@@ -31,7 +31,7 @@ struct AppState {
 
     bool show_debug_panel = true;
     bool show_help_panel = false;
-    bool show_event_log_panel = true;
+    bool show_event_log_panel = false;
     bool auto_run = false;
     float auto_run_accumulator = 0.0F;
     std::string status_message;

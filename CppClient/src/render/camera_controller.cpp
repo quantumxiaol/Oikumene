@@ -9,16 +9,16 @@ void CameraController::Update() {
     const float dt = GetFrameTime();
     const float speed = 520.0F * dt;
 
-    if (IsKeyDown(KEY_A)) {
+    if (IsKeyDown(KEY_LEFT)) {
         offset_.x += speed;
     }
-    if (IsKeyDown(KEY_D)) {
+    if (IsKeyDown(KEY_RIGHT)) {
         offset_.x -= speed;
     }
-    if (IsKeyDown(KEY_W)) {
+    if (IsKeyDown(KEY_UP)) {
         offset_.y += speed;
     }
-    if (IsKeyDown(KEY_S)) {
+    if (IsKeyDown(KEY_DOWN)) {
         offset_.y -= speed;
     }
 
@@ -31,6 +31,20 @@ void CameraController::Update() {
         offset_.x = mouse.x - before_x * TileSize();
         offset_.y = mouse.y - before_y * TileSize();
     }
+}
+
+void CameraController::FitToWorld(const World& world, int screen_width, int screen_height) {
+    constexpr float margin = 42.0F;
+    const float available_width = std::max(100.0F, static_cast<float>(screen_width) - margin * 2.0F);
+    const float available_height = std::max(100.0F, static_cast<float>(screen_height) - margin * 2.0F);
+    const float zoom_x = available_width / (static_cast<float>(world.Width()) * base_tile_size_);
+    const float zoom_y = available_height / (static_cast<float>(world.Height()) * base_tile_size_);
+    zoom_ = std::clamp(std::min(zoom_x, zoom_y), 0.35F, 4.0F);
+
+    const float map_width = static_cast<float>(world.Width()) * TileSize();
+    const float map_height = static_cast<float>(world.Height()) * TileSize();
+    offset_.x = (static_cast<float>(screen_width) - map_width) * 0.50F;
+    offset_.y = (static_cast<float>(screen_height) - map_height) * 0.50F;
 }
 
 Vector2 CameraController::TileToScreen(int x, int y) const {

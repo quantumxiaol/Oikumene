@@ -9,6 +9,7 @@ namespace oikumene {
 class CameraController {
 public:
     void Update();
+    void FitToWorld(const World& world, int screen_width, int screen_height);
 
     [[nodiscard]] Vector2 TileToScreen(int x, int y) const;
     [[nodiscard]] bool ScreenToTile(Vector2 screen, const World& world, int& x, int& y) const;

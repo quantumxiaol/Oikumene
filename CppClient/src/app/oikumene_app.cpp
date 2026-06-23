@@ -40,8 +40,8 @@ std::string StatusText(const HealthStatus& status) {
 }
 
 void DrawPanelBackground(int x, int y, int width, int height) {
-    DrawRectangle(x, y, width, height, Color{18, 22, 26, 226});
-    DrawRectangleLines(x, y, width, height, Color{78, 86, 94, 255});
+    DrawRectangle(x, y, width, height, Color{18, 22, 26, 190});
+    DrawRectangleLines(x, y, width, height, Color{78, 86, 94, 205});
 }
 
 std::string Fixed(float value, int precision = 2) {
@@ -233,6 +233,7 @@ void HandleInput(AppState& state) {
 
     if (IsKeyPressed(KEY_R)) {
         BuildSimulation(state, NextSeed(state.generation_params.seed));
+        state.camera.FitToWorld(state.simulation.GetWorld(), GetScreenWidth(), GetScreenHeight());
         state.status_message = "Generated seed " + std::to_string(state.generation_params.seed);
     }
     if (IsKeyPressed(KEY_B)) {
@@ -256,6 +257,13 @@ void HandleInput(AppState& state) {
     }
     if (IsKeyPressed(KEY_TAB)) {
         state.show_debug_panel = !state.show_debug_panel;
+    }
+    if (IsKeyPressed(KEY_E)) {
+        state.show_event_log_panel = !state.show_event_log_panel;
+    }
+    if (IsKeyPressed(KEY_C)) {
+        state.camera.FitToWorld(state.simulation.GetWorld(), GetScreenWidth(), GetScreenHeight());
+        state.status_message = "Centered map";
     }
     if (IsKeyPressed(KEY_F1)) {
         state.show_help_panel = !state.show_help_panel;
@@ -313,6 +321,11 @@ void DrawEventLogPanel(const AppState& state) {
     DrawText("Recent Events", x + 16, y + 16, 20, RAYWHITE);
 
     const auto& events = state.simulation.Events().Events();
+    if (events.empty()) {
+        DrawText("No events yet. Press Space/N or A to advance.", x + 16, y + 52, 15, Color{202, 211, 218, 255});
+        return;
+    }
+
     int line_y = y + 48;
     const int first = std::max(0, static_cast<int>(events.size()) - 12);
     for (int i = first; i < static_cast<int>(events.size()); ++i) {
@@ -321,6 +334,28 @@ void DrawEventLogPanel(const AppState& state) {
         DrawText(line.c_str(), x + 16, line_y, 15, Color{202, 211, 218, 255});
         line_y += 21;
     }
+}
+
+void DrawHud(const AppState& state) {
+    const int width = 438;
+    const int height = 126;
+    DrawPanelBackground(14, 14, width, height);
+
+    DrawText("Oikumene", 30, 28, 22, RAYWHITE);
+    DrawText(("Layer " + ToString(state.current_layer) + "  Seed " + std::to_string(state.generation_params.seed)).c_str(),
+             30, 58, 16, Color{220, 225, 230, 255});
+    DrawText(("Turn " + std::to_string(state.simulation.CurrentTurn()) + "  Bands " +
+              std::to_string(ActiveBandCount(state.simulation.Bands())) + "/" +
+              std::to_string(state.simulation.Bands().size()) + "  Camps " +
+              std::to_string(static_cast<int>(state.simulation.Settlements().size()) -
+                             VillageCount(state.simulation.Settlements())) +
+              "  Villages " + std::to_string(VillageCount(state.simulation.Settlements())) + "  Pop " +
+              std::to_string(TotalPopulation(state.simulation.Bands(), state.simulation.Settlements())))
+                 .c_str(),
+             30, 82, 16, Color{202, 211, 218, 255});
+    DrawText(("A " + std::string(state.auto_run ? "run" : "pause") + "  Space step  N +10  Tab details  E events  C center")
+                 .c_str(),
+             30, 106, 15, Color{152, 164, 174, 255});
 }
 
 void DrawInspectorDetails(const AppState& state, int& y) {
@@ -397,31 +432,31 @@ void DrawDebugPanel(const AppState& state) {
         return;
     }
 
-    DrawPanelBackground(18, 18, 460, 560);
-    DrawText("Oikumene / The Habitable World", 34, 34, 22, RAYWHITE);
-    DrawText(("Layer: " + ToString(state.current_layer)).c_str(), 34, 68, 18, Color{220, 225, 230, 255});
-    DrawText(("Seed: " + std::to_string(state.generation_params.seed)).c_str(), 34, 94, 18, Color{184, 194, 202, 255});
+    DrawPanelBackground(18, 154, 460, 532);
+    DrawText("Details", 34, 170, 22, RAYWHITE);
+    DrawText(("Layer: " + ToString(state.current_layer)).c_str(), 34, 204, 18, Color{220, 225, 230, 255});
+    DrawText(("Seed: " + std::to_string(state.generation_params.seed)).c_str(), 34, 230, 18, Color{184, 194, 202, 255});
     DrawText(("World: " + std::to_string(state.simulation.GetWorld().Width()) + " x " +
               std::to_string(state.simulation.GetWorld().Height()))
                  .c_str(),
-             34, 120, 18, Color{184, 194, 202, 255});
-    DrawText(("Python Agent: " + StatusText(state.health)).c_str(), 34, 146, 18, StatusColor(state.health.online));
-    DrawText(("Sim: " + state.simulation.StatusSummary()).c_str(), 34, 172, 18, Color{184, 194, 202, 255});
+             34, 256, 18, Color{184, 194, 202, 255});
+    DrawText(("Python Agent: " + StatusText(state.health)).c_str(), 34, 282, 18, StatusColor(state.health.online));
+    DrawText(("Sim: " + state.simulation.StatusSummary()).c_str(), 34, 308, 18, Color{184, 194, 202, 255});
     DrawText(("Auto-run: " + std::string(state.auto_run ? "on" : "off") + "  TPS " +
               Fixed(state.config.simulation.turns_per_second, 1) + "  Events: " +
               std::to_string(state.simulation.Events().Size()))
                  .c_str(),
-             34, 196, 18, Color{184, 194, 202, 255});
+             34, 332, 18, Color{184, 194, 202, 255});
 
     DrawText(("Land " + Fixed(state.report.land_ratio * 100.0F, 1) + "%  Ocean " +
               Fixed((1.0F - state.report.land_ratio) * 100.0F, 1) + "%  Rivers " +
               std::to_string(state.report.river_tiles))
                  .c_str(),
-             34, 232, 16, Color{202, 211, 218, 255});
+             34, 368, 16, Color{202, 211, 218, 255});
     DrawText(("Forest " + Fixed(state.report.forest_ratio * 100.0F, 1) + "%  Desert " +
               Fixed(state.report.desert_ratio * 100.0F, 1) + "%  Top settle " + Fixed(state.report.top_settlement_score))
                  .c_str(),
-             34, 256, 16, Color{202, 211, 218, 255});
+             34, 392, 16, Color{202, 211, 218, 255});
     DrawText(("Bands " + std::to_string(ActiveBandCount(state.simulation.Bands())) + "/" +
               std::to_string(state.simulation.Bands().size()) + "  Camps " +
               std::to_string(static_cast<int>(state.simulation.Settlements().size()) -
@@ -429,20 +464,20 @@ void DrawDebugPanel(const AppState& state) {
               "  Villages " + std::to_string(VillageCount(state.simulation.Settlements())) + "  Pop " +
               std::to_string(TotalPopulation(state.simulation.Bands(), state.simulation.Settlements())))
                  .c_str(),
-             34, 280, 16, Color{202, 211, 218, 255});
+             34, 416, 16, Color{202, 211, 218, 255});
 
-    DrawText("Space step  N 10 turns  Shift+N 100  A auto  B reset", 34, 310, 15, Color{152, 164, 174, 255});
-    DrawText("Tab panel  F1 help  F11 fullscreen  P screenshot  M report", 34, 332, 15, Color{152, 164, 174, 255});
+    DrawText("Space step  N 10 turns  Shift+N 100  A auto  B reset", 34, 446, 15, Color{152, 164, 174, 255});
+    DrawText("Tab details  E events  C center  F1 help  P screenshot", 34, 468, 15, Color{152, 164, 174, 255});
     if (!state.status_message.empty()) {
-        DrawText(state.status_message.c_str(), 34, 356, 15, Color{180, 202, 225, 255});
+        DrawText(state.status_message.c_str(), 34, 492, 15, Color{180, 202, 225, 255});
     }
 
-    int y = 388;
+    int y = 522;
     DrawInspectorDetails(state, y);
 }
 
 void DrawHelpPanel() {
-    DrawPanelBackground(GetScreenWidth() - 390, 18, 364, 246);
+    DrawPanelBackground(GetScreenWidth() - 390, 18, 364, 278);
     DrawText("Help", GetScreenWidth() - 370, 36, 22, RAYWHITE);
     DrawText("1-7      switch map layers", GetScreenWidth() - 370, 72, 16, Color{202, 211, 218, 255});
     DrawText("R        generate next seed", GetScreenWidth() - 370, 96, 16, Color{202, 211, 218, 255});
@@ -451,7 +486,8 @@ void DrawHelpPanel() {
     DrawText("N        step 10 turns", GetScreenWidth() - 370, 168, 16, Color{202, 211, 218, 255});
     DrawText("Shift+N  step 100 turns", GetScreenWidth() - 370, 192, 16, Color{202, 211, 218, 255});
     DrawText("A        toggle auto-run", GetScreenWidth() - 370, 216, 16, Color{202, 211, 218, 255});
-    DrawText("F11      toggle fullscreen", GetScreenWidth() - 370, 240, 16, Color{202, 211, 218, 255});
+    DrawText("E        toggle events panel", GetScreenWidth() - 370, 240, 16, Color{202, 211, 218, 255});
+    DrawText("C        center map, arrows pan", GetScreenWidth() - 370, 264, 16, Color{202, 211, 218, 255});
 }
 
 }  // namespace
@@ -476,6 +512,7 @@ int OikumeneApp::Run() {
     state.show_help_panel = config_.ui.show_help_panel;
     state.auto_run = config_.simulation.auto_run;
     BuildSimulation(state, config_.simulation.default_seed);
+    state.camera.FitToWorld(state.simulation.GetWorld(), GetScreenWidth(), GetScreenHeight());
     state.health = state.remote_provider.CheckHealth();
 
     while (!WindowShouldClose()) {
@@ -487,6 +524,7 @@ int OikumeneApp::Run() {
         ClearBackground(Color{18, 22, 26, 255});
         state.renderer.Draw(state.simulation.GetWorld(), state.camera, state.current_layer, state.hover_tile);
         state.renderer.DrawEntities(state.simulation.Bands(), state.simulation.Settlements(), state.camera);
+        DrawHud(state);
         DrawDebugPanel(state);
         if (state.show_help_panel) {
             DrawHelpPanel();

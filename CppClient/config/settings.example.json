@@ -8,7 +8,7 @@
   },
   "ui": {
     "scale": 1.0,
-    "show_debug_panel": true,
+    "show_debug_panel": false,
     "show_help_panel": false
   },
   "simulation": {

@@ -17,7 +17,7 @@ struct WindowConfig {
 
 struct UiConfig {
     float scale = 1.0F;
-    bool show_debug_panel = true;
+    bool show_debug_panel = false;
     bool show_help_panel = false;
 };
 

@@ -114,15 +114,19 @@ cp CppClient/config/settings.example.json CppClient/config/settings.json
 - `Space`：推进 1 个仿真回合。
 - `N`：推进 10 个仿真回合。
 - `Shift+N`：推进 100 个仿真回合。
-- `Tab`：显示/隐藏调试面板。
+- `Tab`：显示/隐藏详情调试面板，默认隐藏。
+- `E`：显示/隐藏 Recent Events 面板，默认隐藏。
+- `C`：重新居中地图。
 - `F1`：显示/隐藏帮助面板。
 - `F11`：切换全屏。
 - `P`：导出当前窗口截图到 `runs/worldgen_seed_<seed>/layer_<layer>.png`。
 - `M`：导出世界生成报告到 `runs/worldgen_seed_<seed>/report.json`。
-- `W/A/S/D`：平移地图。
+- 方向键：平移地图。
 - 鼠标滚轮：缩放地图。
 - 鼠标 hover：查看 tile 信息。
 - 鼠标左键：选择当前位置的 band 或 settlement。
+
+默认只显示左上角轻量 HUD，避免挡住地图。需要看 tile、band、settlement 的详细解释字段时再按 `Tab`。
 
 ## 测试
 
