@@ -13,6 +13,7 @@ enum class SymbolCategory {
     Water,
     Resource,
     Improvement,
+    Route,
     Entity,
     Polity,
     Overlay,

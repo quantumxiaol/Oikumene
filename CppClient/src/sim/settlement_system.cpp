@@ -436,7 +436,12 @@ void ProduceFromWorkedTile(World& world,
             break;
         case ImprovementKind::ShallowMine:
             if (effects.mining_enabled) {
-                settlement.ore_output_last_turn += IsMineral(tile.resource) ? 0.45F + tile.resource_amount * 0.65F : 0.0F;
+                const bool route_connected =
+                    tile.has_route && settlement.polity_id != kInvalidPolityId &&
+                    tile.route_polity_id == settlement.polity_id;
+                const float route_multiplier = route_connected ? (1.18F + tile.route_quality * 0.28F) : 1.0F;
+                settlement.ore_output_last_turn +=
+                    IsMineral(tile.resource) ? (0.45F + tile.resource_amount * 0.65F) * route_multiplier : 0.0F;
             }
             break;
         case ImprovementKind::ForagingGround:

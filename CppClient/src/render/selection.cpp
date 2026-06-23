@@ -10,6 +10,8 @@ std::string ToString(SelectionKind kind) {
             return "Tile";
         case SelectionKind::ImprovementTile:
             return "ImprovementTile";
+        case SelectionKind::RouteTile:
+            return "RouteTile";
         case SelectionKind::Band:
             return "Band";
         case SelectionKind::Settlement:
@@ -44,6 +46,10 @@ Selection SelectAtTile(const World& world,
     }
 
     const auto& tile = world.At(x, y);
+    if (tile.has_route) {
+        return Selection{.kind = SelectionKind::RouteTile, .id = tile.route_id, .x = x, .y = y};
+    }
+
     if (tile.improvement != ImprovementKind::None) {
         return Selection{.kind = SelectionKind::ImprovementTile, .id = -1, .x = x, .y = y};
     }

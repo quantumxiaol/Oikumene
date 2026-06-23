@@ -102,6 +102,35 @@ void DrawControlOverlay(const Tile& tile, Vector2 position, float tile_size) {
     }
 }
 
+Color RouteColorFor(const Tile& tile) {
+    Color color = tile.route_polity_id == kInvalidPolityId ? Color{224, 202, 136, 245} : ColorForPolity(tile.route_polity_id);
+    color.a = 245;
+    if (tile.route_kind == RouteKind::Trail) {
+        color = Color{196, 172, 122, 235};
+    } else if (tile.route_kind == RouteKind::RiverRoute) {
+        color = Color{84, 170, 232, 245};
+    } else if (tile.route_kind == RouteKind::CoastalRoute) {
+        color = Color{112, 206, 216, 245};
+    }
+    return color;
+}
+
+void DrawRouteOverlay(const Tile& tile, Vector2 position, float tile_size) {
+    if (!tile.has_route) {
+        return;
+    }
+    const float width = std::max(1.0F, tile_size * (tile.route_kind == RouteKind::Road ? 0.18F : 0.12F));
+    const Color color = RouteColorFor(tile);
+    const Vector2 start{position.x + tile_size * 0.10F, position.y + tile_size * 0.52F};
+    const Vector2 end{position.x + tile_size * 0.90F, position.y + tile_size * 0.52F};
+    DrawLineEx(start, end, width, color);
+    if (tile.route_kind == RouteKind::Road) {
+        DrawLineEx(Vector2{position.x + tile_size * 0.24F, position.y + tile_size * 0.38F},
+                   Vector2{position.x + tile_size * 0.76F, position.y + tile_size * 0.38F},
+                   std::max(1.0F, width * 0.52F), Color{232, 220, 176, 230});
+    }
+}
+
 }  // namespace
 
 void MapRenderer::Draw(const World& world,
@@ -125,6 +154,9 @@ void MapRenderer::Draw(const World& world,
         if (layer == MapLayer::PolityControl) {
             DrawControlOverlay(tile, position, tile_size);
         }
+        if (layer == MapLayer::RouteNetwork) {
+            DrawRouteOverlay(tile, position, tile_size);
+        }
 
         if (tile.has_river) {
             const float flow_width = std::clamp(tile.river_flow * 0.035F, 0.12F, 0.34F);
@@ -146,7 +178,8 @@ void MapRenderer::Draw(const World& world,
         DrawRectangleLinesEx(Rectangle{position.x, position.y, tile_size, tile_size}, 2.0F, RAYWHITE);
     }
 
-    if (selection.kind == SelectionKind::Tile || selection.kind == SelectionKind::ImprovementTile) {
+    if (selection.kind == SelectionKind::Tile || selection.kind == SelectionKind::ImprovementTile ||
+        selection.kind == SelectionKind::RouteTile) {
         const Vector2 position = camera.TileToScreen(selection.x, selection.y);
         DrawRectangleLinesEx(Rectangle{position.x - 1.0F, position.y - 1.0F, tile_size + 2.0F, tile_size + 2.0F}, 3.0F,
                              Color{255, 216, 96, 255});

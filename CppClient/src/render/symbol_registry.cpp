@@ -98,6 +98,15 @@ std::vector<SymbolInfo> BuildSymbols() {
         Symbol(SymbolCategory::Improvement, "improvement.foraging", "Foraging Ground", "Early subsistence tile used before full agriculture.",
                Color{80, 190, 108, 255}, "circle"),
 
+        Symbol(SymbolCategory::Route, "route.trail", "Trail", "Low-cost early path that slightly improves local reach.",
+               Color{196, 172, 122, 255}, "line"),
+        Symbol(SymbolCategory::Route, "route.road", "Road", "Built after roads tech; strongly lowers control and admin distance.",
+               Color{232, 220, 176, 255}, "line"),
+        Symbol(SymbolCategory::Route, "route.river", "River Route", "River corridor route for internal movement and resource access.",
+               Color{84, 170, 232, 255}, "line"),
+        Symbol(SymbolCategory::Route, "route.coastal", "Coastal Route", "Sailing-enabled coastal movement route.",
+               Color{112, 206, 216, 255}, "line"),
+
         Symbol(SymbolCategory::Entity, "entity.band", "Band", "Mobile hunting and gathering group before settlement.",
                Color{245, 245, 236, 255}, "triangle"),
         Symbol(SymbolCategory::Entity, "entity.camp", "Camp", "Early fixed settlement.",
@@ -132,6 +141,8 @@ std::string ToString(SymbolCategory category) {
             return "Resources / 资源";
         case SymbolCategory::Improvement:
             return "Improvements / 改良";
+        case SymbolCategory::Route:
+            return "Routes / 路线";
         case SymbolCategory::Entity:
             return "Entities / 聚落";
         case SymbolCategory::Polity:

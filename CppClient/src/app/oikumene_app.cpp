@@ -223,10 +223,27 @@ const Polity* PolityById(const std::vector<Polity>& polities, PolityId id) {
     return nullptr;
 }
 
+const Route* RouteById(const std::vector<Route>& routes, int id) {
+    for (const auto& route : routes) {
+        if (route.id == id) {
+            return &route;
+        }
+    }
+    return nullptr;
+}
+
 int ContestedTileCount(const World& world) {
     int count = 0;
     for (const auto& tile : world.Tiles()) {
         count += tile.is_contested ? 1 : 0;
+    }
+    return count;
+}
+
+int RouteTileCount(const World& world) {
+    int count = 0;
+    for (const auto& tile : world.Tiles()) {
+        count += tile.has_route ? 1 : 0;
     }
     return count;
 }
@@ -388,7 +405,8 @@ bool CenterOnSelection(AppState& state) {
             return true;
         }
     }
-    if (state.selection.kind == SelectionKind::Tile || state.selection.kind == SelectionKind::ImprovementTile) {
+    if (state.selection.kind == SelectionKind::Tile || state.selection.kind == SelectionKind::ImprovementTile ||
+        state.selection.kind == SelectionKind::RouteTile) {
         state.camera.CenterOnTile(state.selection.x, state.selection.y);
         return true;
     }
@@ -440,6 +458,9 @@ void HandleLayerHotkeys(AppState& state) {
     }
     if (IsKeyPressed(KEY_EIGHT)) {
         state.current_layer = MapLayer::PolityControl;
+    }
+    if (IsKeyPressed(KEY_NINE)) {
+        state.current_layer = MapLayer::RouteNetwork;
     }
 }
 
@@ -594,10 +615,11 @@ void DrawHud(const AppState& state) {
               std::to_string(LargestPolityPopulation(state.simulation.Polities())))
                  .c_str(),
              30, 130, 15, Color{184, 194, 202, 255});
-    DrawText(("Tech avg " + Fixed(AverageUnlockedTechs(state.simulation.Polities()), 1) + "  Mining " +
+    DrawText(("Routes " + std::to_string(state.simulation.Routes().size()) + "/" +
+              std::to_string(RouteTileCount(state.simulation.GetWorld())) + "  Tech avg " +
+              Fixed(AverageUnlockedTechs(state.simulation.Polities()), 1) + "  Mining " +
               Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Mining) * 100.0F, 0) + "%  Roads " +
-              Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Roads) * 100.0F, 0) + "%  Admin " +
-              Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Administration) * 100.0F, 0) + "%")
+              Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Roads) * 100.0F, 0) + "%")
                  .c_str(),
              30, 154, 15, Color{184, 194, 202, 255});
 }
@@ -636,7 +658,8 @@ void DrawPlaybackBar(AppState& state) {
 
 void DrawInspectorDetails(const AppState& state, int& y) {
     std::optional<std::pair<int, int>> inspected_tile;
-    if (state.selection.kind == SelectionKind::Tile || state.selection.kind == SelectionKind::ImprovementTile) {
+    if (state.selection.kind == SelectionKind::Tile || state.selection.kind == SelectionKind::ImprovementTile ||
+        state.selection.kind == SelectionKind::RouteTile) {
         inspected_tile = std::pair<int, int>{state.selection.x, state.selection.y};
     } else if (state.hover_tile.has_value()) {
         inspected_tile = state.hover_tile;
@@ -677,6 +700,22 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                      .c_str(),
                  34, y, 17, Color{202, 211, 218, 255});
         y += 26;
+        if (tile.has_route) {
+            DrawText(("Route " + std::to_string(tile.route_id) + "  " + ToString(tile.route_kind) + "  Polity " +
+                      std::to_string(tile.route_polity_id) + "  Quality " + Fixed(tile.route_quality, 2))
+                         .c_str(),
+                     34, y, 17, Color{224, 202, 136, 255});
+            y += 22;
+            if (const auto* route = RouteById(state.simulation.Routes(), tile.route_id)) {
+                DrawText(("Purpose " + ToString(route->purpose) + "  Maint " + Fixed(route->maintenance, 2) +
+                          "  ROI " + Fixed(route->roi, 2))
+                             .c_str(),
+                         34, y, 17, Color{224, 202, 136, 255});
+                y += 22;
+                DrawText(Truncate("Reason: " + route->reason, 58).c_str(), 34, y, 16, Color{224, 202, 136, 255});
+                y += 24;
+            }
+        }
     }
 
     const int selected_band_id = state.selection.kind == SelectionKind::Band ? state.selection.id : -1;
@@ -784,6 +823,13 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                       Fixed(polity->military_potential, 1))
                          .c_str(),
                      34, y, 17, Color{198, 228, 245, 255});
+            y += 22;
+            DrawText(("Routes " + std::to_string(polity->route_ids.size()) + "  Maint " +
+                      Fixed(polity->route_maintenance, 2) + "  Conn villages " +
+                      std::to_string(polity->connected_settlements) + "  Mines " +
+                      std::to_string(polity->connected_mines))
+                         .c_str(),
+                     34, y, 17, Color{224, 202, 136, 255});
         }
     }
 }
@@ -841,7 +887,7 @@ void DrawDebugPanel(const AppState& state) {
 void DrawHelpPanel() {
     DrawPanelBackground(GetScreenWidth() - 390, 18, 364, 342);
     DrawText("Help", GetScreenWidth() - 370, 36, 22, RAYWHITE);
-    DrawText("1-8      switch map layers", GetScreenWidth() - 370, 72, 16, Color{202, 211, 218, 255});
+    DrawText("1-9      switch map layers", GetScreenWidth() - 370, 72, 16, Color{202, 211, 218, 255});
     DrawText("R        generate next seed", GetScreenWidth() - 370, 96, 16, Color{202, 211, 218, 255});
     DrawText("B        reset bands on current world", GetScreenWidth() - 370, 120, 16, Color{202, 211, 218, 255});
     DrawText("Space    step one turn", GetScreenWidth() - 370, 144, 16, Color{202, 211, 218, 255});

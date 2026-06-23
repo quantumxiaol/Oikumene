@@ -11,10 +11,10 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 
 ## 当前状态
 
-当前已经进入 Phase 4.0：
+当前已经进入 Phase 4.5：
 
 - C++ 主程序能打开 Raylib 窗口，生成 80x56 世界地图。
-- 支持 Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore 图层。
+- 支持 Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl、RouteNetwork 图层。
 - 已有河流 overlay、资源 marker、band / settlement marker、hover tile inspector。
 - `Simulation` 拥有唯一权威 `World`，渲染读取 `simulation.GetWorld()`。
 - 已有 band 迁徙、采集、定居、camp 升级 village、事件日志。
@@ -24,12 +24,14 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 - 已有 polity 资源池与行政维护：food/wood/ore/wealth 收入、行政负担、行政容量、overextension、stability 会影响控制力扩散。
 - 已有 polity-level 科技系统：Pottery、Irrigation、AnimalHusbandry、Mining、Roads、Administration、BronzeWorking、Fortification、Sailing。
 - 科技由 C++ heuristic 选择和推进，暂时不接 LLM；科技效果会影响农田/牧场/矿井产出、行政能力、控制力路径成本和未来军事潜力。
+- 已有显式路线网络：polity 会根据首都-成员村庄、矿点/资源点连接收益自动建设 Trail、Road、RiverRoute、CoastalRoute；路线会降低同 polity 的路径/控制成本，增加矿点转运效率，并产生维护成本。
+- `RouteNetwork` 图层可以直接查看路线；选中路线 tile 时详情面板会显示 route id、类型、目的、维护成本、ROI 和建造原因。
 - 已有图例系统：`F2` 打开 Legend 面板，`docs/LEGEND.md` 维护图标和覆盖层说明。
 - UI 底部有轻量播放控制条：Play/Pause、Step、+10、+100、TPS 调整、Reset Bands。
 - 已有 headless 工具：
   - `oikumene_worldgen_batch`：批量生成世界并输出世界生成报告。
   - `oikumene_sim_batch`：无窗口跑部落/定居仿真并输出 summary、final_state、events。
-  - `oikumene_sim_balance_batch`：批量跑多个 seed，输出人口、农田、牧场、伐木、粮食供需、承载力、polity 行政、稳定性和科技指标。
+  - `oikumene_sim_balance_batch`：批量跑多个 seed，输出人口、农田、牧场、伐木、粮食供需、承载力、polity 行政、稳定性、科技和路线网络指标。
 
 ## C++ 依赖
 
@@ -115,7 +117,7 @@ cp CppClient/config/settings.example.json CppClient/config/settings.json
 
 ## 窗口快捷键
 
-- `1`-`8`：切换地图图层：Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl。
+- `1`-`9`：切换地图图层：Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl、RouteNetwork。
 - `F2`：显示/隐藏图例面板。
 - `R`：使用新 seed 重新生成世界，并重置仿真。
 - `B`：在当前世界上重置 band。
@@ -130,7 +132,7 @@ cp CppClient/config/settings.example.json CppClient/config/settings.json
 - `WASD` / 方向键：平移地图。
 - 鼠标右键或中键拖动：拖拽地图。
 - 鼠标滚轮：以鼠标指向位置缩放地图。
-- 鼠标左键：选择 Settlement / Band / Improvement tile / Tile，UI 面板区域不会穿透点击地图。
+- 鼠标左键：选择 Settlement / Band / Route tile / Improvement tile / Tile，UI 面板区域不会穿透点击地图。
 - `C`：居中到当前选中对象；没有选中对象时适配整张地图。
 - `Home` / `F`：适配整张地图到窗口。
 - `F1`：显示/隐藏帮助面板。
@@ -159,6 +161,7 @@ ctest --test-dir build --output-on-failure
 - Chiefdom 形成、附近聚落加入、远处聚落不加入、控制力场地形阻隔、河谷扩散、海洋阻断和争议区。
 - Polity 资源收入、行政负担、行政容量、overextension、stability，以及图例符号注册完整性。
 - Polity 科技研究、前置条件、heuristic 选题、科技效果、确定性，以及 batch 科技字段导出。
+- 路径搜索、路线网络建设、道路/小径科技差异、路线确定性、路线对行政距离/控制力/矿点产出的效果。
 
 ## 批处理工具
 
@@ -190,7 +193,7 @@ cd CppClient
 - `world_report.json`
 - `states.jsonl`：仅在传入 `--sample-every N` 时生成。
 
-`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension、stability、平均解锁科技数、knowledge income 和关键科技解锁率。`final_state.json` 会保留 Band / Settlement / Polity 的调试字段，并导出 `improved_tiles` 摘要；每个 polity 会包含 `research`、`unlocked_techs`、`active_effects`、`military_potential` 和 `tool_efficiency`。
+`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension、stability、平均解锁科技数、knowledge income、关键科技解锁率和路线网络规模。`final_state.json` 会保留 Band / Settlement / Polity / Route 的调试字段，并导出 `improved_tiles` 与 `route_tiles` 摘要；每个 polity 会包含 `research`、`unlocked_techs`、`active_effects`、`military_potential`、`tool_efficiency`、`route_ids`、`route_maintenance`、`connected_settlements` 和 `connected_mines`。
 
 批量检查村庄经济平衡：
 
@@ -224,6 +227,11 @@ cd CppClient
 - `mean_unlocked_techs` / `mean_knowledge_income`：科技进展速度。
 - `pottery_unlock_rate` / `mining_unlock_rate` / `roads_unlock_rate` / `administration_unlock_rate` 等：科技路线分布。
 - `mean_ore_income` / `mean_tool_efficiency` / `mean_military_potential`：矿业、工具和未来军事潜力。
+- `mean_routes` / `mean_route_tiles`：平均路线数量和路线 tile 数量。
+- `mean_road_tiles` / `mean_trail_tiles` / `mean_river_route_tiles` / `mean_coastal_route_tiles`：不同路线类型的占比，用来判断路线是否过度依赖人造道路或天然廊道。
+- `mean_connected_settlements` / `mean_connected_mines`：路线实际连接了多少成员聚落和矿点。
+- `mean_route_maintenance` / `mean_admin_distance_saving`：路线维护成本和行政距离收益。
+- `mean_ore_income_for_mining_polities`：已解锁 Mining 的 polity 的平均 ore income，方便判断矿点路线是否有实际收益。
 
 ## 开发格式化
 
@@ -241,8 +249,8 @@ clang-format -i CppClient/include/oikumene/**/*.hpp CppClient/src/**/*.cpp CppCl
 
 ## 下一阶段
 
-Phase 4 后续重点：
+Phase 4.5 后续重点：
 
-- 继续校准科技成本、研究选择和科技对人口/控制范围的影响。
-- 做 Roads / Route Network 的显式路线层，但暂时不做贸易和战争。
-- 后续进入 Trade Routes，再进入 Military Potential / War ROI。
+- 校准路线建设 ROI，避免路线过稀或过早铺满。
+- 让 Roads、Sailing、Administration 对路线类型和维护成本的影响更清晰。
+- 后续进入 Trade Routes，再进入 Military Potential / War ROI；当前路线网络只是基础设施层，不等同于贸易系统。

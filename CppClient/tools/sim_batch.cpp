@@ -11,6 +11,7 @@
 
 #include "oikumene/core/simulation.hpp"
 #include "oikumene/sim/event.hpp"
+#include "oikumene/sim/route_system.hpp"
 #include "oikumene/sim/tech_effects.hpp"
 #include "oikumene/world/world_generation_report.hpp"
 #include "oikumene/world/world_generator.hpp"
@@ -242,6 +243,36 @@ nlohmann::json PolityToJson(const oikumene::Polity& polity) {
         {"active_effects", TechEffectsToJson(effects)},
         {"military_potential", polity.military_potential},
         {"tool_efficiency", polity.tool_efficiency},
+        {"route_ids", polity.route_ids},
+        {"route_maintenance", polity.route_maintenance},
+        {"connected_settlements", polity.connected_settlements},
+        {"connected_mines", polity.connected_mines},
+        {"admin_distance_saving", polity.admin_distance_saving},
+    };
+}
+
+nlohmann::json RouteToJson(const oikumene::Route& route) {
+    nlohmann::json path = nlohmann::json::array();
+    for (const auto& coord : route.path) {
+        path.push_back(nlohmann::json{{"x", coord.x}, {"y", coord.y}});
+    }
+    return nlohmann::json{
+        {"id", route.id},
+        {"polity_id", route.polity_id},
+        {"from_settlement_id", route.from_settlement_id},
+        {"to_settlement_id", route.to_settlement_id},
+        {"target_x", route.target_x},
+        {"target_y", route.target_y},
+        {"purpose", oikumene::ToString(route.purpose)},
+        {"kind", oikumene::ToString(route.kind)},
+        {"path", path},
+        {"tile_count", route.path.size()},
+        {"build_cost_wood", route.build_cost_wood},
+        {"build_cost_wealth", route.build_cost_wealth},
+        {"maintenance", route.maintenance},
+        {"route_value", route.route_value},
+        {"roi", route.roi},
+        {"reason", route.reason},
     };
 }
 
@@ -345,6 +376,22 @@ int CountContestedTiles(const oikumene::Simulation& sim) {
     int count = 0;
     for (const auto& tile : sim.GetWorld().Tiles()) {
         count += tile.is_contested ? 1 : 0;
+    }
+    return count;
+}
+
+int CountRouteTiles(const oikumene::Simulation& sim) {
+    int count = 0;
+    for (const auto& tile : sim.GetWorld().Tiles()) {
+        count += tile.has_route ? 1 : 0;
+    }
+    return count;
+}
+
+int CountRouteKindTiles(const oikumene::Simulation& sim, oikumene::RouteKind kind) {
+    int count = 0;
+    for (const auto& tile : sim.GetWorld().Tiles()) {
+        count += tile.has_route && tile.route_kind == kind ? 1 : 0;
     }
     return count;
 }
@@ -490,6 +537,24 @@ nlohmann::json ImprovedTilesToJson(const oikumene::Simulation& sim) {
     return tiles;
 }
 
+nlohmann::json RouteTilesToJson(const oikumene::Simulation& sim) {
+    nlohmann::json tiles = nlohmann::json::array();
+    for (const auto& tile : sim.GetWorld().Tiles()) {
+        if (!tile.has_route) {
+            continue;
+        }
+        tiles.push_back(nlohmann::json{
+            {"x", tile.x},
+            {"y", tile.y},
+            {"route_id", tile.route_id},
+            {"polity_id", tile.route_polity_id},
+            {"kind", oikumene::ToString(tile.route_kind)},
+            {"quality", tile.route_quality},
+        });
+    }
+    return tiles;
+}
+
 nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
     nlohmann::json bands = nlohmann::json::array();
     for (const auto& band : sim.Bands()) {
@@ -504,6 +569,10 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
     for (const auto& polity : sim.Polities()) {
         polities.push_back(PolityToJson(polity));
     }
+    nlohmann::json routes = nlohmann::json::array();
+    for (const auto& route : sim.Routes()) {
+        routes.push_back(RouteToJson(route));
+    }
 
     return nlohmann::json{
         {"turn", sim.CurrentTurn()},
@@ -511,8 +580,10 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
         {"active_bands", CountActiveBands(sim)},
         {"settlements", settlements},
         {"polities", polities},
+        {"routes", routes},
         {"bands", bands},
         {"improved_tiles", ImprovedTilesToJson(sim)},
+        {"route_tiles", RouteTilesToJson(sim)},
         {"event_count", sim.Events().Size()},
     };
 }
@@ -547,6 +618,12 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"polities", sim.Polities().size()},
         {"controlled_land_ratio", ControlledLandRatio(sim)},
         {"contested_tiles", CountContestedTiles(sim)},
+        {"routes", sim.Routes().size()},
+        {"route_tile_count", CountRouteTiles(sim)},
+        {"road_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Road)},
+        {"trail_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Trail)},
+        {"river_route_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::RiverRoute)},
+        {"coastal_route_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::CoastalRoute)},
         {"average_admin_load", AverageAdminLoad(sim)},
         {"average_admin_capacity", AverageAdminCapacity(sim)},
         {"average_overextension", AverageOverextension(sim)},
@@ -565,6 +642,7 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"farm_built_events", CountEvents(sim, oikumene::EventType::FarmBuilt)},
         {"lumbercamp_built_events", CountEvents(sim, oikumene::EventType::LumberCampBuilt)},
         {"pasture_built_events", CountEvents(sim, oikumene::EventType::PastureBuilt)},
+        {"route_built_events", CountEvents(sim, oikumene::EventType::RouteBuilt)},
         {"carrying_capacity_reached_events", CountEvents(sim, oikumene::EventType::CarryingCapacityReached)},
     };
 }
@@ -593,6 +671,12 @@ nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
         {"polities", sim.Polities().size()},
         {"controlled_land_ratio", ControlledLandRatio(sim)},
         {"contested_tiles", CountContestedTiles(sim)},
+        {"routes", sim.Routes().size()},
+        {"route_tile_count", CountRouteTiles(sim)},
+        {"road_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Road)},
+        {"trail_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Trail)},
+        {"river_route_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::RiverRoute)},
+        {"coastal_route_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::CoastalRoute)},
         {"average_admin_load", AverageAdminLoad(sim)},
         {"average_admin_capacity", AverageAdminCapacity(sim)},
         {"average_overextension", AverageOverextension(sim)},

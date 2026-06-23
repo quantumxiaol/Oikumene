@@ -57,6 +57,11 @@ struct Polity {
     float knowledge_income = 0.0F;
     float military_potential = 0.0F;
     float tool_efficiency = 1.0F;
+    std::vector<int> route_ids;
+    float route_maintenance = 0.0F;
+    int connected_settlements = 0;
+    int connected_mines = 0;
+    float admin_distance_saving = 0.0F;
     std::uint32_t debug_color_index = 0;
     int controlled_tile_count = 0;
     int contested_tile_count = 0;

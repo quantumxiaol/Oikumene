@@ -4,6 +4,7 @@
 
 #include "oikumene/sim/band_system.hpp"
 #include "oikumene/sim/polity_system.hpp"
+#include "oikumene/sim/route_system.hpp"
 #include "oikumene/sim/settlement_system.hpp"
 #include "oikumene/sim/technology_system.hpp"
 #include "oikumene/world/world_generation_params.hpp"
@@ -51,6 +52,14 @@ std::vector<Polity>& Simulation::Polities() {
     return polities_;
 }
 
+const std::vector<Route>& Simulation::Routes() const {
+    return routes_;
+}
+
+std::vector<Route>& Simulation::Routes() {
+    return routes_;
+}
+
 const EventLog& Simulation::Events() const {
     return event_log_;
 }
@@ -76,7 +85,9 @@ std::string Simulation::StatusSummary() const {
 
 void Simulation::InitializeBands(int count) {
     settlements_.clear();
+    routes_.clear();
     PolitySystem::Reset(world_, settlements_, polities_);
+    RouteSystem::Reset(world_, routes_, polities_);
     event_log_.Events().clear();
     current_turn_ = 0;
     BandSystem::InitializeBands(world_, params_, count, bands_);
@@ -87,6 +98,7 @@ void Simulation::AdvanceOneTurn() {
     SettlementSystem::UpdateSettlements(world_, params_, current_turn_, settlements_, polities_, event_log_);
     PolitySystem::UpdatePolities(world_, current_turn_, settlements_, polities_, event_log_);
     TechnologySystem::UpdateTechnologies(world_, current_turn_, settlements_, polities_, event_log_);
+    RouteSystem::UpdateRoutes(world_, current_turn_, settlements_, polities_, routes_, event_log_);
     ++current_turn_;
 }
 

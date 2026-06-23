@@ -127,6 +127,7 @@ void DrawLegendPanel(Rectangle bounds) {
     left_y = DrawCategory(SymbolCategory::Water, x, left_y, column_width);
     right_y = DrawCategory(SymbolCategory::Resource, right_x, right_y, column_width);
     right_y = DrawCategory(SymbolCategory::Improvement, right_x, right_y, column_width);
+    right_y = DrawCategory(SymbolCategory::Route, right_x, right_y, column_width);
     left_y = DrawCategory(SymbolCategory::Entity, x, left_y, column_width);
     right_y = DrawCategory(SymbolCategory::Polity, right_x, right_y, column_width);
     right_y = DrawCategory(SymbolCategory::Overlay, right_x, right_y, column_width);

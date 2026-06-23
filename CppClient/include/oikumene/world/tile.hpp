@@ -3,6 +3,7 @@
 #include "oikumene/world/biome.hpp"
 #include "oikumene/world/improvement.hpp"
 #include "oikumene/world/resource.hpp"
+#include "oikumene/world/route_kind.hpp"
 
 namespace oikumene {
 
@@ -38,6 +39,12 @@ struct Tile {
     float control_strength = 0.0F;
     bool is_contested = false;
     int settlement_id = -1;
+
+    bool has_route = false;
+    RouteKind route_kind = RouteKind::Trail;
+    float route_quality = 0.0F;
+    int route_polity_id = -1;
+    int route_id = -1;
 };
 
 }  // namespace oikumene

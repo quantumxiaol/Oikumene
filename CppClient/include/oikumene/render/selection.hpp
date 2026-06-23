@@ -15,6 +15,7 @@ enum class SelectionKind {
     None,
     Tile,
     ImprovementTile,
+    RouteTile,
     Band,
     Settlement,
 };

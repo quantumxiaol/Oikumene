@@ -22,6 +22,8 @@ std::string ToString(MapLayer layer) {
             return "SettlementScore";
         case MapLayer::PolityControl:
             return "PolityControl";
+        case MapLayer::RouteNetwork:
+            return "RouteNetwork";
     }
     return "Unknown";
 }
@@ -44,6 +46,8 @@ MapLayer MapLayerFromHotkey(int key) {
             return MapLayer::SettlementScore;
         case KEY_EIGHT:
             return MapLayer::PolityControl;
+        case KEY_NINE:
+            return MapLayer::RouteNetwork;
         default:
             return MapLayer::Biome;
     }

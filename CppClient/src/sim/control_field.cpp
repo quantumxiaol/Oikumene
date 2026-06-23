@@ -44,6 +44,16 @@ float SourcePowerFor(const Polity& polity, const Settlement& settlement, bool ca
     return base * EffectiveControlMultiplier(polity);
 }
 
+float RouteControlMultiplier(const Tile& tile, PolityId polity_id) {
+    if (!tile.has_route) {
+        return 1.0F;
+    }
+    if (polity_id != kInvalidPolityId && tile.route_polity_id != polity_id) {
+        return 1.0F;
+    }
+    return RouteTravelMultiplier(tile.route_kind);
+}
+
 struct QueueNode {
     int index = 0;
     float cost = 0.0F;
@@ -130,6 +140,7 @@ void DiffuseFromSource(const World& world,
             if (neighbor.is_coast) {
                 step *= coastal_path_cost_multiplier;
             }
+            step *= RouteControlMultiplier(neighbor, polity_id);
             const int next_index = TileIndex(world, nx, ny);
             const float next_cost = node.cost + step;
             if (next_cost < distances[static_cast<std::size_t>(next_index)] && next_cost <= max_cost) {
@@ -198,7 +209,8 @@ float TerrainPathCost(const World& world,
                       int end_y,
                       float max_cost,
                       float path_cost_multiplier,
-                      float coastal_path_cost_multiplier) {
+                      float coastal_path_cost_multiplier,
+                      PolityId route_polity_id) {
     if (!world.InBounds(start_x, start_y) || !world.InBounds(end_x, end_y)) {
         return std::numeric_limits<float>::infinity();
     }
@@ -243,6 +255,7 @@ float TerrainPathCost(const World& world,
             if (neighbor.is_coast) {
                 step *= coastal_path_cost_multiplier;
             }
+            step *= RouteControlMultiplier(neighbor, route_polity_id);
             const int next_index = TileIndex(world, nx, ny);
             const float next_cost = node.cost + step;
             if (next_cost < distances[static_cast<std::size_t>(next_index)] && next_cost <= max_cost) {

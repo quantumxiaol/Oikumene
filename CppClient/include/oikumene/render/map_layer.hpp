@@ -13,6 +13,7 @@ enum class MapLayer {
     Resources,
     SettlementScore,
     PolityControl,
+    RouteNetwork,
 };
 
 [[nodiscard]] std::string ToString(MapLayer layer);

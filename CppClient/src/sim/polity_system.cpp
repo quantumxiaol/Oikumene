@@ -61,7 +61,7 @@ bool HasNearbyCapital(const World& world, const std::vector<Settlement>& settlem
         const auto effects = ComputeTechEffects(polity.research);
         const float cost = TerrainPathCost(world, candidate.x, candidate.y, capital->x, capital->y,
                                            kCapitalSeparationCost, effects.control_path_cost_multiplier,
-                                           effects.coastal_control_cost_multiplier);
+                                           effects.coastal_control_cost_multiplier, polity.id);
         if (cost <= kCapitalSeparationCost) {
             return true;
         }
@@ -136,7 +136,8 @@ float AverageCapitalPathCost(const World& world,
         }
         const auto effects = ComputeTechEffects(polity.research);
         float cost = TerrainPathCost(world, capital.x, capital.y, settlement->x, settlement->y, 120.0F,
-                                     effects.control_path_cost_multiplier, effects.coastal_control_cost_multiplier);
+                                     effects.control_path_cost_multiplier, effects.coastal_control_cost_multiplier,
+                                     polity.id);
         if (!std::isfinite(cost)) {
             cost = 120.0F;
         }
@@ -192,7 +193,8 @@ void RecalculatePolityBudgetsAndAdministration(const World& world,
         polity.budget.wood_maintenance = member_count * 0.32F;
         polity.budget.admin_maintenance = polity.admin_load * 0.055F;
         polity.budget.control_maintenance = static_cast<float>(polity.controlled_tile_count) * 0.012F +
-                                            static_cast<float>(polity.contested_tile_count) * 0.055F;
+                                            static_cast<float>(polity.contested_tile_count) * 0.055F +
+                                            polity.route_maintenance;
         polity.budget.food_surplus = polity.budget.food_income - polity.budget.food_maintenance;
         polity.budget.wood_surplus = polity.budget.wood_income - polity.budget.wood_maintenance;
         polity.budget.wealth_surplus =
@@ -274,7 +276,7 @@ void JoinNearbySettlements(World& world,
             const auto effects = ComputeTechEffects(polity.research);
             const float cost =
                 TerrainPathCost(world, settlement.x, settlement.y, capital->x, capital->y, polity.admin_range,
-                                effects.control_path_cost_multiplier, effects.coastal_control_cost_multiplier);
+                                effects.control_path_cost_multiplier, effects.coastal_control_cost_multiplier, polity.id);
             if (cost <= polity.admin_range && cost < best_cost) {
                 best_cost = cost;
                 best_polity = &polity;

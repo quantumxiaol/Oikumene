@@ -51,8 +51,12 @@ add_library(oikumene_core STATIC
     src/sim/control_field.cpp
     src/sim/event.cpp
     src/sim/event_log.cpp
+    src/sim/pathfinding.cpp
     src/sim/polity.cpp
     src/sim/polity_system.cpp
+    src/sim/route.cpp
+    src/sim/route_planner.cpp
+    src/sim/route_system.cpp
     src/sim/settlement.cpp
     src/sim/settlement_system.cpp
     src/sim/simulation_params.cpp
@@ -62,6 +66,7 @@ add_library(oikumene_core STATIC
     src/world/biome.cpp
     src/world/improvement.cpp
     src/world/resource.cpp
+    src/world/route_kind.cpp
     src/world/world.cpp
     src/world/world_generation_report.cpp
     src/world/world_generation_params.cpp
@@ -220,6 +225,21 @@ add_executable(oikumene_tech_effects_tests
 )
 target_link_libraries(oikumene_tech_effects_tests PRIVATE oikumene_core)
 
+add_executable(oikumene_pathfinding_tests
+    tests/test_pathfinding.cpp
+)
+target_link_libraries(oikumene_pathfinding_tests PRIVATE oikumene_core)
+
+add_executable(oikumene_route_network_tests
+    tests/test_route_network.cpp
+)
+target_link_libraries(oikumene_route_network_tests PRIVATE oikumene_core)
+
+add_executable(oikumene_route_effects_tests
+    tests/test_route_effects.cpp
+)
+target_link_libraries(oikumene_route_effects_tests PRIVATE oikumene_core)
+
 foreach(target_name oikumene_camera_controller_tests oikumene_selection_tests oikumene_symbol_registry_tests)
     if(raylib_FOUND)
         target_link_libraries(${target_name} PRIVATE raylib)
@@ -245,6 +265,9 @@ if(BUILD_TESTING)
     add_test(NAME oikumene_symbol_registry_tests COMMAND oikumene_symbol_registry_tests)
     add_test(NAME oikumene_technology_tests COMMAND oikumene_technology_tests)
     add_test(NAME oikumene_tech_effects_tests COMMAND oikumene_tech_effects_tests)
+    add_test(NAME oikumene_pathfinding_tests COMMAND oikumene_pathfinding_tests)
+    add_test(NAME oikumene_route_network_tests COMMAND oikumene_route_network_tests)
+    add_test(NAME oikumene_route_effects_tests COMMAND oikumene_route_effects_tests)
     add_test(
         NAME oikumene_sim_batch_smoke
         COMMAND

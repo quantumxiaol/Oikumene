@@ -45,6 +45,15 @@ struct Metrics {
     int farm_events = 0;
     int lumber_events = 0;
     int pasture_events = 0;
+    int route_events = 0;
+    int routes = 0;
+    int route_tiles = 0;
+    int road_tiles = 0;
+    int trail_tiles = 0;
+    int river_route_tiles = 0;
+    int coastal_route_tiles = 0;
+    int connected_settlements = 0;
+    int connected_mines = 0;
     float total_food_output = 0.0F;
     float total_food_consumption = 0.0F;
     float total_wood_output = 0.0F;
@@ -75,8 +84,11 @@ struct Metrics {
     float fortification_unlock_rate = 0.0F;
     float sailing_unlock_rate = 0.0F;
     float average_ore_income = 0.0F;
+    float average_ore_income_for_mining_polities = 0.0F;
     float average_tool_efficiency = 0.0F;
     float average_military_potential = 0.0F;
+    float average_route_maintenance = 0.0F;
+    float average_admin_distance_saving = 0.0F;
 };
 
 void PrintUsage() {
@@ -202,6 +214,13 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         metrics.worked_tiles += tile.worked_by_settlement_id >= 0 ? 1 : 0;
         controlled_land_tiles += tile.controller_polity_id != oikumene::kInvalidPolityId && !tile.is_ocean && !tile.is_lake ? 1 : 0;
         metrics.contested_tiles += tile.is_contested ? 1 : 0;
+        if (tile.has_route) {
+            ++metrics.route_tiles;
+            metrics.road_tiles += tile.route_kind == oikumene::RouteKind::Road ? 1 : 0;
+            metrics.trail_tiles += tile.route_kind == oikumene::RouteKind::Trail ? 1 : 0;
+            metrics.river_route_tiles += tile.route_kind == oikumene::RouteKind::RiverRoute ? 1 : 0;
+            metrics.coastal_route_tiles += tile.route_kind == oikumene::RouteKind::CoastalRoute ? 1 : 0;
+        }
     }
     const int land_tiles = CountLandTiles(sim);
     metrics.controlled_land_ratio =
@@ -231,8 +250,12 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     int fortification_count = 0;
     int sailing_count = 0;
     float ore_income_sum = 0.0F;
+    float mining_polity_ore_income_sum = 0.0F;
+    int mining_polity_count = 0;
     float tool_efficiency_sum = 0.0F;
     float military_potential_sum = 0.0F;
+    float route_maintenance_sum = 0.0F;
+    float admin_distance_saving_sum = 0.0F;
     for (const auto& polity : sim.Polities()) {
         metrics.largest_polity_population = std::max(metrics.largest_polity_population, polity.population);
         member_sum += static_cast<int>(polity.member_settlement_ids.size());
@@ -261,8 +284,16 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         fortification_count += oikumene::HasTech(polity.research, oikumene::TechId::Fortification) ? 1 : 0;
         sailing_count += oikumene::HasTech(polity.research, oikumene::TechId::Sailing) ? 1 : 0;
         ore_income_sum += polity.budget.ore_income;
+        if (oikumene::HasTech(polity.research, oikumene::TechId::Mining)) {
+            mining_polity_ore_income_sum += polity.budget.ore_income;
+            ++mining_polity_count;
+        }
         tool_efficiency_sum += polity.tool_efficiency;
         military_potential_sum += polity.military_potential;
+        metrics.connected_settlements += polity.connected_settlements;
+        metrics.connected_mines += polity.connected_mines;
+        route_maintenance_sum += polity.route_maintenance;
+        admin_distance_saving_sum += polity.admin_distance_saving;
     }
     metrics.average_member_settlements_per_polity =
         metrics.polities <= 0 ? 0.0F : static_cast<float>(member_sum) / static_cast<float>(metrics.polities);
@@ -301,14 +332,22 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         metrics.polities <= 0 ? 0.0F : static_cast<float>(fortification_count) / static_cast<float>(metrics.polities);
     metrics.sailing_unlock_rate = metrics.polities <= 0 ? 0.0F : static_cast<float>(sailing_count) / static_cast<float>(metrics.polities);
     metrics.average_ore_income = metrics.polities <= 0 ? 0.0F : ore_income_sum / static_cast<float>(metrics.polities);
+    metrics.average_ore_income_for_mining_polities =
+        mining_polity_count <= 0 ? 0.0F : mining_polity_ore_income_sum / static_cast<float>(mining_polity_count);
     metrics.average_tool_efficiency =
         metrics.polities <= 0 ? 0.0F : tool_efficiency_sum / static_cast<float>(metrics.polities);
     metrics.average_military_potential =
         metrics.polities <= 0 ? 0.0F : military_potential_sum / static_cast<float>(metrics.polities);
+    metrics.average_route_maintenance =
+        metrics.polities <= 0 ? 0.0F : route_maintenance_sum / static_cast<float>(metrics.polities);
+    metrics.average_admin_distance_saving =
+        metrics.polities <= 0 ? 0.0F : admin_distance_saving_sum / static_cast<float>(metrics.polities);
     metrics.famine_events = CountEvents(sim, oikumene::EventType::Famine);
     metrics.farm_events = CountEvents(sim, oikumene::EventType::FarmBuilt);
     metrics.lumber_events = CountEvents(sim, oikumene::EventType::LumberCampBuilt);
     metrics.pasture_events = CountEvents(sim, oikumene::EventType::PastureBuilt);
+    metrics.route_events = CountEvents(sim, oikumene::EventType::RouteBuilt);
+    metrics.routes = static_cast<int>(sim.Routes().size());
     metrics.food_output_consumption_ratio =
         metrics.total_food_output / std::max(1.0F, metrics.total_food_consumption);
     metrics.farm_share_of_worked_tiles =
@@ -357,8 +396,19 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"fortification_unlock_rate", metrics.fortification_unlock_rate},
         {"sailing_unlock_rate", metrics.sailing_unlock_rate},
         {"average_ore_income", metrics.average_ore_income},
+        {"average_ore_income_for_mining_polities", metrics.average_ore_income_for_mining_polities},
         {"average_tool_efficiency", metrics.average_tool_efficiency},
         {"average_military_potential", metrics.average_military_potential},
+        {"routes", metrics.routes},
+        {"route_tile_count", metrics.route_tiles},
+        {"road_tile_count", metrics.road_tiles},
+        {"trail_tile_count", metrics.trail_tiles},
+        {"river_route_tile_count", metrics.river_route_tiles},
+        {"coastal_route_tile_count", metrics.coastal_route_tiles},
+        {"connected_settlements", metrics.connected_settlements},
+        {"connected_mines", metrics.connected_mines},
+        {"average_route_maintenance", metrics.average_route_maintenance},
+        {"average_admin_distance_saving", metrics.average_admin_distance_saving},
         {"total_food_output_last_turn", metrics.total_food_output},
         {"total_food_consumption_last_turn", metrics.total_food_consumption},
         {"total_wood_output_last_turn", metrics.total_wood_output},
@@ -369,6 +419,7 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"farm_built_events", metrics.farm_events},
         {"lumbercamp_built_events", metrics.lumber_events},
         {"pasture_built_events", metrics.pasture_events},
+        {"route_built_events", metrics.route_events},
     };
 }
 
@@ -382,10 +433,14 @@ void WriteCsvHeader(std::ofstream& output) {
               "average_control_maintenance,average_unlocked_techs,average_knowledge_income,first_tech_turn_mean,"
               "pottery_unlock_rate,irrigation_unlock_rate,animal_husbandry_unlock_rate,mining_unlock_rate,"
               "roads_unlock_rate,administration_unlock_rate,bronze_working_unlock_rate,fortification_unlock_rate,"
-              "sailing_unlock_rate,average_ore_income,average_tool_efficiency,average_military_potential,"
+              "sailing_unlock_rate,average_ore_income,average_ore_income_for_mining_polities,"
+              "average_tool_efficiency,average_military_potential,"
+              "routes,route_tile_count,road_tile_count,trail_tile_count,river_route_tile_count,coastal_route_tile_count,"
+              "connected_settlements,connected_mines,"
+              "average_route_maintenance,average_admin_distance_saving,"
               "total_food_output_last_turn,total_food_consumption_last_turn,total_wood_output_last_turn,"
               "average_carrying_capacity,food_output_consumption_ratio,farm_share_of_worked_tiles,"
-              "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events\n";
+              "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events,route_built_events\n";
 }
 
 void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
@@ -406,12 +461,17 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.roads_unlock_rate << ',' << metrics.administration_unlock_rate << ','
            << metrics.bronze_working_unlock_rate << ',' << metrics.fortification_unlock_rate << ','
            << metrics.sailing_unlock_rate << ',' << metrics.average_ore_income << ','
-           << metrics.average_tool_efficiency << ',' << metrics.average_military_potential << ','
+           << metrics.average_ore_income_for_mining_polities << ',' << metrics.average_tool_efficiency << ','
+           << metrics.average_military_potential << ',' << metrics.routes << ',' << metrics.route_tiles << ','
+           << metrics.road_tiles << ',' << metrics.trail_tiles << ',' << metrics.river_route_tiles << ','
+           << metrics.coastal_route_tiles << ',' << metrics.connected_settlements << ',' << metrics.connected_mines << ','
+           << metrics.average_route_maintenance << ','
+           << metrics.average_admin_distance_saving << ','
            << metrics.total_food_output << ','
            << metrics.total_food_consumption << ',' << metrics.total_wood_output << ','
            << metrics.average_carrying_capacity << ',' << metrics.food_output_consumption_ratio << ','
            << metrics.farm_share_of_worked_tiles << ',' << metrics.famine_events << ',' << metrics.farm_events << ','
-           << metrics.lumber_events << ',' << metrics.pasture_events << '\n';
+           << metrics.lumber_events << ',' << metrics.pasture_events << ',' << metrics.route_events << '\n';
 }
 
 nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
@@ -484,8 +544,20 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"fortification_unlock_rate", mean([](const Metrics& item) { return item.fortification_unlock_rate; })},
         {"sailing_unlock_rate", mean([](const Metrics& item) { return item.sailing_unlock_rate; })},
         {"mean_ore_income", mean([](const Metrics& item) { return item.average_ore_income; })},
+        {"mean_ore_income_for_mining_polities",
+         mean([](const Metrics& item) { return item.average_ore_income_for_mining_polities; })},
         {"mean_tool_efficiency", mean([](const Metrics& item) { return item.average_tool_efficiency; })},
         {"mean_military_potential", mean([](const Metrics& item) { return item.average_military_potential; })},
+        {"mean_routes", mean([](const Metrics& item) { return item.routes; })},
+        {"mean_route_tiles", mean([](const Metrics& item) { return item.route_tiles; })},
+        {"mean_road_tiles", mean([](const Metrics& item) { return item.road_tiles; })},
+        {"mean_trail_tiles", mean([](const Metrics& item) { return item.trail_tiles; })},
+        {"mean_river_route_tiles", mean([](const Metrics& item) { return item.river_route_tiles; })},
+        {"mean_coastal_route_tiles", mean([](const Metrics& item) { return item.coastal_route_tiles; })},
+        {"mean_connected_settlements", mean([](const Metrics& item) { return item.connected_settlements; })},
+        {"mean_connected_mines", mean([](const Metrics& item) { return item.connected_mines; })},
+        {"mean_route_maintenance", mean([](const Metrics& item) { return item.average_route_maintenance; })},
+        {"mean_admin_distance_saving", mean([](const Metrics& item) { return item.average_admin_distance_saving; })},
         {"mean_food_output", mean([](const Metrics& item) { return item.total_food_output; })},
         {"mean_food_consumption", mean([](const Metrics& item) { return item.total_food_consumption; })},
         {"mean_food_output_consumption_ratio",
@@ -497,6 +569,7 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_farm_built_events", mean([](const Metrics& item) { return item.farm_events; })},
         {"mean_lumbercamp_built_events", mean([](const Metrics& item) { return item.lumber_events; })},
         {"mean_pasture_built_events", mean([](const Metrics& item) { return item.pasture_events; })},
+        {"mean_route_built_events", mean([](const Metrics& item) { return item.route_events; })},
     };
 }
 

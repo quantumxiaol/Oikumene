@@ -38,6 +38,14 @@
 ## Phase 4: Polities and Control Fields
 
 - Capitals, cities, control diffusion, contested land, wilderness, natural borders.
+- Polity resource pools, administration, overextension, stability, and polity-level technology.
+
+## Phase 4.5: Explicit Route Network
+
+- Pathfinding-aware Trail, Road, RiverRoute, and CoastalRoute infrastructure.
+- Route ROI scoring for capital-member links and resource/mine access.
+- Route maintenance, connected settlement/mine stats, route event logs, and RouteNetwork map layer.
+- Route effects on control/path cost, administrative distance, and shallow mine transfer.
 
 ## Phase 5: Trade and War ROI
 
