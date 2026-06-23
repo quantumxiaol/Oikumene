@@ -1,5 +1,6 @@
 #include "oikumene/render/map_renderer.hpp"
 
+#include "oikumene/core/types.hpp"
 #include "oikumene/render/color_palette.hpp"
 
 #include <algorithm>
@@ -84,12 +85,30 @@ void DrawImprovementOverlay(const Tile& tile, Vector2 position, float tile_size)
     }
 }
 
+void DrawControlOverlay(const Tile& tile, Vector2 position, float tile_size) {
+    if (tile.controller_polity_id == kInvalidPolityId) {
+        return;
+    }
+
+    Color control = ColorForPolity(tile.controller_polity_id);
+    control.a = tile.is_contested ? 118 : 92;
+    DrawRectangleV(position, Vector2{tile_size + 0.75F, tile_size + 0.75F}, control);
+
+    if (tile.is_contested) {
+        DrawLineEx(position, Vector2{position.x + tile_size, position.y + tile_size}, std::max(1.0F, tile_size * 0.10F),
+                   Color{246, 226, 108, 210});
+        DrawLineEx(Vector2{position.x + tile_size, position.y}, Vector2{position.x, position.y + tile_size},
+                   std::max(1.0F, tile_size * 0.10F), Color{246, 226, 108, 210});
+    }
+}
+
 }  // namespace
 
 void MapRenderer::Draw(const World& world,
                        const CameraController& camera,
                        MapLayer layer,
-                       const std::optional<std::pair<int, int>>& hover_tile) const {
+                       const std::optional<std::pair<int, int>>& hover_tile,
+                       const Selection& selection) const {
     const float tile_size = camera.TileSize();
     const int screen_width = GetScreenWidth();
     const int screen_height = GetScreenHeight();
@@ -103,6 +122,9 @@ void MapRenderer::Draw(const World& world,
 
         const Color color = ColorForTile(tile, layer);
         DrawRectangleV(position, Vector2{tile_size + 0.75F, tile_size + 0.75F}, color);
+        if (layer == MapLayer::PolityControl) {
+            DrawControlOverlay(tile, position, tile_size);
+        }
 
         if (tile.has_river) {
             const float flow_width = std::clamp(tile.river_flow * 0.035F, 0.12F, 0.34F);
@@ -123,11 +145,18 @@ void MapRenderer::Draw(const World& world,
         const Vector2 position = camera.TileToScreen(x, y);
         DrawRectangleLinesEx(Rectangle{position.x, position.y, tile_size, tile_size}, 2.0F, RAYWHITE);
     }
+
+    if (selection.kind == SelectionKind::Tile || selection.kind == SelectionKind::ImprovementTile) {
+        const Vector2 position = camera.TileToScreen(selection.x, selection.y);
+        DrawRectangleLinesEx(Rectangle{position.x - 1.0F, position.y - 1.0F, tile_size + 2.0F, tile_size + 2.0F}, 3.0F,
+                             Color{255, 216, 96, 255});
+    }
 }
 
 void MapRenderer::DrawEntities(const std::vector<Band>& bands,
                                const std::vector<Settlement>& settlements,
-                               const CameraController& camera) const {
+                               const CameraController& camera,
+                               const Selection& selection) const {
     const float tile_size = camera.TileSize();
 
     for (const auto& settlement : settlements) {
@@ -139,6 +168,17 @@ void MapRenderer::DrawEntities(const std::vector<Band>& bands,
         DrawRectangleV(Vector2{center.x - radius, center.y - radius}, Vector2{radius * 2.0F, radius * 2.0F}, fill);
         DrawRectangleLinesEx(Rectangle{center.x - radius, center.y - radius, radius * 2.0F, radius * 2.0F}, 2.0F,
                              Color{65, 42, 25, 255});
+        if (settlement.is_capital) {
+            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius * 1.75F,
+                            Color{255, 216, 96, 255});
+            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius * 2.05F,
+                            Color{65, 42, 25, 255});
+        }
+        if (selection.kind == SelectionKind::Settlement && selection.id == settlement.id) {
+            DrawRectangleLinesEx(Rectangle{center.x - radius - 3.0F, center.y - radius - 3.0F, radius * 2.0F + 6.0F,
+                                           radius * 2.0F + 6.0F},
+                                 3.0F, Color{255, 216, 96, 255});
+        }
         if (settlement.level == SettlementLevel::Village) {
             DrawTriangle(Vector2{center.x, center.y - radius * 1.55F}, Vector2{center.x - radius, center.y - radius},
                          Vector2{center.x + radius, center.y - radius}, Color{170, 74, 48, 255});
@@ -156,6 +196,10 @@ void MapRenderer::DrawEntities(const std::vector<Band>& bands,
                      Vector2{center.x + radius, center.y + radius}, Color{245, 245, 236, 255});
         DrawTriangleLines(Vector2{center.x, center.y - radius}, Vector2{center.x - radius, center.y + radius},
                           Vector2{center.x + radius, center.y + radius}, Color{26, 28, 30, 255});
+        if (selection.kind == SelectionKind::Band && selection.id == band.id) {
+            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius * 1.65F,
+                            Color{255, 216, 96, 255});
+        }
     }
 }
 

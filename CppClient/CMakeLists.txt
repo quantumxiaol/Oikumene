@@ -48,8 +48,11 @@ add_library(oikumene_core STATIC
     src/network/http_client.cpp
     src/sim/band.cpp
     src/sim/band_system.cpp
+    src/sim/control_field.cpp
     src/sim/event.cpp
     src/sim/event_log.cpp
+    src/sim/polity.cpp
+    src/sim/polity_system.cpp
     src/sim/settlement.cpp
     src/sim/settlement_system.cpp
     src/sim/simulation_params.cpp
@@ -91,6 +94,7 @@ add_executable(oikumene_app
     src/render/color_palette.cpp
     src/render/map_layer.cpp
     src/render/map_renderer.cpp
+    src/render/selection.cpp
 )
 
 target_link_libraries(oikumene_app PRIVATE oikumene_core)
@@ -167,6 +171,37 @@ add_executable(oikumene_settlement_economy_tests
 )
 target_link_libraries(oikumene_settlement_economy_tests PRIVATE oikumene_core)
 
+add_executable(oikumene_camera_controller_tests
+    tests/test_camera_controller.cpp
+    src/render/camera_controller.cpp
+)
+target_link_libraries(oikumene_camera_controller_tests PRIVATE oikumene_core)
+
+add_executable(oikumene_selection_tests
+    tests/test_selection.cpp
+    src/render/selection.cpp
+)
+target_link_libraries(oikumene_selection_tests PRIVATE oikumene_core)
+
+add_executable(oikumene_polity_tests
+    tests/test_polity.cpp
+)
+target_link_libraries(oikumene_polity_tests PRIVATE oikumene_core)
+
+add_executable(oikumene_control_field_tests
+    tests/test_control_field.cpp
+)
+target_link_libraries(oikumene_control_field_tests PRIVATE oikumene_core)
+
+foreach(target_name oikumene_camera_controller_tests oikumene_selection_tests)
+    if(raylib_FOUND)
+        target_link_libraries(${target_name} PRIVATE raylib)
+    else()
+        target_include_directories(${target_name} PRIVATE ${RAYLIB_INCLUDE_DIR})
+        target_link_libraries(${target_name} PRIVATE ${RAYLIB_LIBRARY})
+    endif()
+endforeach()
+
 if(BUILD_TESTING)
     add_test(NAME oikumene_app_config_tests COMMAND oikumene_app_config_tests)
     add_test(NAME oikumene_simulation_controller_tests COMMAND oikumene_simulation_controller_tests)
@@ -175,6 +210,10 @@ if(BUILD_TESTING)
     add_test(NAME oikumene_world_generation_balance_tests COMMAND oikumene_world_generation_balance_tests)
     add_test(NAME oikumene_band_settlement_tests COMMAND oikumene_band_settlement_tests)
     add_test(NAME oikumene_settlement_economy_tests COMMAND oikumene_settlement_economy_tests)
+    add_test(NAME oikumene_camera_controller_tests COMMAND oikumene_camera_controller_tests)
+    add_test(NAME oikumene_selection_tests COMMAND oikumene_selection_tests)
+    add_test(NAME oikumene_polity_tests COMMAND oikumene_polity_tests)
+    add_test(NAME oikumene_control_field_tests COMMAND oikumene_control_field_tests)
     add_test(
         NAME oikumene_sim_batch_smoke
         COMMAND

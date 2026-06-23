@@ -19,6 +19,10 @@ enum class EventType {
     ShallowMineBuilt,
     ForestCleared,
     CarryingCapacityReached,
+    PolityFounded,
+    SettlementJoinedPolity,
+    ControlFieldExpanded,
+    ContestedRegionFormed,
 };
 
 [[nodiscard]] std::string ToString(EventType type);

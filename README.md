@@ -11,7 +11,7 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 
 ## 当前状态
 
-当前已经进入 Phase 2 入口：
+当前已经进入 Phase 3.5 入口：
 
 - C++ 主程序能打开 Raylib 窗口，生成 80x56 世界地图。
 - 支持 Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore 图层。
@@ -19,6 +19,8 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 - `Simulation` 拥有唯一权威 `World`，渲染读取 `simulation.GetWorld()`。
 - 已有 band 迁徙、采集、定居、camp 升级 village、事件日志。
 - 已有最小村庄经济：村庄会在周围建设 Farm、LumberCamp、Pasture、ShallowMine，并受 carrying capacity 约束。
+- 已有早期政治共同体：Village 可形成 Chiefdom，附近聚落会按地形成本加入，首都和成员村庄会向外扩散控制力。
+- 已有 Polity / Control 图层，可查看不同 polity 的控制范围、争议区和首都。
 - UI 底部有轻量播放控制条：Play/Pause、Step、+10、+100、TPS 调整、Reset Bands。
 - 已有 headless 工具：
   - `oikumene_worldgen_batch`：批量生成世界并输出世界生成报告。
@@ -109,7 +111,7 @@ cp CppClient/config/settings.example.json CppClient/config/settings.json
 
 ## 窗口快捷键
 
-- `1`-`7`：切换地图图层：Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore。
+- `1`-`8`：切换地图图层：Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl。
 - `R`：使用新 seed 重新生成世界，并重置仿真。
 - `B`：在当前世界上重置 band。
 - `H`：重新检测 Python Agent 服务是否在线。
@@ -120,15 +122,16 @@ cp CppClient/config/settings.example.json CppClient/config/settings.json
 - `Shift+N`：推进 100 个仿真回合。
 - `Tab`：显示/隐藏详情调试面板，默认隐藏。
 - `E`：显示/隐藏 Recent Events 面板，默认隐藏。
-- `C`：重新居中地图。
+- `WASD` / 方向键：平移地图。
+- 鼠标右键或中键拖动：拖拽地图。
+- 鼠标滚轮：以鼠标指向位置缩放地图。
+- 鼠标左键：选择 Settlement / Band / Improvement tile / Tile，UI 面板区域不会穿透点击地图。
+- `C`：居中到当前选中对象；没有选中对象时适配整张地图。
+- `Home` / `F`：适配整张地图到窗口。
 - `F1`：显示/隐藏帮助面板。
 - `F11`：切换全屏。
 - `P`：导出当前窗口截图到 `runs/worldgen_seed_<seed>/layer_<layer>.png`。
 - `M`：导出世界生成报告到 `runs/worldgen_seed_<seed>/report.json`。
-- 方向键：平移地图。
-- 鼠标滚轮：缩放地图。
-- 鼠标 hover：查看 tile 信息。
-- 鼠标左键：选择当前位置的 band 或 settlement。
 
 默认只显示左上角轻量 HUD，避免挡住地图。需要看 tile、band、settlement 的详细解释字段时再按 `Tab`。
 
@@ -146,7 +149,9 @@ ctest --test-dir build --output-on-failure
 - 世界生成基础约束。
 - 世界生成平衡性。
 - app 配置和命令行解析。
+- 地图相机数学、缩放稳定性、选择优先级和 UI 点击阻挡。
 - band 迁徙、定居、settlement 成长、village 升级、牧场建设、仿真确定性和事件顺序。
+- Chiefdom 形成、附近聚落加入、远处聚落不加入、控制力场地形阻隔、河谷扩散、海洋阻断和争议区。
 
 ## 批处理工具
 
@@ -200,6 +205,11 @@ cd CppClient
 - `mean_food_output_consumption_ratio`：粮食是否过剩或过紧。
 - `mean_wood_output`：伐木场是否真的被劳动力使用。
 - `mean_famine_events`：是否出现异常饥荒。
+- `mean_polities`：早期政治共同体数量。
+- `mean_controlled_land_ratio`：陆地被 polity 控制的比例，不能过早接近 100%。
+- `mean_contested_tiles`：控制力接近导致的争议区数量。
+- `mean_largest_polity_population`：最大政治共同体人口。
+- `mean_member_settlements_per_polity`：平均每个 polity 吸纳多少聚落。
 
 ## 开发格式化
 
@@ -217,11 +227,9 @@ clang-format -i CppClient/include/oikumene/**/*.hpp CppClient/src/**/*.cpp CppCl
 
 ## 下一阶段
 
-Phase 2 后续重点：
+Phase 3 后续重点：
 
-- 让 settlement 生产模型更明确：粮食、木材、浅层矿产、财富。
-- 增加村庄经济面板和曲线。
-- 让 band / settlement 事件在 UI 中可筛选。
-- 批量跑多个 seed，观察定居速度、Village 升级速度和饥荒频率。
-- 继续平衡 Farm/LumberCamp/Pasture 的建设速度、人口增长速度和 carrying capacity。
-- 进入 Phase 3：polity、首都、控制力场和自然边界。
+- 继续调 Polity / Control 图层的可读性：边界线、首都图标、成员聚落标记。
+- 让 polity 拥有更明确的资源池、行政范围和维护成本。
+- 增加 polity-level technology，但暂时不做战争和贸易。
+- 后续再进入 Trade，再进入 War ROI。

@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "oikumene/core/types.hpp"
 #include "oikumene/sim/stockpile.hpp"
 
 namespace oikumene {
@@ -19,6 +20,8 @@ struct Settlement {
     int x = 0;
     int y = 0;
     int founder_band_id = -1;
+    PolityId polity_id = kInvalidPolityId;
+    bool is_capital = false;
     int population = 30;
     SettlementLevel level = SettlementLevel::Camp;
     Stockpile stockpile;

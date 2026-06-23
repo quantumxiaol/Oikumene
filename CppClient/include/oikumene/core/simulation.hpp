@@ -6,6 +6,7 @@
 #include "oikumene/core/types.hpp"
 #include "oikumene/sim/band.hpp"
 #include "oikumene/sim/event_log.hpp"
+#include "oikumene/sim/polity.hpp"
 #include "oikumene/sim/settlement.hpp"
 #include "oikumene/sim/simulation_params.hpp"
 #include "oikumene/world/world.hpp"
@@ -24,6 +25,8 @@ public:
     [[nodiscard]] std::vector<Band>& Bands();
     [[nodiscard]] const std::vector<Settlement>& Settlements() const;
     [[nodiscard]] std::vector<Settlement>& Settlements();
+    [[nodiscard]] const std::vector<Polity>& Polities() const;
+    [[nodiscard]] std::vector<Polity>& Polities();
     [[nodiscard]] const EventLog& Events() const;
     [[nodiscard]] EventLog& Events();
     [[nodiscard]] std::string StatusSummary() const;
@@ -37,6 +40,7 @@ private:
     Turn current_turn_ = 0;
     std::vector<Band> bands_;
     std::vector<Settlement> settlements_;
+    std::vector<Polity> polities_;
     EventLog event_log_;
 };
 

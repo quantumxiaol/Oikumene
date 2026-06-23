@@ -38,6 +38,9 @@ struct Metrics {
     int pastures = 0;
     int shallow_mines = 0;
     int worked_tiles = 0;
+    int polities = 0;
+    int contested_tiles = 0;
+    int largest_polity_population = 0;
     int famine_events = 0;
     int farm_events = 0;
     int lumber_events = 0;
@@ -48,6 +51,9 @@ struct Metrics {
     float average_carrying_capacity = 0.0F;
     float food_output_consumption_ratio = 0.0F;
     float farm_share_of_worked_tiles = 0.0F;
+    float controlled_land_ratio = 0.0F;
+    float average_member_settlements_per_polity = 0.0F;
+    float polity_formation_turn_mean = 0.0F;
 };
 
 void PrintUsage() {
@@ -120,6 +126,14 @@ int CountImprovement(const oikumene::Simulation& sim, oikumene::ImprovementKind 
     return count;
 }
 
+int CountLandTiles(const oikumene::Simulation& sim) {
+    int count = 0;
+    for (const auto& tile : sim.GetWorld().Tiles()) {
+        count += !tile.is_ocean && !tile.is_lake ? 1 : 0;
+    }
+    return count;
+}
+
 Metrics RunOne(const Options& options, std::uint64_t seed) {
     oikumene::WorldGenerationParams world_params;
     world_params.seed = seed;
@@ -160,9 +174,27 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     metrics.lumber_camps = CountImprovement(sim, oikumene::ImprovementKind::LumberCamp);
     metrics.pastures = CountImprovement(sim, oikumene::ImprovementKind::Pasture);
     metrics.shallow_mines = CountImprovement(sim, oikumene::ImprovementKind::ShallowMine);
+    int controlled_land_tiles = 0;
     for (const auto& tile : sim.GetWorld().Tiles()) {
         metrics.worked_tiles += tile.worked_by_settlement_id >= 0 ? 1 : 0;
+        controlled_land_tiles += tile.controller_polity_id != oikumene::kInvalidPolityId && !tile.is_ocean && !tile.is_lake ? 1 : 0;
+        metrics.contested_tiles += tile.is_contested ? 1 : 0;
     }
+    const int land_tiles = CountLandTiles(sim);
+    metrics.controlled_land_ratio =
+        land_tiles <= 0 ? 0.0F : static_cast<float>(controlled_land_tiles) / static_cast<float>(land_tiles);
+    metrics.polities = static_cast<int>(sim.Polities().size());
+    int member_sum = 0;
+    float formation_turn_sum = 0.0F;
+    for (const auto& polity : sim.Polities()) {
+        metrics.largest_polity_population = std::max(metrics.largest_polity_population, polity.population);
+        member_sum += static_cast<int>(polity.member_settlement_ids.size());
+        formation_turn_sum += static_cast<float>(polity.founded_turn);
+    }
+    metrics.average_member_settlements_per_polity =
+        metrics.polities <= 0 ? 0.0F : static_cast<float>(member_sum) / static_cast<float>(metrics.polities);
+    metrics.polity_formation_turn_mean =
+        metrics.polities <= 0 ? 0.0F : formation_turn_sum / static_cast<float>(metrics.polities);
     metrics.famine_events = CountEvents(sim, oikumene::EventType::Famine);
     metrics.farm_events = CountEvents(sim, oikumene::EventType::FarmBuilt);
     metrics.lumber_events = CountEvents(sim, oikumene::EventType::LumberCampBuilt);
@@ -188,6 +220,12 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"pasture_count", metrics.pastures},
         {"shallow_mine_count", metrics.shallow_mines},
         {"worked_tile_count", metrics.worked_tiles},
+        {"polities", metrics.polities},
+        {"controlled_land_ratio", metrics.controlled_land_ratio},
+        {"contested_tiles", metrics.contested_tiles},
+        {"largest_polity_population", metrics.largest_polity_population},
+        {"average_member_settlements_per_polity", metrics.average_member_settlements_per_polity},
+        {"polity_formation_turn_mean", metrics.polity_formation_turn_mean},
         {"total_food_output_last_turn", metrics.total_food_output},
         {"total_food_consumption_last_turn", metrics.total_food_consumption},
         {"total_wood_output_last_turn", metrics.total_wood_output},
@@ -204,6 +242,8 @@ nlohmann::json ToJson(const Metrics& metrics) {
 void WriteCsvHeader(std::ofstream& output) {
     output << "seed,settlements,villages,camps,active_bands,total_population,max_settlement_population,"
               "farm_count,lumbercamp_count,pasture_count,shallow_mine_count,worked_tile_count,"
+              "polities,controlled_land_ratio,contested_tiles,largest_polity_population,"
+              "average_member_settlements_per_polity,polity_formation_turn_mean,"
               "total_food_output_last_turn,total_food_consumption_last_turn,total_wood_output_last_turn,"
               "average_carrying_capacity,food_output_consumption_ratio,farm_share_of_worked_tiles,"
               "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events\n";
@@ -213,7 +253,10 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
     output << metrics.seed << ',' << metrics.settlements << ',' << metrics.villages << ',' << metrics.camps << ','
            << metrics.active_bands << ',' << metrics.total_population << ',' << metrics.max_settlement_population
            << ',' << metrics.farms << ',' << metrics.lumber_camps << ',' << metrics.pastures << ','
-           << metrics.shallow_mines << ',' << metrics.worked_tiles << ',' << metrics.total_food_output << ','
+           << metrics.shallow_mines << ',' << metrics.worked_tiles << ',' << metrics.polities << ','
+           << metrics.controlled_land_ratio << ',' << metrics.contested_tiles << ','
+           << metrics.largest_polity_population << ',' << metrics.average_member_settlements_per_polity << ','
+           << metrics.polity_formation_turn_mean << ',' << metrics.total_food_output << ','
            << metrics.total_food_consumption << ',' << metrics.total_wood_output << ','
            << metrics.average_carrying_capacity << ',' << metrics.food_output_consumption_ratio << ','
            << metrics.farm_share_of_worked_tiles << ',' << metrics.famine_events << ',' << metrics.farm_events << ','
@@ -262,6 +305,13 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_pastures", mean([](const Metrics& item) { return item.pastures; })},
         {"mean_shallow_mines", mean([](const Metrics& item) { return item.shallow_mines; })},
         {"mean_worked_tiles", mean([](const Metrics& item) { return item.worked_tiles; })},
+        {"mean_polities", mean([](const Metrics& item) { return item.polities; })},
+        {"mean_controlled_land_ratio", mean([](const Metrics& item) { return item.controlled_land_ratio; })},
+        {"mean_contested_tiles", mean([](const Metrics& item) { return item.contested_tiles; })},
+        {"mean_largest_polity_population", mean([](const Metrics& item) { return item.largest_polity_population; })},
+        {"mean_member_settlements_per_polity",
+         mean([](const Metrics& item) { return item.average_member_settlements_per_polity; })},
+        {"mean_polity_formation_turn", mean([](const Metrics& item) { return item.polity_formation_turn_mean; })},
         {"mean_food_output", mean([](const Metrics& item) { return item.total_food_output; })},
         {"mean_food_consumption", mean([](const Metrics& item) { return item.total_food_consumption; })},
         {"mean_food_output_consumption_ratio",

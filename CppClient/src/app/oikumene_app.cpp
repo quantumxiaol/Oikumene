@@ -44,6 +44,26 @@ void DrawPanelBackground(int x, int y, int width, int height) {
     DrawRectangleLines(x, y, width, height, Color{78, 86, 94, 205});
 }
 
+Rectangle HudBounds() {
+    return Rectangle{14.0F, 14.0F, 438.0F, 150.0F};
+}
+
+Rectangle DebugPanelBounds() {
+    return Rectangle{18.0F, 154.0F, 460.0F, 532.0F};
+}
+
+Rectangle HelpPanelBounds() {
+    return Rectangle{static_cast<float>(GetScreenWidth() - 390), 18.0F, 364.0F, 310.0F};
+}
+
+Rectangle EventLogPanelBounds() {
+    constexpr int width = 430;
+    constexpr int height = 314;
+    return Rectangle{static_cast<float>(GetScreenWidth() - width - 18),
+                     static_cast<float>(GetScreenHeight() - height - 18), static_cast<float>(width),
+                     static_cast<float>(height)};
+}
+
 Rectangle PlaybackBarBounds() {
     return Rectangle{16.0F, static_cast<float>(GetScreenHeight() - 58), 718.0F, 42.0F};
 }
@@ -183,6 +203,64 @@ const Band* ActiveBandAt(const std::vector<Band>& bands, int x, int y) {
     return nullptr;
 }
 
+const Polity* PolityById(const std::vector<Polity>& polities, PolityId id) {
+    for (const auto& polity : polities) {
+        if (polity.id == id) {
+            return &polity;
+        }
+    }
+    return nullptr;
+}
+
+int ContestedTileCount(const World& world) {
+    int count = 0;
+    for (const auto& tile : world.Tiles()) {
+        count += tile.is_contested ? 1 : 0;
+    }
+    return count;
+}
+
+float ControlledLandRatio(const World& world) {
+    int land = 0;
+    int controlled = 0;
+    for (const auto& tile : world.Tiles()) {
+        if (tile.is_ocean || tile.is_lake) {
+            continue;
+        }
+        ++land;
+        controlled += tile.controller_polity_id != kInvalidPolityId ? 1 : 0;
+    }
+    return land <= 0 ? 0.0F : static_cast<float>(controlled) / static_cast<float>(land);
+}
+
+int LargestPolityPopulation(const std::vector<Polity>& polities) {
+    int largest = 0;
+    for (const auto& polity : polities) {
+        largest = std::max(largest, polity.population);
+    }
+    return largest;
+}
+
+std::vector<Rectangle> UiCaptureRectangles(const AppState& state) {
+    std::vector<Rectangle> rectangles;
+    rectangles.push_back(HudBounds());
+    rectangles.push_back(PlaybackBarBounds());
+    if (state.show_debug_panel) {
+        rectangles.push_back(DebugPanelBounds());
+    }
+    if (state.show_help_panel) {
+        rectangles.push_back(HelpPanelBounds());
+    }
+    if (state.show_event_log_panel) {
+        rectangles.push_back(EventLogPanelBounds());
+    }
+    return rectangles;
+}
+
+bool UiCapturesMouse(const AppState& state, Vector2 mouse) {
+    return PointInAnyRectangle(mouse, UiCaptureRectangles(state));
+}
+
 std::string Truncate(std::string text, std::size_t limit) {
     if (text.size() <= limit) {
         return text;
@@ -202,13 +280,52 @@ void BuildSimulation(AppState& state, std::uint64_t seed) {
     state.simulation = Simulation(WorldGenerator::Generate(state.generation_params), state.simulation_params);
     state.simulation.InitializeBands(state.config.simulation.initial_bands);
     state.report = BuildWorldGenerationReport(state.simulation.GetWorld());
+    state.selection = ClearSelection();
     state.selected_band_id = -1;
     state.selected_settlement_id = -1;
     state.controller.SetRunning(false);
 }
 
+void ApplySelection(AppState& state, Selection selection) {
+    state.selection = selection;
+    state.selected_band_id = selection.kind == SelectionKind::Band ? selection.id : -1;
+    state.selected_settlement_id = selection.kind == SelectionKind::Settlement ? selection.id : -1;
+}
+
+void SelectAtMouse(AppState& state, Vector2 mouse) {
+    int x = 0;
+    int y = 0;
+    if (!state.camera.ScreenToTile(mouse, state.simulation.GetWorld(), x, y)) {
+        ApplySelection(state, ClearSelection());
+        return;
+    }
+    ApplySelection(state, SelectAtTile(state.simulation.GetWorld(), state.simulation.Bands(),
+                                      state.simulation.Settlements(), x, y));
+}
+
+bool CenterOnSelection(AppState& state) {
+    if (state.selection.kind == SelectionKind::Settlement) {
+        if (const auto* settlement = SettlementById(state.simulation.Settlements(), state.selection.id)) {
+            state.camera.CenterOnTile(settlement->x, settlement->y);
+            return true;
+        }
+    }
+    if (state.selection.kind == SelectionKind::Band) {
+        if (const auto* band = BandById(state.simulation.Bands(), state.selection.id)) {
+            state.camera.CenterOnTile(band->x, band->y);
+            return true;
+        }
+    }
+    if (state.selection.kind == SelectionKind::Tile || state.selection.kind == SelectionKind::ImprovementTile) {
+        state.camera.CenterOnTile(state.selection.x, state.selection.y);
+        return true;
+    }
+    return false;
+}
+
 void SelectAtHover(AppState& state) {
     if (!state.hover_tile.has_value()) {
+        ApplySelection(state, ClearSelection());
         state.selected_band_id = -1;
         state.selected_settlement_id = -1;
         return;
@@ -216,15 +333,15 @@ void SelectAtHover(AppState& state) {
 
     const auto [x, y] = *state.hover_tile;
     if (const auto* settlement = SettlementAt(state.simulation.Settlements(), x, y)) {
-        state.selected_settlement_id = settlement->id;
-        state.selected_band_id = -1;
+        ApplySelection(state, Selection{.kind = SelectionKind::Settlement, .id = settlement->id, .x = x, .y = y});
         return;
     }
     if (const auto* band = ActiveBandAt(state.simulation.Bands(), x, y)) {
-        state.selected_band_id = band->id;
-        state.selected_settlement_id = -1;
+        ApplySelection(state, Selection{.kind = SelectionKind::Band, .id = band->id, .x = x, .y = y});
         return;
     }
+    ApplySelection(state, SelectAtTile(state.simulation.GetWorld(), state.simulation.Bands(), state.simulation.Settlements(),
+                                      x, y));
 }
 
 void HandleLayerHotkeys(AppState& state) {
@@ -249,19 +366,27 @@ void HandleLayerHotkeys(AppState& state) {
     if (IsKeyPressed(KEY_SEVEN)) {
         state.current_layer = MapLayer::SettlementScore;
     }
+    if (IsKeyPressed(KEY_EIGHT)) {
+        state.current_layer = MapLayer::PolityControl;
+    }
 }
 
 void HandleInput(AppState& state) {
-    state.camera.Update();
+    state.camera.SetViewport(Rectangle{0.0F, 0.0F, static_cast<float>(GetScreenWidth()),
+                                       static_cast<float>(GetScreenHeight())});
+    const Vector2 mouse = GetMousePosition();
+    const bool mouse_captured = UiCapturesMouse(state, mouse);
+    state.camera.Update(!mouse_captured, true);
     HandleLayerHotkeys(state);
 
     if (IsKeyPressed(KEY_R)) {
         BuildSimulation(state, NextSeed(state.generation_params.seed));
-        state.camera.FitToWorld(state.simulation.GetWorld(), GetScreenWidth(), GetScreenHeight());
+        state.camera.FitWorld(state.simulation.GetWorld().Width(), state.simulation.GetWorld().Height());
         state.status_message = "Generated seed " + std::to_string(state.generation_params.seed);
     }
     if (IsKeyPressed(KEY_B)) {
         state.simulation.InitializeBands(state.config.simulation.initial_bands);
+        ApplySelection(state, ClearSelection());
         state.selected_band_id = -1;
         state.selected_settlement_id = -1;
         state.status_message = "Reset bands on current world";
@@ -292,8 +417,16 @@ void HandleInput(AppState& state) {
         state.show_event_log_panel = !state.show_event_log_panel;
     }
     if (IsKeyPressed(KEY_C)) {
-        state.camera.FitToWorld(state.simulation.GetWorld(), GetScreenWidth(), GetScreenHeight());
-        state.status_message = "Centered map";
+        if (CenterOnSelection(state)) {
+            state.status_message = "Centered selection";
+        } else {
+            state.camera.FitWorld(state.simulation.GetWorld().Width(), state.simulation.GetWorld().Height());
+            state.status_message = "Fit world";
+        }
+    }
+    if (IsKeyPressed(KEY_HOME) || IsKeyPressed(KEY_F)) {
+        state.camera.FitWorld(state.simulation.GetWorld().Width(), state.simulation.GetWorld().Height());
+        state.status_message = "Fit world";
     }
     if (IsKeyPressed(KEY_F1)) {
         state.show_help_panel = !state.show_help_panel;
@@ -301,8 +434,8 @@ void HandleInput(AppState& state) {
     if (IsKeyPressed(KEY_F11)) {
         ToggleFullscreen();
     }
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !CheckCollisionPointRec(GetMousePosition(), PlaybackBarBounds())) {
-        SelectAtHover(state);
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !mouse_captured) {
+        SelectAtMouse(state, mouse);
     }
     if (IsKeyPressed(KEY_M)) {
         const auto path = WorldgenDirectory(state.generation_params.seed) / "report.json";
@@ -322,7 +455,11 @@ void AdvanceAutoRun(AppState& state) {
 
 void UpdateHover(AppState& state) {
     state.hover_tile.reset();
-    if (state.camera.ScreenToTile(GetMousePosition(), state.simulation.GetWorld(), state.hover_x, state.hover_y)) {
+    const Vector2 mouse = GetMousePosition();
+    if (UiCapturesMouse(state, mouse)) {
+        return;
+    }
+    if (state.camera.ScreenToTile(mouse, state.simulation.GetWorld(), state.hover_x, state.hover_y)) {
         state.hover_tile = std::pair<int, int>{state.hover_x, state.hover_y};
     }
 }
@@ -358,7 +495,9 @@ void DrawEventLogPanel(const AppState& state) {
 void DrawHud(const AppState& state) {
     const int width = 438;
     const int height = 126;
-    DrawPanelBackground(14, 14, width, height);
+    const Rectangle bounds = HudBounds();
+    DrawPanelBackground(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width),
+                        static_cast<int>(bounds.height));
 
     DrawText("Oikumene", 30, 28, 22, RAYWHITE);
     DrawText(("Layer " + ToString(state.current_layer) + "  Seed " + std::to_string(state.generation_params.seed)).c_str(),
@@ -373,9 +512,15 @@ void DrawHud(const AppState& state) {
                  .c_str(),
              30, 82, 16, Color{202, 211, 218, 255});
     DrawText(("A " + std::string(state.controller.IsRunning() ? "run" : "pause") +
-              "  Space step  N +10  Tab details  E events  C center")
+              "  Space step  N +10  Tab details  E events  Home fit")
                  .c_str(),
              30, 106, 15, Color{152, 164, 174, 255});
+    DrawText(("Polities " + std::to_string(state.simulation.Polities().size()) + "  Control " +
+              Fixed(ControlledLandRatio(state.simulation.GetWorld()) * 100.0F, 1) + "%  Contested " +
+              std::to_string(ContestedTileCount(state.simulation.GetWorld())) + "  Largest pop " +
+              std::to_string(LargestPolityPopulation(state.simulation.Polities())))
+                 .c_str(),
+             30, 130, 15, Color{184, 194, 202, 255});
 }
 
 void DrawPlaybackBar(AppState& state) {
@@ -405,15 +550,25 @@ void DrawPlaybackBar(AppState& state) {
     }
     if (DrawButton(PlaybackButton(7, 108.0F), "Reset Bands")) {
         state.simulation.InitializeBands(state.config.simulation.initial_bands);
-        state.selected_band_id = -1;
-        state.selected_settlement_id = -1;
+        ApplySelection(state, ClearSelection());
         state.status_message = "Reset bands on current world";
     }
 }
 
 void DrawInspectorDetails(const AppState& state, int& y) {
-    if (state.hover_tile.has_value()) {
-        const auto& tile = state.simulation.GetWorld().At(state.hover_x, state.hover_y);
+    std::optional<std::pair<int, int>> inspected_tile;
+    if (state.selection.kind == SelectionKind::Tile || state.selection.kind == SelectionKind::ImprovementTile) {
+        inspected_tile = std::pair<int, int>{state.selection.x, state.selection.y};
+    } else if (state.hover_tile.has_value()) {
+        inspected_tile = state.hover_tile;
+    }
+
+    DrawText(("Selection: " + ToString(state.selection.kind)).c_str(), 34, y, 17, Color{220, 225, 230, 255});
+    y += 24;
+
+    if (inspected_tile.has_value()) {
+        const auto [tile_x, tile_y] = *inspected_tile;
+        const auto& tile = state.simulation.GetWorld().At(tile_x, tile_y);
         DrawText(("Tile: " + std::to_string(tile.x) + ", " + std::to_string(tile.y)).c_str(), 34, y, 17, RAYWHITE);
         y += 22;
         DrawText(("Biome: " + ToString(tile.biome) + "  Resource: " + ToString(tile.resource)).c_str(), 34, y, 17,
@@ -438,9 +593,15 @@ void DrawInspectorDetails(const AppState& state, int& y) {
         DrawText(("Soil " + Fixed(tile.soil_quality) + "  Forest " + Fixed(tile.forest_cover)).c_str(), 34, y, 17,
                  Color{202, 211, 218, 255});
         y += 26;
+        DrawText(("Controller " + std::to_string(tile.controller_polity_id) + "  Control " +
+                  Fixed(tile.control_strength, 1) + "  Contested " + std::string(tile.is_contested ? "yes" : "no"))
+                     .c_str(),
+                 34, y, 17, Color{202, 211, 218, 255});
+        y += 26;
     }
 
-    if (const auto* band = BandById(state.simulation.Bands(), state.selected_band_id)) {
+    const int selected_band_id = state.selection.kind == SelectionKind::Band ? state.selection.id : -1;
+    if (const auto* band = BandById(state.simulation.Bands(), selected_band_id)) {
         DrawText(("Band " + std::to_string(band->id) + " " + ToString(band->state)).c_str(), 34, y, 17,
                  Color{245, 245, 236, 255});
         y += 22;
@@ -464,7 +625,8 @@ void DrawInspectorDetails(const AppState& state, int& y) {
         y += 26;
     }
 
-    if (const auto* settlement = SettlementById(state.simulation.Settlements(), state.selected_settlement_id)) {
+    const int selected_settlement_id = state.selection.kind == SelectionKind::Settlement ? state.selection.id : -1;
+    if (const auto* settlement = SettlementById(state.simulation.Settlements(), selected_settlement_id)) {
         DrawText(("Settlement " + std::to_string(settlement->id) + " " + ToString(settlement->level)).c_str(), 34, y,
                  17, Color{238, 218, 144, 255});
         y += 22;
@@ -495,6 +657,25 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                   Fixed(settlement->carrying_capacity_ratio * 100.0F, 0) + "%")
                      .c_str(),
                  34, y, 17, Color{238, 218, 144, 255});
+        y += 22;
+        DrawText(("Polity " + std::to_string(settlement->polity_id) +
+                  (settlement->is_capital ? "  Capital" : ""))
+                     .c_str(),
+                 34, y, 17, Color{238, 218, 144, 255});
+        y += 22;
+        if (const auto* polity = PolityById(state.simulation.Polities(), settlement->polity_id)) {
+            DrawText((polity->name + " " + ToString(polity->level)).c_str(), 34, y, 17, Color{238, 218, 144, 255});
+            y += 22;
+            DrawText(("Members " + std::to_string(polity->member_settlement_ids.size()) + "  Control tiles " +
+                      std::to_string(polity->controlled_tile_count))
+                         .c_str(),
+                     34, y, 17, Color{238, 218, 144, 255});
+            y += 22;
+            DrawText(("Admin range " + Fixed(polity->admin_range, 1) + "  Food " + Fixed(polity->food, 0) +
+                      "  Wood " + Fixed(polity->wood, 0))
+                         .c_str(),
+                     34, y, 17, Color{238, 218, 144, 255});
+        }
     }
 }
 
@@ -538,19 +719,20 @@ void DrawDebugPanel(const AppState& state) {
              34, 416, 16, Color{202, 211, 218, 255});
 
     DrawText("Space step  N 10 turns  Shift+N 100  A auto  B reset", 34, 446, 15, Color{152, 164, 174, 255});
-    DrawText("Tab details  E events  C center  F1 help  P screenshot", 34, 468, 15, Color{152, 164, 174, 255});
+    DrawText("WASD/arrows pan  right/middle drag  wheel zoom", 34, 468, 15, Color{152, 164, 174, 255});
+    DrawText("Tab details  E events  C selected  Home/F fit  P shot", 34, 490, 15, Color{152, 164, 174, 255});
     if (!state.status_message.empty()) {
-        DrawText(state.status_message.c_str(), 34, 492, 15, Color{180, 202, 225, 255});
+        DrawText(state.status_message.c_str(), 34, 512, 15, Color{180, 202, 225, 255});
     }
 
-    int y = 522;
+    int y = 542;
     DrawInspectorDetails(state, y);
 }
 
 void DrawHelpPanel() {
-    DrawPanelBackground(GetScreenWidth() - 390, 18, 364, 278);
+    DrawPanelBackground(GetScreenWidth() - 390, 18, 364, 310);
     DrawText("Help", GetScreenWidth() - 370, 36, 22, RAYWHITE);
-    DrawText("1-7      switch map layers", GetScreenWidth() - 370, 72, 16, Color{202, 211, 218, 255});
+    DrawText("1-8      switch map layers", GetScreenWidth() - 370, 72, 16, Color{202, 211, 218, 255});
     DrawText("R        generate next seed", GetScreenWidth() - 370, 96, 16, Color{202, 211, 218, 255});
     DrawText("B        reset bands on current world", GetScreenWidth() - 370, 120, 16, Color{202, 211, 218, 255});
     DrawText("Space    step one turn", GetScreenWidth() - 370, 144, 16, Color{202, 211, 218, 255});
@@ -558,7 +740,8 @@ void DrawHelpPanel() {
     DrawText("Shift+N  step 100 turns", GetScreenWidth() - 370, 192, 16, Color{202, 211, 218, 255});
     DrawText("A        toggle auto-run", GetScreenWidth() - 370, 216, 16, Color{202, 211, 218, 255});
     DrawText("E        toggle events panel", GetScreenWidth() - 370, 240, 16, Color{202, 211, 218, 255});
-    DrawText("C        center map, arrows pan", GetScreenWidth() - 370, 264, 16, Color{202, 211, 218, 255});
+    DrawText("WASD/arrows pan, right-drag map", GetScreenWidth() - 370, 264, 16, Color{202, 211, 218, 255});
+    DrawText("C center selected, Home/F fit world", GetScreenWidth() - 370, 288, 16, Color{202, 211, 218, 255});
 }
 
 }  // namespace
@@ -590,14 +773,14 @@ int OikumeneApp::Run() {
     state.health = state.remote_provider.CheckHealth();
 
     while (!WindowShouldClose()) {
-        UpdateHover(state);
         HandleInput(state);
+        UpdateHover(state);
         AdvanceAutoRun(state);
 
         BeginDrawing();
         ClearBackground(Color{18, 22, 26, 255});
-        state.renderer.Draw(state.simulation.GetWorld(), state.camera, state.current_layer, state.hover_tile);
-        state.renderer.DrawEntities(state.simulation.Bands(), state.simulation.Settlements(), state.camera);
+        state.renderer.Draw(state.simulation.GetWorld(), state.camera, state.current_layer, state.hover_tile, state.selection);
+        state.renderer.DrawEntities(state.simulation.Bands(), state.simulation.Settlements(), state.camera, state.selection);
         DrawHud(state);
         DrawPlaybackBar(state);
         DrawDebugPanel(state);

@@ -35,6 +35,10 @@ foreach(token
     "\"mean_food_output_consumption_ratio\""
     "\"mean_farm_share_of_worked_tiles\""
     "\"mean_wood_output\""
+    "\"mean_polities\""
+    "\"mean_controlled_land_ratio\""
+    "\"mean_contested_tiles\""
+    "\"mean_largest_polity_population\""
 )
     string(FIND "${summary}" "${token}" token_index)
     if(token_index EQUAL -1)

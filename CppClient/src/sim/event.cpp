@@ -28,6 +28,14 @@ std::string ToString(EventType type) {
             return "ForestCleared";
         case EventType::CarryingCapacityReached:
             return "CarryingCapacityReached";
+        case EventType::PolityFounded:
+            return "PolityFounded";
+        case EventType::SettlementJoinedPolity:
+            return "SettlementJoinedPolity";
+        case EventType::ControlFieldExpanded:
+            return "ControlFieldExpanded";
+        case EventType::ContestedRegionFormed:
+            return "ContestedRegionFormed";
     }
     return "Unknown";
 }

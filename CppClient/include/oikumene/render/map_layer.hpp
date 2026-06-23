@@ -12,6 +12,7 @@ enum class MapLayer {
     Fertility,
     Resources,
     SettlementScore,
+    PolityControl,
 };
 
 [[nodiscard]] std::string ToString(MapLayer layer);

@@ -12,6 +12,7 @@
 #include "oikumene/render/camera_controller.hpp"
 #include "oikumene/render/map_layer.hpp"
 #include "oikumene/render/map_renderer.hpp"
+#include "oikumene/render/selection.hpp"
 #include "oikumene/world/world_generation_report.hpp"
 #include "oikumene/world/world_generation_params.hpp"
 
@@ -37,6 +38,7 @@ struct AppState {
     std::string status_message;
     std::optional<std::filesystem::path> pending_screenshot;
     std::optional<std::pair<int, int>> hover_tile;
+    Selection selection;
     int hover_x = 0;
     int hover_y = 0;
     int selected_band_id = -1;

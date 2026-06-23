@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "oikumene/sim/band_system.hpp"
+#include "oikumene/sim/polity_system.hpp"
 #include "oikumene/sim/settlement_system.hpp"
 #include "oikumene/world/world_generation_params.hpp"
 #include "oikumene/world/world_generator.hpp"
@@ -41,6 +42,14 @@ std::vector<Settlement>& Simulation::Settlements() {
     return settlements_;
 }
 
+const std::vector<Polity>& Simulation::Polities() const {
+    return polities_;
+}
+
+std::vector<Polity>& Simulation::Polities() {
+    return polities_;
+}
+
 const EventLog& Simulation::Events() const {
     return event_log_;
 }
@@ -60,12 +69,13 @@ std::string Simulation::StatusSummary() const {
         villages += settlement.level == SettlementLevel::Village ? 1 : 0;
     }
     stream << "Turn " << current_turn_ << " bands " << active_bands << "/" << bands_.size() << " settlements "
-           << settlements_.size() << " villages " << villages;
+           << settlements_.size() << " villages " << villages << " polities " << polities_.size();
     return stream.str();
 }
 
 void Simulation::InitializeBands(int count) {
     settlements_.clear();
+    PolitySystem::Reset(world_, settlements_, polities_);
     event_log_.Events().clear();
     current_turn_ = 0;
     BandSystem::InitializeBands(world_, params_, count, bands_);
@@ -74,6 +84,7 @@ void Simulation::InitializeBands(int count) {
 void Simulation::AdvanceOneTurn() {
     BandSystem::UpdateBands(world_, params_, current_turn_, bands_, settlements_, event_log_);
     SettlementSystem::UpdateSettlements(world_, params_, current_turn_, settlements_, event_log_);
+    PolitySystem::UpdatePolities(world_, current_turn_, settlements_, polities_, event_log_);
     ++current_turn_;
 }
 

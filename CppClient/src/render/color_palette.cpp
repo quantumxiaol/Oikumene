@@ -100,6 +100,20 @@ Color ColorForResource(ResourceKind resource) {
     return MAGENTA;
 }
 
+Color ColorForPolity(PolityId polity_id) {
+    static constexpr Color palette[] = {
+        Color{225, 92, 86, 255},  Color{86, 158, 226, 255}, Color{98, 188, 116, 255},
+        Color{218, 172, 72, 255}, Color{176, 112, 210, 255}, Color{82, 190, 184, 255},
+        Color{228, 126, 67, 255}, Color{168, 184, 72, 255},
+    };
+    if (polity_id == kInvalidPolityId) {
+        return Color{42, 46, 50, 255};
+    }
+    constexpr int palette_size = static_cast<int>(sizeof(palette) / sizeof(palette[0]));
+    const auto index = static_cast<std::size_t>(std::abs(polity_id) % palette_size);
+    return palette[index];
+}
+
 Color ColorForTile(const Tile& tile, MapLayer layer) {
     switch (layer) {
         case MapLayer::Biome:
@@ -116,6 +130,8 @@ Color ColorForTile(const Tile& tile, MapLayer layer) {
             return LerpColor(ColorForBiome(tile.biome), Color{20, 22, 24, 255}, 0.50F);
         case MapLayer::SettlementScore:
             return LerpColor(Color{52, 50, 56, 255}, Color{238, 214, 93, 255}, tile.settlement_score);
+        case MapLayer::PolityControl:
+            return LerpColor(ColorForBiome(tile.biome), Color{18, 22, 26, 255}, 0.48F);
     }
     return MAGENTA;
 }

@@ -34,6 +34,9 @@ struct Tile {
     float river_flow = 0.0F;
 
     int owner_polity_id = -1;
+    int controller_polity_id = -1;
+    float control_strength = 0.0F;
+    bool is_contested = false;
     int settlement_id = -1;
 };
 
