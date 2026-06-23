@@ -1,0 +1,10 @@
+{
+  "archive_sha256": "c713d2cd6803f264f11625e729cc84bfbb6b2f2ceb83cd7c453889269e9e2343",
+  "archive_url": "https://github.com/ocornut/imgui/archive/d15966ff6cb48adacaae2f6d40230b4194d8ea70.zip",
+  "name": "Dear ImGui",
+  "repo": "ocornut/imgui",
+  "requested_ref": "master",
+  "requested_ref_kind": "branch",
+  "resolved_ref": "d15966ff6cb48adacaae2f6d40230b4194d8ea70",
+  "resolved_ref_kind": "commit"
+}

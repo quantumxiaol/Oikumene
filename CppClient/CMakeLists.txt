@@ -36,6 +36,8 @@ if(NOT nlohmann_json_FOUND)
     endif()
 endif()
 
+include(cmake/ThirdParty.cmake)
+
 add_library(oikumene_core STATIC
     src/ai/heuristic_decision_provider.cpp
     src/ai/remote_decision_provider.cpp
@@ -58,11 +60,25 @@ if(WIN32)
     target_link_libraries(oikumene_core PRIVATE ws2_32)
 endif()
 
+if(TARGET oikumene_fastnoise)
+    target_link_libraries(oikumene_core PUBLIC oikumene_fastnoise)
+    target_compile_definitions(oikumene_core PUBLIC OIKUMENE_HAS_FASTNOISELITE=1)
+else()
+    target_compile_definitions(oikumene_core PUBLIC OIKUMENE_HAS_FASTNOISELITE=0)
+endif()
+
 add_executable(oikumene_app
     src/main.cpp
 )
 
 target_link_libraries(oikumene_app PRIVATE oikumene_core)
+
+if(TARGET oikumene_imgui)
+    target_link_libraries(oikumene_app PRIVATE oikumene_imgui)
+    target_compile_definitions(oikumene_app PRIVATE OIKUMENE_HAS_IMGUI=1)
+else()
+    target_compile_definitions(oikumene_app PRIVATE OIKUMENE_HAS_IMGUI=0)
+endif()
 
 if(raylib_FOUND)
     target_link_libraries(oikumene_app PRIVATE raylib)

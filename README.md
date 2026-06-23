@@ -33,6 +33,17 @@ brew install cmake ninja raylib nlohmann-json pkgconf cpp-httplib
 - `third_party` 里的小型源码建议提交到 GitHub，保证离线和跨平台构建稳定。
 - 后续可以再补一个下载/更新脚本，用来从固定 tag 重新拉取这些第三方源码，但正常构建不应依赖联网下载。
 
+拉取/更新 vendored 依赖：
+
+```bash
+python3 scripts/vendor_third_party.py
+```
+
+CMake 会自动检测这些源码是否存在。未下载时，Phase 0 仍可正常编译；下载后会启用：
+
+- `oikumene_imgui`：Dear ImGui + rlImGui。
+- `oikumene_fastnoise`：FastNoiseLite。
+
 ## 启动 Python Agent 服务
 
 ```bash

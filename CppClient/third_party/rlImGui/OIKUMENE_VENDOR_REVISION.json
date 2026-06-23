@@ -1,0 +1,10 @@
+{
+  "archive_sha256": "b0c6ef3ad4961a396faea1ba5b78ffc8ed1c84ac593f9376da1be9afbe067352",
+  "archive_url": "https://github.com/raylib-extras/rlImGui/archive/ef129d1858373b6fe332c45f85a1dfc1421bebae.zip",
+  "name": "rlImGui",
+  "repo": "raylib-extras/rlImGui",
+  "requested_ref": "main",
+  "requested_ref_kind": "branch",
+  "resolved_ref": "ef129d1858373b6fe332c45f85a1dfc1421bebae",
+  "resolved_ref_kind": "commit"
+}
