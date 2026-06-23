@@ -4,6 +4,8 @@
 #include <cmath>
 #include <sstream>
 
+#include "oikumene/sim/tech_effects.hpp"
+
 namespace oikumene {
 namespace {
 
@@ -28,6 +30,20 @@ Tile& TileByIndex(World& world, int index) {
 
 const Tile& TileByIndex(const World& world, int index) {
     return world.Tiles()[static_cast<std::size_t>(index)];
+}
+
+const Polity* PolityById(const std::vector<Polity>& polities, PolityId id) {
+    for (const auto& polity : polities) {
+        if (polity.id == id) {
+            return &polity;
+        }
+    }
+    return nullptr;
+}
+
+TechEffects EffectsForSettlement(const Settlement& settlement, const std::vector<Polity>& polities) {
+    const auto* polity = PolityById(polities, settlement.polity_id);
+    return polity == nullptr ? TechEffects{} : ComputeTechEffects(polity->research);
 }
 
 int WorkRadiusFor(const Settlement& settlement) {
@@ -149,7 +165,10 @@ int DesiredFarmCount(const Settlement& settlement) {
     return std::clamp(1 + settlement.population / 130, 1, cap);
 }
 
-ImprovementKind DesiredImprovement(const World& world, const Settlement& settlement, const SimulationParams& params) {
+ImprovementKind DesiredImprovement(const World& world,
+                                   const Settlement& settlement,
+                                   const SimulationParams& params,
+                                   const TechEffects& effects) {
     const int farms = CountImprovement(world, settlement, ImprovementKind::Farm);
     const int lumber_camps = CountImprovement(world, settlement, ImprovementKind::LumberCamp);
     const int pastures = CountImprovement(world, settlement, ImprovementKind::Pasture);
@@ -162,6 +181,9 @@ ImprovementKind DesiredImprovement(const World& world, const Settlement& settlem
     }
     if (lumber_camps < 1) {
         return ImprovementKind::LumberCamp;
+    }
+    if (effects.mining_enabled && mines < 1 && HasBuildableImprovement(world, settlement, ImprovementKind::ShallowMine)) {
+        return ImprovementKind::ShallowMine;
     }
     if (pastures < 1 && HasBuildableImprovement(world, settlement, ImprovementKind::Pasture)) {
         return ImprovementKind::Pasture;
@@ -267,7 +289,7 @@ bool BuildBestImprovement(World& world, Settlement& settlement, ImprovementKind 
     return false;
 }
 
-float CarryingCapacityFor(const World& world, const Settlement& settlement) {
+float CarryingCapacityFor(const World& world, const Settlement& settlement, const TechEffects& effects) {
     float capacity = settlement.level == SettlementLevel::Village ? 65.0F : 42.0F;
     const auto& center = world.At(settlement.x, settlement.y);
     if (center.has_river || center.is_coast) {
@@ -281,10 +303,14 @@ float CarryingCapacityFor(const World& world, const Settlement& settlement) {
         }
         switch (tile.improvement) {
             case ImprovementKind::Farm:
-                capacity += 16.0F + tile.soil_quality * 12.0F + (tile.has_river ? 4.0F : 0.0F);
+                capacity +=
+                    (16.0F + tile.soil_quality * 12.0F + (tile.has_river ? 4.0F : 0.0F)) *
+                    (tile.has_river ? effects.river_farm_output_multiplier : 1.0F);
                 break;
             case ImprovementKind::Pasture:
-                capacity += 12.0F + tile.fertility * 6.0F + (tile.resource == ResourceKind::Horse ? 5.0F : 0.0F);
+                capacity += (12.0F + tile.fertility * 6.0F +
+                             (tile.resource == ResourceKind::Horse ? 5.0F * effects.horse_value_multiplier : 0.0F)) *
+                            effects.pasture_output_multiplier;
                 break;
             case ImprovementKind::ForagingGround:
                 capacity += 6.0F + tile.fertility * 5.0F;
@@ -300,10 +326,10 @@ float CarryingCapacityFor(const World& world, const Settlement& settlement) {
                 break;
         }
     }
-    return capacity;
+    return capacity * effects.carrying_capacity_multiplier;
 }
 
-float WorkedTileScore(const Tile& tile, const Settlement& settlement) {
+float WorkedTileScore(const Tile& tile, const Settlement& settlement, const TechEffects& effects) {
     switch (tile.improvement) {
         case ImprovementKind::Farm:
             return 4.0F + tile.soil_quality * 5.0F;
@@ -315,7 +341,7 @@ float WorkedTileScore(const Tile& tile, const Settlement& settlement) {
         case ImprovementKind::Pasture:
             return 2.6F + tile.fertility + (tile.resource == ResourceKind::Horse ? 2.5F : 0.0F);
         case ImprovementKind::ShallowMine:
-            return 2.0F + tile.resource_amount * 2.0F;
+            return effects.mining_enabled ? 8.0F + tile.resource_amount * 3.0F : 1.2F + tile.resource_amount;
         case ImprovementKind::ForagingGround:
             return 1.5F + tile.fertility * 2.0F;
         case ImprovementKind::None:
@@ -325,7 +351,10 @@ float WorkedTileScore(const Tile& tile, const Settlement& settlement) {
     return 0.0F;
 }
 
-std::vector<int> SelectWorkedTiles(const World& world, const Settlement& settlement, const SimulationParams& params) {
+std::vector<int> SelectWorkedTiles(const World& world,
+                                   const Settlement& settlement,
+                                   const SimulationParams& params,
+                                   const TechEffects& effects) {
     std::vector<int> candidates;
     for (const int index : NearbyTileIndices(world, settlement, WorkRadiusFor(settlement))) {
         const auto& tile = TileByIndex(world, index);
@@ -334,7 +363,8 @@ std::vector<int> SelectWorkedTiles(const World& world, const Settlement& settlem
         }
     }
     std::sort(candidates.begin(), candidates.end(), [&](int lhs, int rhs) {
-        return WorkedTileScore(TileByIndex(world, lhs), settlement) > WorkedTileScore(TileByIndex(world, rhs), settlement);
+        return WorkedTileScore(TileByIndex(world, lhs), settlement, effects) >
+               WorkedTileScore(TileByIndex(world, rhs), settlement, effects);
     });
     const int slots = WorkSlotsFor(settlement, params);
     if (static_cast<int>(candidates.size()) > slots) {
@@ -351,8 +381,8 @@ std::vector<int> SelectWorkedTiles(const World& world, const Settlement& settlem
                 if (!already_selected && TileByIndex(world, index).improvement == kind) {
                     selected.back() = index;
                     std::sort(selected.begin(), selected.end(), [&](int lhs, int rhs) {
-                        return WorkedTileScore(TileByIndex(world, lhs), settlement) >
-                               WorkedTileScore(TileByIndex(world, rhs), settlement);
+                        return WorkedTileScore(TileByIndex(world, lhs), settlement, effects) >
+                               WorkedTileScore(TileByIndex(world, rhs), settlement, effects);
                     });
                     return;
                 }
@@ -367,11 +397,18 @@ std::vector<int> SelectWorkedTiles(const World& world, const Settlement& settlem
     return candidates;
 }
 
-void ProduceFromWorkedTile(World& world, Settlement& settlement, int index, Turn turn, EventLog& event_log) {
+void ProduceFromWorkedTile(World& world,
+                           Settlement& settlement,
+                           int index,
+                           const TechEffects& effects,
+                           Turn turn,
+                           EventLog& event_log) {
     auto& tile = TileByIndex(world, index);
     switch (tile.improvement) {
         case ImprovementKind::Farm:
-            settlement.local_food_output_last_turn += 2.8F + tile.soil_quality * 3.8F + (tile.has_river ? 0.8F : 0.0F);
+            settlement.local_food_output_last_turn +=
+                (2.8F + tile.soil_quality * 3.8F + (tile.has_river ? 0.8F : 0.0F)) *
+                effects.farm_output_multiplier * (tile.has_river ? effects.river_farm_output_multiplier : 1.0F);
             break;
         case ImprovementKind::LumberCamp: {
             const float before = tile.forest_cover;
@@ -392,11 +429,15 @@ void ProduceFromWorkedTile(World& world, Settlement& settlement, int index, Turn
             break;
         }
         case ImprovementKind::Pasture:
-            settlement.local_food_output_last_turn += 1.8F + tile.fertility * 1.2F +
-                                                      (tile.resource == ResourceKind::Horse ? 1.0F : 0.0F);
+            settlement.local_food_output_last_turn +=
+                (1.8F + tile.fertility * 1.2F +
+                 (tile.resource == ResourceKind::Horse ? 1.0F * effects.horse_value_multiplier : 0.0F)) *
+                effects.pasture_output_multiplier;
             break;
         case ImprovementKind::ShallowMine:
-            settlement.ore_output_last_turn += IsMineral(tile.resource) ? 0.45F + tile.resource_amount * 0.65F : 0.0F;
+            if (effects.mining_enabled) {
+                settlement.ore_output_last_turn += IsMineral(tile.resource) ? 0.45F + tile.resource_amount * 0.65F : 0.0F;
+            }
             break;
         case ImprovementKind::ForagingGround:
             settlement.local_food_output_last_turn += 1.0F + tile.fertility * 1.4F + tile.forest_cover * 0.5F;
@@ -464,8 +505,10 @@ void SettlementSystem::UpdateSettlements(World& world,
                                          const SimulationParams& params,
                                          Turn turn,
                                          std::vector<Settlement>& settlements,
+                                         const std::vector<Polity>& polities,
                                          EventLog& event_log) {
     for (auto& settlement : settlements) {
+        const TechEffects effects = EffectsForSettlement(settlement, polities);
         ++settlement.turns_since_founded;
         settlement.work_radius = WorkRadiusFor(settlement);
         const int existing_improvements = CountImprovement(world, settlement, ImprovementKind::Farm) +
@@ -481,17 +524,17 @@ void SettlementSystem::UpdateSettlements(World& world,
         const int improvement_limit =
             WorkSlotsFor(settlement, params) + (settlement.level == SettlementLevel::Village ? 3 : 2);
         if (should_build_now && existing_improvements < improvement_limit) {
-            BuildBestImprovement(world, settlement, DesiredImprovement(world, settlement, params), turn, event_log);
+            BuildBestImprovement(world, settlement, DesiredImprovement(world, settlement, params, effects), turn, event_log);
         }
 
         settlement.local_food_output_last_turn =
             std::max(0.8F, LocalFoodOutput(world, settlement, params) * 0.16F);
         settlement.local_wood_output_last_turn = 0.0F;
         settlement.ore_output_last_turn = 0.0F;
-        settlement.worked_tile_indices = SelectWorkedTiles(world, settlement, params);
+        settlement.worked_tile_indices = SelectWorkedTiles(world, settlement, params, effects);
         settlement.worked_tile_count = static_cast<int>(settlement.worked_tile_indices.size());
         for (const int index : settlement.worked_tile_indices) {
-            ProduceFromWorkedTile(world, settlement, index, turn, event_log);
+            ProduceFromWorkedTile(world, settlement, index, effects, turn, event_log);
         }
 
         settlement.food_consumption_last_turn =
@@ -500,7 +543,7 @@ void SettlementSystem::UpdateSettlements(World& world,
         settlement.stockpile.wood += settlement.local_wood_output_last_turn;
         settlement.stockpile.ore += settlement.ore_output_last_turn;
         settlement.stockpile.food -= settlement.food_consumption_last_turn;
-        settlement.carrying_capacity = CarryingCapacityFor(world, settlement);
+        settlement.carrying_capacity = CarryingCapacityFor(world, settlement, effects);
         settlement.carrying_capacity_ratio =
             settlement.carrying_capacity <= 0.0F ? 0.0F : static_cast<float>(settlement.population) / settlement.carrying_capacity;
 
@@ -532,7 +575,8 @@ void SettlementSystem::UpdateSettlements(World& world,
             });
         } else if (settlement.stockpile.food < 0.0F) {
             const float deficit = settlement.stockpile.food;
-            const int loss = std::max(1, static_cast<int>(static_cast<float>(settlement.population) * 0.025F));
+            const int loss = std::max(
+                1, static_cast<int>(static_cast<float>(settlement.population) * 0.025F * effects.famine_severity_multiplier));
             settlement.population = std::max(1, settlement.population - loss);
             settlement.stockpile.food = 0.0F;
             std::ostringstream summary;
@@ -584,6 +628,15 @@ void SettlementSystem::UpdateSettlements(World& world,
             });
         }
     }
+}
+
+void SettlementSystem::UpdateSettlements(World& world,
+                                         const SimulationParams& params,
+                                         Turn turn,
+                                         std::vector<Settlement>& settlements,
+                                         EventLog& event_log) {
+    const std::vector<Polity> no_polities;
+    UpdateSettlements(world, params, turn, settlements, no_polities, event_log);
 }
 
 }  // namespace oikumene

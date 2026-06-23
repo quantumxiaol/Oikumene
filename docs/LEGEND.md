@@ -50,6 +50,20 @@
 - Capital Ring：首都标记。
 - Selection / Hover：当前选中对象或鼠标悬停 tile。
 
+## 科技
+
+科技属于 polity，不属于单个村庄。当前版本先用规则 AI 选择研究方向，后续再交给 Python/LLM 做宏观决策。
+
+- Pottery：提高储粮能力、降低饥荒损失，并小幅提高承载力。
+- Irrigation：提高农田产出，河流旁农田额外受益。
+- Animal Husbandry：提高牧场产出和马资源价值。
+- Mining：让 ShallowMine 正式产生 ore income。
+- Roads：降低控制力路径成本和距离行政负担。
+- Administration：提高行政容量，并降低 overextension 压力。
+- Bronze Working：需要 Mining 和金属条件，提高工具效率和未来军事潜力。
+- Fortification：提高防御潜力，并降低争议区对稳定度的损害。
+- Sailing：需要海岸接触，解锁未来沿海贸易能力，并小幅加强海岸控制。
+
 ## 快捷键
 
 - `F2`：打开或关闭图例。

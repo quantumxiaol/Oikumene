@@ -12,6 +12,8 @@ struct ControlFieldParams {
     float min_control_strength = 24.0F;
     float contested_margin = 4.0F;
     float max_path_cost = 52.0F;
+    float path_cost_multiplier = 1.0F;
+    float coastal_path_cost_multiplier = 1.0F;
 };
 
 struct ControlFieldStats {
@@ -23,7 +25,14 @@ struct ControlFieldStats {
 };
 
 [[nodiscard]] float TerrainControlCost(const Tile& tile);
-[[nodiscard]] float TerrainPathCost(const World& world, int start_x, int start_y, int end_x, int end_y, float max_cost);
+[[nodiscard]] float TerrainPathCost(const World& world,
+                                    int start_x,
+                                    int start_y,
+                                    int end_x,
+                                    int end_y,
+                                    float max_cost,
+                                    float path_cost_multiplier = 1.0F,
+                                    float coastal_path_cost_multiplier = 1.0F);
 
 [[nodiscard]] ControlFieldStats RecomputeControlField(World& world,
                                                       const std::vector<Settlement>& settlements,

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "oikumene/core/types.hpp"
+#include "oikumene/sim/technology.hpp"
 
 namespace oikumene {
 
@@ -52,6 +53,10 @@ struct Polity {
     float admin_capacity = 0.0F;
     float overextension = 0.0F;
     PolityBudget budget;
+    ResearchState research;
+    float knowledge_income = 0.0F;
+    float military_potential = 0.0F;
+    float tool_efficiency = 1.0F;
     std::uint32_t debug_color_index = 0;
     int controlled_tile_count = 0;
     int contested_tile_count = 0;

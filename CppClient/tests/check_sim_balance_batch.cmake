@@ -45,6 +45,15 @@ foreach(token
     "\"mean_overextension\""
     "\"mean_stability\""
     "\"mean_control_maintenance\""
+    "\"mean_unlocked_techs\""
+    "\"mean_knowledge_income\""
+    "\"pottery_unlock_rate\""
+    "\"mining_unlock_rate\""
+    "\"roads_unlock_rate\""
+    "\"administration_unlock_rate\""
+    "\"mean_ore_income\""
+    "\"mean_tool_efficiency\""
+    "\"mean_military_potential\""
 )
     string(FIND "${summary}" "${token}" token_index)
     if(token_index EQUAL -1)

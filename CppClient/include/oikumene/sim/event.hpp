@@ -23,6 +23,8 @@ enum class EventType {
     SettlementJoinedPolity,
     ControlFieldExpanded,
     ContestedRegionFormed,
+    ResearchStarted,
+    TechnologyUnlocked,
 };
 
 [[nodiscard]] std::string ToString(EventType type);

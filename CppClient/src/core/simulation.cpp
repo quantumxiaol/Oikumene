@@ -5,6 +5,7 @@
 #include "oikumene/sim/band_system.hpp"
 #include "oikumene/sim/polity_system.hpp"
 #include "oikumene/sim/settlement_system.hpp"
+#include "oikumene/sim/technology_system.hpp"
 #include "oikumene/world/world_generation_params.hpp"
 #include "oikumene/world/world_generator.hpp"
 
@@ -83,8 +84,9 @@ void Simulation::InitializeBands(int count) {
 
 void Simulation::AdvanceOneTurn() {
     BandSystem::UpdateBands(world_, params_, current_turn_, bands_, settlements_, event_log_);
-    SettlementSystem::UpdateSettlements(world_, params_, current_turn_, settlements_, event_log_);
+    SettlementSystem::UpdateSettlements(world_, params_, current_turn_, settlements_, polities_, event_log_);
     PolitySystem::UpdatePolities(world_, current_turn_, settlements_, polities_, event_log_);
+    TechnologySystem::UpdateTechnologies(world_, current_turn_, settlements_, polities_, event_log_);
     ++current_turn_;
 }
 

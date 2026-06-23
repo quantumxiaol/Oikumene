@@ -40,7 +40,10 @@ foreach(token
         "\"polities\""
         "\"controlled_land_ratio\""
         "\"average_admin_load\""
-        "\"average_stability\"")
+        "\"average_stability\""
+        "\"average_unlocked_techs\""
+        "\"average_knowledge_income\""
+        "\"mining_unlock_rate\"")
     string(FIND "${summary}" "${token}" token_index)
     if(token_index EQUAL -1)
         message(FATAL_ERROR "summary.json is missing ${token}")
@@ -58,7 +61,12 @@ foreach(token
         "\"polities\""
         "\"admin_load\""
         "\"overextension\""
-        "\"budget\"")
+        "\"budget\""
+        "\"research\""
+        "\"unlocked_techs\""
+        "\"active_effects\""
+        "\"military_potential\""
+        "\"tool_efficiency\"")
     string(FIND "${final_state}" "${token}" token_index)
     if(token_index EQUAL -1)
         message(FATAL_ERROR "final_state.json is missing ${token}")

@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "oikumene/sim/control_field.hpp"
+#include "oikumene/sim/tech_effects.hpp"
 
 namespace oikumene {
 namespace {
@@ -57,7 +58,10 @@ bool HasNearbyCapital(const World& world, const std::vector<Settlement>& settlem
         if (capital == nullptr) {
             continue;
         }
-        const float cost = TerrainPathCost(world, candidate.x, candidate.y, capital->x, capital->y, kCapitalSeparationCost);
+        const auto effects = ComputeTechEffects(polity.research);
+        const float cost = TerrainPathCost(world, candidate.x, candidate.y, capital->x, capital->y,
+                                           kCapitalSeparationCost, effects.control_path_cost_multiplier,
+                                           effects.coastal_control_cost_multiplier);
         if (cost <= kCapitalSeparationCost) {
             return true;
         }
@@ -130,7 +134,9 @@ float AverageCapitalPathCost(const World& world,
         if (settlement == nullptr) {
             continue;
         }
-        float cost = TerrainPathCost(world, capital.x, capital.y, settlement->x, settlement->y, 120.0F);
+        const auto effects = ComputeTechEffects(polity.research);
+        float cost = TerrainPathCost(world, capital.x, capital.y, settlement->x, settlement->y, 120.0F,
+                                     effects.control_path_cost_multiplier, effects.coastal_control_cost_multiplier);
         if (!std::isfinite(cost)) {
             cost = 120.0F;
         }
@@ -168,13 +174,19 @@ void RecalculatePolityBudgetsAndAdministration(const World& world,
             polity.budget.wealth_income += static_cast<float>(settlement->population) * 0.018F;
         }
 
+        const auto effects = ComputeTechEffects(polity.research);
         const float average_distance = AverageCapitalPathCost(world, settlements, polity, *capital);
         const float member_count = static_cast<float>(polity.member_settlement_ids.size());
         polity.admin_load = member_count * 8.0F + static_cast<float>(polity.controlled_tile_count) * 0.08F +
-                            static_cast<float>(polity.contested_tile_count) * 0.25F + average_distance * 1.2F;
-        polity.admin_capacity = 40.0F + static_cast<float>(capital->population) * 0.08F + PolityLevelAdminBonus(polity.level);
-        polity.overextension =
-            polity.admin_capacity <= 0.0F ? 1.0F : std::max(0.0F, polity.admin_load / polity.admin_capacity - 1.0F);
+                            static_cast<float>(polity.contested_tile_count) * 0.25F +
+                            average_distance * 1.2F * effects.distance_admin_load_multiplier;
+        polity.admin_capacity =
+            (40.0F + static_cast<float>(capital->population) * 0.08F + PolityLevelAdminBonus(polity.level)) *
+            effects.admin_capacity_multiplier;
+        polity.overextension = polity.admin_capacity <= 0.0F
+                                   ? 1.0F
+                                   : std::max(0.0F, polity.admin_load / polity.admin_capacity - 1.0F) *
+                                         effects.overextension_penalty_multiplier;
 
         polity.budget.food_maintenance = member_count * 1.5F + static_cast<float>(polity.controlled_tile_count) * 0.006F;
         polity.budget.wood_maintenance = member_count * 0.32F;
@@ -192,8 +204,10 @@ void RecalculatePolityBudgetsAndAdministration(const World& world,
                 : static_cast<float>(polity.contested_tile_count) / static_cast<float>(polity.controlled_tile_count);
         const float deficit_pressure = polity.budget.wealth_surplus < 0.0F ? std::min(0.35F, -polity.budget.wealth_surplus * 0.025F)
                                                                             : 0.0F;
-        polity.stability =
-            std::clamp(1.0F - polity.overextension * 0.45F - contested_pressure * 0.35F - deficit_pressure, 0.10F, 1.0F);
+        polity.stability = std::clamp(1.0F - polity.overextension * 0.45F -
+                                          contested_pressure * 0.35F * effects.contested_stability_loss_multiplier -
+                                          deficit_pressure,
+                                      0.10F, 1.0F);
         polity.legitimacy = std::clamp(1.0F - polity.overextension * 0.25F - deficit_pressure * 0.20F, 0.15F, 1.0F);
         polity.control_power =
             (38.0F + static_cast<float>(polity.population) * 0.045F) * (0.65F + polity.stability * 0.35F);
@@ -257,7 +271,10 @@ void JoinNearbySettlements(World& world,
             if (capital == nullptr) {
                 continue;
             }
-            const float cost = TerrainPathCost(world, settlement.x, settlement.y, capital->x, capital->y, polity.admin_range);
+            const auto effects = ComputeTechEffects(polity.research);
+            const float cost =
+                TerrainPathCost(world, settlement.x, settlement.y, capital->x, capital->y, polity.admin_range,
+                                effects.control_path_cost_multiplier, effects.coastal_control_cost_multiplier);
             if (cost <= polity.admin_range && cost < best_cost) {
                 best_cost = cost;
                 best_polity = &polity;

@@ -56,6 +56,9 @@ add_library(oikumene_core STATIC
     src/sim/settlement.cpp
     src/sim/settlement_system.cpp
     src/sim/simulation_params.cpp
+    src/sim/tech_effects.cpp
+    src/sim/technology.cpp
+    src/sim/technology_system.cpp
     src/world/biome.cpp
     src/world/improvement.cpp
     src/world/resource.cpp
@@ -207,6 +210,16 @@ add_executable(oikumene_symbol_registry_tests
 )
 target_link_libraries(oikumene_symbol_registry_tests PRIVATE oikumene_core)
 
+add_executable(oikumene_technology_tests
+    tests/test_technology.cpp
+)
+target_link_libraries(oikumene_technology_tests PRIVATE oikumene_core)
+
+add_executable(oikumene_tech_effects_tests
+    tests/test_tech_effects.cpp
+)
+target_link_libraries(oikumene_tech_effects_tests PRIVATE oikumene_core)
+
 foreach(target_name oikumene_camera_controller_tests oikumene_selection_tests oikumene_symbol_registry_tests)
     if(raylib_FOUND)
         target_link_libraries(${target_name} PRIVATE raylib)
@@ -230,6 +243,8 @@ if(BUILD_TESTING)
     add_test(NAME oikumene_control_field_tests COMMAND oikumene_control_field_tests)
     add_test(NAME oikumene_polity_economy_tests COMMAND oikumene_polity_economy_tests)
     add_test(NAME oikumene_symbol_registry_tests COMMAND oikumene_symbol_registry_tests)
+    add_test(NAME oikumene_technology_tests COMMAND oikumene_technology_tests)
+    add_test(NAME oikumene_tech_effects_tests COMMAND oikumene_tech_effects_tests)
     add_test(
         NAME oikumene_sim_batch_smoke
         COMMAND

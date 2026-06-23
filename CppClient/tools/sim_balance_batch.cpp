@@ -62,6 +62,21 @@ struct Metrics {
     float average_overextension = 0.0F;
     float average_stability = 0.0F;
     float average_control_maintenance = 0.0F;
+    float average_unlocked_techs = 0.0F;
+    float average_knowledge_income = 0.0F;
+    float first_tech_turn_mean = 0.0F;
+    float pottery_unlock_rate = 0.0F;
+    float irrigation_unlock_rate = 0.0F;
+    float animal_husbandry_unlock_rate = 0.0F;
+    float mining_unlock_rate = 0.0F;
+    float roads_unlock_rate = 0.0F;
+    float administration_unlock_rate = 0.0F;
+    float bronze_working_unlock_rate = 0.0F;
+    float fortification_unlock_rate = 0.0F;
+    float sailing_unlock_rate = 0.0F;
+    float average_ore_income = 0.0F;
+    float average_tool_efficiency = 0.0F;
+    float average_military_potential = 0.0F;
 };
 
 void PrintUsage() {
@@ -202,6 +217,22 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     float overextension_sum = 0.0F;
     float stability_sum = 0.0F;
     float control_maintenance_sum = 0.0F;
+    float unlocked_tech_sum = 0.0F;
+    float knowledge_income_sum = 0.0F;
+    float first_tech_turn_sum = 0.0F;
+    int first_tech_turn_count = 0;
+    int pottery_count = 0;
+    int irrigation_count = 0;
+    int animal_husbandry_count = 0;
+    int mining_count = 0;
+    int roads_count = 0;
+    int administration_count = 0;
+    int bronze_count = 0;
+    int fortification_count = 0;
+    int sailing_count = 0;
+    float ore_income_sum = 0.0F;
+    float tool_efficiency_sum = 0.0F;
+    float military_potential_sum = 0.0F;
     for (const auto& polity : sim.Polities()) {
         metrics.largest_polity_population = std::max(metrics.largest_polity_population, polity.population);
         member_sum += static_cast<int>(polity.member_settlement_ids.size());
@@ -214,6 +245,24 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         overextension_sum += polity.overextension;
         stability_sum += polity.stability;
         control_maintenance_sum += polity.budget.control_maintenance;
+        unlocked_tech_sum += static_cast<float>(polity.research.unlocked.size());
+        knowledge_income_sum += polity.knowledge_income;
+        if (polity.research.first_unlock_turn >= 0) {
+            first_tech_turn_sum += static_cast<float>(polity.research.first_unlock_turn);
+            ++first_tech_turn_count;
+        }
+        pottery_count += oikumene::HasTech(polity.research, oikumene::TechId::Pottery) ? 1 : 0;
+        irrigation_count += oikumene::HasTech(polity.research, oikumene::TechId::Irrigation) ? 1 : 0;
+        animal_husbandry_count += oikumene::HasTech(polity.research, oikumene::TechId::AnimalHusbandry) ? 1 : 0;
+        mining_count += oikumene::HasTech(polity.research, oikumene::TechId::Mining) ? 1 : 0;
+        roads_count += oikumene::HasTech(polity.research, oikumene::TechId::Roads) ? 1 : 0;
+        administration_count += oikumene::HasTech(polity.research, oikumene::TechId::Administration) ? 1 : 0;
+        bronze_count += oikumene::HasTech(polity.research, oikumene::TechId::BronzeWorking) ? 1 : 0;
+        fortification_count += oikumene::HasTech(polity.research, oikumene::TechId::Fortification) ? 1 : 0;
+        sailing_count += oikumene::HasTech(polity.research, oikumene::TechId::Sailing) ? 1 : 0;
+        ore_income_sum += polity.budget.ore_income;
+        tool_efficiency_sum += polity.tool_efficiency;
+        military_potential_sum += polity.military_potential;
     }
     metrics.average_member_settlements_per_polity =
         metrics.polities <= 0 ? 0.0F : static_cast<float>(member_sum) / static_cast<float>(metrics.polities);
@@ -231,6 +280,31 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     metrics.average_stability = metrics.polities <= 0 ? 0.0F : stability_sum / static_cast<float>(metrics.polities);
     metrics.average_control_maintenance =
         metrics.polities <= 0 ? 0.0F : control_maintenance_sum / static_cast<float>(metrics.polities);
+    metrics.average_unlocked_techs =
+        metrics.polities <= 0 ? 0.0F : unlocked_tech_sum / static_cast<float>(metrics.polities);
+    metrics.average_knowledge_income =
+        metrics.polities <= 0 ? 0.0F : knowledge_income_sum / static_cast<float>(metrics.polities);
+    metrics.first_tech_turn_mean =
+        first_tech_turn_count <= 0 ? 0.0F : first_tech_turn_sum / static_cast<float>(first_tech_turn_count);
+    metrics.pottery_unlock_rate = metrics.polities <= 0 ? 0.0F : static_cast<float>(pottery_count) / static_cast<float>(metrics.polities);
+    metrics.irrigation_unlock_rate =
+        metrics.polities <= 0 ? 0.0F : static_cast<float>(irrigation_count) / static_cast<float>(metrics.polities);
+    metrics.animal_husbandry_unlock_rate =
+        metrics.polities <= 0 ? 0.0F : static_cast<float>(animal_husbandry_count) / static_cast<float>(metrics.polities);
+    metrics.mining_unlock_rate = metrics.polities <= 0 ? 0.0F : static_cast<float>(mining_count) / static_cast<float>(metrics.polities);
+    metrics.roads_unlock_rate = metrics.polities <= 0 ? 0.0F : static_cast<float>(roads_count) / static_cast<float>(metrics.polities);
+    metrics.administration_unlock_rate =
+        metrics.polities <= 0 ? 0.0F : static_cast<float>(administration_count) / static_cast<float>(metrics.polities);
+    metrics.bronze_working_unlock_rate =
+        metrics.polities <= 0 ? 0.0F : static_cast<float>(bronze_count) / static_cast<float>(metrics.polities);
+    metrics.fortification_unlock_rate =
+        metrics.polities <= 0 ? 0.0F : static_cast<float>(fortification_count) / static_cast<float>(metrics.polities);
+    metrics.sailing_unlock_rate = metrics.polities <= 0 ? 0.0F : static_cast<float>(sailing_count) / static_cast<float>(metrics.polities);
+    metrics.average_ore_income = metrics.polities <= 0 ? 0.0F : ore_income_sum / static_cast<float>(metrics.polities);
+    metrics.average_tool_efficiency =
+        metrics.polities <= 0 ? 0.0F : tool_efficiency_sum / static_cast<float>(metrics.polities);
+    metrics.average_military_potential =
+        metrics.polities <= 0 ? 0.0F : military_potential_sum / static_cast<float>(metrics.polities);
     metrics.famine_events = CountEvents(sim, oikumene::EventType::Famine);
     metrics.farm_events = CountEvents(sim, oikumene::EventType::FarmBuilt);
     metrics.lumber_events = CountEvents(sim, oikumene::EventType::LumberCampBuilt);
@@ -270,6 +344,21 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"average_overextension", metrics.average_overextension},
         {"average_stability", metrics.average_stability},
         {"average_control_maintenance", metrics.average_control_maintenance},
+        {"average_unlocked_techs", metrics.average_unlocked_techs},
+        {"average_knowledge_income", metrics.average_knowledge_income},
+        {"first_tech_turn_mean", metrics.first_tech_turn_mean},
+        {"pottery_unlock_rate", metrics.pottery_unlock_rate},
+        {"irrigation_unlock_rate", metrics.irrigation_unlock_rate},
+        {"animal_husbandry_unlock_rate", metrics.animal_husbandry_unlock_rate},
+        {"mining_unlock_rate", metrics.mining_unlock_rate},
+        {"roads_unlock_rate", metrics.roads_unlock_rate},
+        {"administration_unlock_rate", metrics.administration_unlock_rate},
+        {"bronze_working_unlock_rate", metrics.bronze_working_unlock_rate},
+        {"fortification_unlock_rate", metrics.fortification_unlock_rate},
+        {"sailing_unlock_rate", metrics.sailing_unlock_rate},
+        {"average_ore_income", metrics.average_ore_income},
+        {"average_tool_efficiency", metrics.average_tool_efficiency},
+        {"average_military_potential", metrics.average_military_potential},
         {"total_food_output_last_turn", metrics.total_food_output},
         {"total_food_consumption_last_turn", metrics.total_food_consumption},
         {"total_wood_output_last_turn", metrics.total_wood_output},
@@ -290,7 +379,10 @@ void WriteCsvHeader(std::ofstream& output) {
               "average_member_settlements_per_polity,polity_formation_turn_mean,"
               "average_polity_food_income,average_polity_wood_income,average_polity_wealth_income,"
               "average_admin_load,average_admin_capacity,average_overextension,average_stability,"
-              "average_control_maintenance,"
+              "average_control_maintenance,average_unlocked_techs,average_knowledge_income,first_tech_turn_mean,"
+              "pottery_unlock_rate,irrigation_unlock_rate,animal_husbandry_unlock_rate,mining_unlock_rate,"
+              "roads_unlock_rate,administration_unlock_rate,bronze_working_unlock_rate,fortification_unlock_rate,"
+              "sailing_unlock_rate,average_ore_income,average_tool_efficiency,average_military_potential,"
               "total_food_output_last_turn,total_food_consumption_last_turn,total_wood_output_last_turn,"
               "average_carrying_capacity,food_output_consumption_ratio,farm_share_of_worked_tiles,"
               "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events\n";
@@ -307,7 +399,15 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.average_polity_wood_income << ',' << metrics.average_polity_wealth_income << ','
            << metrics.average_admin_load << ',' << metrics.average_admin_capacity << ','
            << metrics.average_overextension << ',' << metrics.average_stability << ','
-           << metrics.average_control_maintenance << ',' << metrics.total_food_output << ','
+           << metrics.average_control_maintenance << ',' << metrics.average_unlocked_techs << ','
+           << metrics.average_knowledge_income << ',' << metrics.first_tech_turn_mean << ','
+           << metrics.pottery_unlock_rate << ',' << metrics.irrigation_unlock_rate << ','
+           << metrics.animal_husbandry_unlock_rate << ',' << metrics.mining_unlock_rate << ','
+           << metrics.roads_unlock_rate << ',' << metrics.administration_unlock_rate << ','
+           << metrics.bronze_working_unlock_rate << ',' << metrics.fortification_unlock_rate << ','
+           << metrics.sailing_unlock_rate << ',' << metrics.average_ore_income << ','
+           << metrics.average_tool_efficiency << ',' << metrics.average_military_potential << ','
+           << metrics.total_food_output << ','
            << metrics.total_food_consumption << ',' << metrics.total_wood_output << ','
            << metrics.average_carrying_capacity << ',' << metrics.food_output_consumption_ratio << ','
            << metrics.farm_share_of_worked_tiles << ',' << metrics.famine_events << ',' << metrics.farm_events << ','
@@ -371,6 +471,21 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_overextension", mean([](const Metrics& item) { return item.average_overextension; })},
         {"mean_stability", mean([](const Metrics& item) { return item.average_stability; })},
         {"mean_control_maintenance", mean([](const Metrics& item) { return item.average_control_maintenance; })},
+        {"mean_unlocked_techs", mean([](const Metrics& item) { return item.average_unlocked_techs; })},
+        {"mean_knowledge_income", mean([](const Metrics& item) { return item.average_knowledge_income; })},
+        {"mean_first_tech_turn", mean([](const Metrics& item) { return item.first_tech_turn_mean; })},
+        {"pottery_unlock_rate", mean([](const Metrics& item) { return item.pottery_unlock_rate; })},
+        {"irrigation_unlock_rate", mean([](const Metrics& item) { return item.irrigation_unlock_rate; })},
+        {"animal_husbandry_unlock_rate", mean([](const Metrics& item) { return item.animal_husbandry_unlock_rate; })},
+        {"mining_unlock_rate", mean([](const Metrics& item) { return item.mining_unlock_rate; })},
+        {"roads_unlock_rate", mean([](const Metrics& item) { return item.roads_unlock_rate; })},
+        {"administration_unlock_rate", mean([](const Metrics& item) { return item.administration_unlock_rate; })},
+        {"bronze_working_unlock_rate", mean([](const Metrics& item) { return item.bronze_working_unlock_rate; })},
+        {"fortification_unlock_rate", mean([](const Metrics& item) { return item.fortification_unlock_rate; })},
+        {"sailing_unlock_rate", mean([](const Metrics& item) { return item.sailing_unlock_rate; })},
+        {"mean_ore_income", mean([](const Metrics& item) { return item.average_ore_income; })},
+        {"mean_tool_efficiency", mean([](const Metrics& item) { return item.average_tool_efficiency; })},
+        {"mean_military_potential", mean([](const Metrics& item) { return item.average_military_potential; })},
         {"mean_food_output", mean([](const Metrics& item) { return item.total_food_output; })},
         {"mean_food_consumption", mean([](const Metrics& item) { return item.total_food_consumption; })},
         {"mean_food_output_consumption_ratio",

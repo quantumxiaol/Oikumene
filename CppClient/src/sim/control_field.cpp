@@ -6,6 +6,8 @@
 #include <queue>
 #include <vector>
 
+#include "oikumene/sim/tech_effects.hpp"
+
 namespace oikumene {
 namespace {
 
@@ -76,6 +78,8 @@ void DiffuseFromSource(const World& world,
                        PolityId polity_id,
                        float source_power,
                        float max_cost,
+                       float path_cost_multiplier,
+                       float coastal_path_cost_multiplier,
                        std::vector<float>& best,
                        std::vector<float>& second_best,
                        std::vector<PolityId>& best_polity) {
@@ -118,9 +122,13 @@ void DiffuseFromSource(const World& world,
                 continue;
             }
             const auto& neighbor = world.At(nx, ny);
-            const float step = TerrainControlCost(neighbor);
-            if (step >= kBlockedCost) {
+            const float raw_step = TerrainControlCost(neighbor);
+            if (raw_step >= kBlockedCost) {
                 continue;
+            }
+            float step = raw_step * path_cost_multiplier;
+            if (neighbor.is_coast) {
+                step *= coastal_path_cost_multiplier;
             }
             const int next_index = TileIndex(world, nx, ny);
             const float next_cost = node.cost + step;
@@ -183,7 +191,14 @@ float TerrainControlCost(const Tile& tile) {
     return std::max(0.35F, cost);
 }
 
-float TerrainPathCost(const World& world, int start_x, int start_y, int end_x, int end_y, float max_cost) {
+float TerrainPathCost(const World& world,
+                      int start_x,
+                      int start_y,
+                      int end_x,
+                      int end_y,
+                      float max_cost,
+                      float path_cost_multiplier,
+                      float coastal_path_cost_multiplier) {
     if (!world.InBounds(start_x, start_y) || !world.InBounds(end_x, end_y)) {
         return std::numeric_limits<float>::infinity();
     }
@@ -219,9 +234,14 @@ float TerrainPathCost(const World& world, int start_x, int start_y, int end_x, i
             if (!world.InBounds(nx, ny)) {
                 continue;
             }
-            const float step = TerrainControlCost(world.At(nx, ny));
-            if (step >= kBlockedCost) {
+            const auto& neighbor = world.At(nx, ny);
+            const float raw_step = TerrainControlCost(neighbor);
+            if (raw_step >= kBlockedCost) {
                 continue;
+            }
+            float step = raw_step * path_cost_multiplier;
+            if (neighbor.is_coast) {
+                step *= coastal_path_cost_multiplier;
             }
             const int next_index = TileIndex(world, nx, ny);
             const float next_cost = node.cost + step;
@@ -255,9 +275,13 @@ ControlFieldStats RecomputeControlField(World& world,
     }
 
     for (const auto& polity : polities) {
+        const auto effects = ComputeTechEffects(polity.research);
+        const float path_multiplier = params.path_cost_multiplier * effects.control_path_cost_multiplier;
+        const float coastal_multiplier = params.coastal_path_cost_multiplier * effects.coastal_control_cost_multiplier;
         if (const auto* capital = SettlementById(settlements, polity.capital_settlement_id)) {
             DiffuseFromSource(world, *capital, polity.id, SourcePowerFor(polity, *capital, true),
-                              std::min(params.max_path_cost, polity.admin_range * 1.15F), best, second_best, best_polity);
+                              std::min(params.max_path_cost, polity.admin_range * 1.15F), path_multiplier,
+                              coastal_multiplier, best, second_best, best_polity);
         }
         for (const int settlement_id : polity.member_settlement_ids) {
             if (settlement_id == polity.capital_settlement_id) {
@@ -265,8 +289,8 @@ ControlFieldStats RecomputeControlField(World& world,
             }
             if (const auto* settlement = SettlementById(settlements, settlement_id)) {
                 DiffuseFromSource(world, *settlement, polity.id, SourcePowerFor(polity, *settlement, false),
-                                  std::min(params.max_path_cost, polity.admin_range * 0.90F), best, second_best,
-                                  best_polity);
+                                  std::min(params.max_path_cost, polity.admin_range * 0.90F), path_multiplier,
+                                  coastal_multiplier, best, second_best, best_polity);
             }
         }
     }

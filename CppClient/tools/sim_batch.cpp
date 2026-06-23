@@ -11,6 +11,7 @@
 
 #include "oikumene/core/simulation.hpp"
 #include "oikumene/sim/event.hpp"
+#include "oikumene/sim/tech_effects.hpp"
 #include "oikumene/world/world_generation_report.hpp"
 #include "oikumene/world/world_generator.hpp"
 
@@ -167,7 +168,50 @@ nlohmann::json PolityBudgetToJson(const oikumene::PolityBudget& budget) {
     };
 }
 
+nlohmann::json TechListToJson(const std::vector<oikumene::TechId>& techs) {
+    nlohmann::json values = nlohmann::json::array();
+    for (const auto tech : techs) {
+        values.push_back(oikumene::ToString(tech));
+    }
+    return values;
+}
+
+nlohmann::json TechEffectsToJson(const oikumene::TechEffects& effects) {
+    return nlohmann::json{
+        {"farm_output_multiplier", effects.farm_output_multiplier},
+        {"river_farm_output_multiplier", effects.river_farm_output_multiplier},
+        {"pasture_output_multiplier", effects.pasture_output_multiplier},
+        {"horse_value_multiplier", effects.horse_value_multiplier},
+        {"food_storage_multiplier", effects.food_storage_multiplier},
+        {"famine_severity_multiplier", effects.famine_severity_multiplier},
+        {"carrying_capacity_multiplier", effects.carrying_capacity_multiplier},
+        {"admin_capacity_multiplier", effects.admin_capacity_multiplier},
+        {"distance_admin_load_multiplier", effects.distance_admin_load_multiplier},
+        {"overextension_penalty_multiplier", effects.overextension_penalty_multiplier},
+        {"control_path_cost_multiplier", effects.control_path_cost_multiplier},
+        {"coastal_control_cost_multiplier", effects.coastal_control_cost_multiplier},
+        {"contested_stability_loss_multiplier", effects.contested_stability_loss_multiplier},
+        {"mining_enabled", effects.mining_enabled},
+        {"roads_enabled", effects.roads_enabled},
+        {"coastal_trade_enabled", effects.coastal_trade_enabled},
+        {"bronze_working_enabled", effects.bronze_working_enabled},
+        {"fortification_enabled", effects.fortification_enabled},
+    };
+}
+
+nlohmann::json ResearchToJson(const oikumene::Polity& polity) {
+    return nlohmann::json{
+        {"current", oikumene::ToString(polity.research.current)},
+        {"progress", polity.research.progress},
+        {"current_cost", oikumene::TechCost(polity.research.current)},
+        {"knowledge_income", polity.knowledge_income},
+        {"first_unlock_turn", polity.research.first_unlock_turn},
+        {"unlocked", TechListToJson(polity.research.unlocked)},
+    };
+}
+
 nlohmann::json PolityToJson(const oikumene::Polity& polity) {
+    const auto effects = oikumene::ComputeTechEffects(polity.research);
     return nlohmann::json{
         {"id", polity.id},
         {"name", polity.name},
@@ -190,6 +234,14 @@ nlohmann::json PolityToJson(const oikumene::Polity& polity) {
         {"contested_tile_count", polity.contested_tile_count},
         {"founded_turn", polity.founded_turn},
         {"budget", PolityBudgetToJson(polity.budget)},
+        {"research", ResearchToJson(polity)},
+        {"current_research", oikumene::ToString(polity.research.current)},
+        {"research_progress", polity.research.progress},
+        {"knowledge_income", polity.knowledge_income},
+        {"unlocked_techs", TechListToJson(polity.research.unlocked)},
+        {"active_effects", TechEffectsToJson(effects)},
+        {"military_potential", polity.military_potential},
+        {"tool_efficiency", polity.tool_efficiency},
     };
 }
 
@@ -341,6 +393,39 @@ float AverageStability(const oikumene::Simulation& sim) {
     return total / static_cast<float>(sim.Polities().size());
 }
 
+float AverageUnlockedTechs(const oikumene::Simulation& sim) {
+    if (sim.Polities().empty()) {
+        return 0.0F;
+    }
+    int unlocked = 0;
+    for (const auto& polity : sim.Polities()) {
+        unlocked += static_cast<int>(polity.research.unlocked.size());
+    }
+    return static_cast<float>(unlocked) / static_cast<float>(sim.Polities().size());
+}
+
+float AverageKnowledgeIncome(const oikumene::Simulation& sim) {
+    if (sim.Polities().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& polity : sim.Polities()) {
+        total += polity.knowledge_income;
+    }
+    return total / static_cast<float>(sim.Polities().size());
+}
+
+float TechUnlockRate(const oikumene::Simulation& sim, oikumene::TechId tech) {
+    if (sim.Polities().empty()) {
+        return 0.0F;
+    }
+    int count = 0;
+    for (const auto& polity : sim.Polities()) {
+        count += oikumene::HasTech(polity.research, tech) ? 1 : 0;
+    }
+    return static_cast<float>(count) / static_cast<float>(sim.Polities().size());
+}
+
 float AverageSettlementScore(const oikumene::Simulation& sim) {
     if (sim.Settlements().empty()) {
         return 0.0F;
@@ -466,6 +551,11 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"average_admin_capacity", AverageAdminCapacity(sim)},
         {"average_overextension", AverageOverextension(sim)},
         {"average_stability", AverageStability(sim)},
+        {"average_unlocked_techs", AverageUnlockedTechs(sim)},
+        {"average_knowledge_income", AverageKnowledgeIncome(sim)},
+        {"mining_unlock_rate", TechUnlockRate(sim, oikumene::TechId::Mining)},
+        {"roads_unlock_rate", TechUnlockRate(sim, oikumene::TechId::Roads)},
+        {"administration_unlock_rate", TechUnlockRate(sim, oikumene::TechId::Administration)},
         {"event_count", sim.Events().Size()},
         {"migration_events", CountEvents(sim, oikumene::EventType::BandMigrated)},
         {"settlement_founded_events", CountEvents(sim, oikumene::EventType::SettlementFounded)},
@@ -507,6 +597,11 @@ nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
         {"average_admin_capacity", AverageAdminCapacity(sim)},
         {"average_overextension", AverageOverextension(sim)},
         {"average_stability", AverageStability(sim)},
+        {"average_unlocked_techs", AverageUnlockedTechs(sim)},
+        {"average_knowledge_income", AverageKnowledgeIncome(sim)},
+        {"mining_unlock_rate", TechUnlockRate(sim, oikumene::TechId::Mining)},
+        {"roads_unlock_rate", TechUnlockRate(sim, oikumene::TechId::Roads)},
+        {"administration_unlock_rate", TechUnlockRate(sim, oikumene::TechId::Administration)},
     };
 }
 

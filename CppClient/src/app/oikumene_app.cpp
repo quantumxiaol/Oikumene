@@ -18,6 +18,7 @@
 #include "oikumene/render/map_layer.hpp"
 #include "oikumene/sim/band_system.hpp"
 #include "oikumene/sim/settlement_system.hpp"
+#include "oikumene/sim/tech_effects.hpp"
 #include "oikumene/ui/legend_panel.hpp"
 #include "oikumene/world/biome.hpp"
 #include "oikumene/world/resource.hpp"
@@ -46,7 +47,7 @@ void DrawPanelBackground(int x, int y, int width, int height) {
 }
 
 Rectangle HudBounds() {
-    return Rectangle{14.0F, 14.0F, 438.0F, 150.0F};
+    return Rectangle{14.0F, 14.0F, 496.0F, 174.0F};
 }
 
 Rectangle DebugPanelBounds() {
@@ -249,6 +250,64 @@ int LargestPolityPopulation(const std::vector<Polity>& polities) {
         largest = std::max(largest, polity.population);
     }
     return largest;
+}
+
+float AverageUnlockedTechs(const std::vector<Polity>& polities) {
+    if (polities.empty()) {
+        return 0.0F;
+    }
+    int unlocked = 0;
+    for (const auto& polity : polities) {
+        unlocked += static_cast<int>(polity.research.unlocked.size());
+    }
+    return static_cast<float>(unlocked) / static_cast<float>(polities.size());
+}
+
+float TechUnlockRate(const std::vector<Polity>& polities, TechId tech) {
+    if (polities.empty()) {
+        return 0.0F;
+    }
+    int count = 0;
+    for (const auto& polity : polities) {
+        count += HasTech(polity.research, tech) ? 1 : 0;
+    }
+    return static_cast<float>(count) / static_cast<float>(polities.size());
+}
+
+std::string TechList(const ResearchState& research, std::size_t limit = 4) {
+    if (research.unlocked.empty()) {
+        return "None";
+    }
+    std::string text;
+    const std::size_t count = std::min(limit, research.unlocked.size());
+    for (std::size_t i = 0; i < count; ++i) {
+        if (!text.empty()) {
+            text += ", ";
+        }
+        text += ToString(research.unlocked[i]);
+    }
+    if (research.unlocked.size() > limit) {
+        text += ", ...";
+    }
+    return text;
+}
+
+std::string EffectsSummary(const TechEffects& effects) {
+    const auto descriptions = DescribeActiveEffects(effects);
+    if (descriptions.empty()) {
+        return "None";
+    }
+    std::string text;
+    for (std::size_t i = 0; i < descriptions.size() && i < 4; ++i) {
+        if (!text.empty()) {
+            text += ", ";
+        }
+        text += descriptions[i];
+    }
+    if (descriptions.size() > 4) {
+        text += ", ...";
+    }
+    return text;
 }
 
 std::vector<Rectangle> UiCaptureRectangles(const AppState& state) {
@@ -509,8 +568,6 @@ void DrawEventLogPanel(const AppState& state) {
 }
 
 void DrawHud(const AppState& state) {
-    const int width = 438;
-    const int height = 126;
     const Rectangle bounds = HudBounds();
     DrawPanelBackground(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width),
                         static_cast<int>(bounds.height));
@@ -537,6 +594,12 @@ void DrawHud(const AppState& state) {
               std::to_string(LargestPolityPopulation(state.simulation.Polities())))
                  .c_str(),
              30, 130, 15, Color{184, 194, 202, 255});
+    DrawText(("Tech avg " + Fixed(AverageUnlockedTechs(state.simulation.Polities()), 1) + "  Mining " +
+              Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Mining) * 100.0F, 0) + "%  Roads " +
+              Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Roads) * 100.0F, 0) + "%  Admin " +
+              Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Administration) * 100.0F, 0) + "%")
+                 .c_str(),
+             30, 154, 15, Color{184, 194, 202, 255});
 }
 
 void DrawPlaybackBar(AppState& state) {
@@ -703,6 +766,24 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                       Fixed(polity->budget.wealth_surplus, 1))
                          .c_str(),
                      34, y, 17, Color{238, 218, 144, 255});
+            y += 22;
+            const float current_cost = TechCost(polity->research.current);
+            DrawText(("Research " + ToString(polity->research.current) + "  " +
+                      Fixed(polity->research.progress, 1) + "/" + Fixed(current_cost, 0) + "  K+" +
+                      Fixed(polity->knowledge_income, 1))
+                         .c_str(),
+                     34, y, 17, Color{198, 228, 245, 255});
+            y += 22;
+            DrawText(Truncate("Techs: " + TechList(polity->research), 58).c_str(), 34, y, 17,
+                     Color{198, 228, 245, 255});
+            y += 22;
+            DrawText(Truncate("Effects: " + EffectsSummary(ComputeTechEffects(polity->research)), 58).c_str(), 34, y, 17,
+                     Color{198, 228, 245, 255});
+            y += 22;
+            DrawText(("Tools " + Fixed(polity->tool_efficiency, 2) + "  Military " +
+                      Fixed(polity->military_potential, 1))
+                         .c_str(),
+                     34, y, 17, Color{198, 228, 245, 255});
         }
     }
 }

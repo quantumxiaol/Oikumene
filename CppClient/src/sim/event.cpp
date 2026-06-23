@@ -36,6 +36,10 @@ std::string ToString(EventType type) {
             return "ControlFieldExpanded";
         case EventType::ContestedRegionFormed:
             return "ContestedRegionFormed";
+        case EventType::ResearchStarted:
+            return "ResearchStarted";
+        case EventType::TechnologyUnlocked:
+            return "TechnologyUnlocked";
     }
     return "Unknown";
 }
