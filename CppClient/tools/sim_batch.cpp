@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
@@ -21,12 +22,13 @@ struct Options {
     int height = 56;
     int bands = 8;
     int turns = 200;
+    int sample_every = 0;
     std::filesystem::path out = "../runs/sim_batch";
 };
 
 void PrintUsage() {
     std::cout << "usage: oikumene_sim_batch [--seed N] [--width N] [--height N] [--bands N] [--turns N]"
-                 " [--out PATH]\n";
+                 " [--sample-every N] [--out PATH]\n";
 }
 
 bool NeedValue(int argc, int index) {
@@ -61,6 +63,10 @@ Options ParseArgs(int argc, char** argv) {
             options.turns = std::stoi(argv[++i]);
             continue;
         }
+        if (arg == "--sample-every" && NeedValue(argc, i)) {
+            options.sample_every = std::stoi(argv[++i]);
+            continue;
+        }
         if (arg == "--out" && NeedValue(argc, i)) {
             options.out = argv[++i];
             continue;
@@ -68,8 +74,9 @@ Options ParseArgs(int argc, char** argv) {
         throw std::runtime_error("Unknown or incomplete argument: " + arg);
     }
 
-    if (options.width <= 0 || options.height <= 0 || options.bands <= 0 || options.turns < 0) {
-        throw std::runtime_error("--width/--height/--bands must be positive and --turns must be non-negative");
+    if (options.width <= 0 || options.height <= 0 || options.bands <= 0 || options.turns < 0 || options.sample_every < 0) {
+        throw std::runtime_error(
+            "--width/--height/--bands must be positive and --turns/--sample-every must be non-negative");
     }
     return options;
 }
@@ -107,6 +114,10 @@ nlohmann::json BandToJson(const oikumene::Band& band) {
         {"turns_alive", band.turns_alive},
         {"state", oikumene::ToString(band.state)},
         {"active", band.active},
+        {"last_decision_reason", band.last_decision_reason},
+        {"current_tile_score", band.current_tile_score},
+        {"best_seen_score", band.best_seen_score},
+        {"forage_yield_last_turn", band.forage_yield_last_turn},
     };
 }
 
@@ -120,6 +131,10 @@ nlohmann::json SettlementToJson(const oikumene::Settlement& settlement) {
         {"level", oikumene::ToString(settlement.level)},
         {"stockpile", StockpileToJson(settlement.stockpile)},
         {"turns_since_founded", settlement.turns_since_founded},
+        {"local_food_output_last_turn", settlement.local_food_output_last_turn},
+        {"local_wood_output_last_turn", settlement.local_wood_output_last_turn},
+        {"food_consumption_last_turn", settlement.food_consumption_last_turn},
+        {"upgrade_readiness", settlement.upgrade_readiness},
     };
 }
 
@@ -139,12 +154,52 @@ int CountVillages(const oikumene::Simulation& sim) {
     return count;
 }
 
+int CountCamps(const oikumene::Simulation& sim) {
+    return static_cast<int>(sim.Settlements().size()) - CountVillages(sim);
+}
+
+int CountInactiveBands(const oikumene::Simulation& sim) {
+    return static_cast<int>(sim.Bands().size()) - CountActiveBands(sim);
+}
+
 int CountEvents(const oikumene::Simulation& sim, oikumene::EventType type) {
     int count = 0;
     for (const auto& event : sim.Events().Events()) {
         count += event.type == type ? 1 : 0;
     }
     return count;
+}
+
+float AverageSettlementScore(const oikumene::Simulation& sim) {
+    if (sim.Settlements().empty()) {
+        return 0.0F;
+    }
+
+    float total = 0.0F;
+    for (const auto& settlement : sim.Settlements()) {
+        total += sim.GetWorld().At(settlement.x, settlement.y).settlement_score;
+    }
+    return total / static_cast<float>(sim.Settlements().size());
+}
+
+float AverageSettlementFertility(const oikumene::Simulation& sim) {
+    if (sim.Settlements().empty()) {
+        return 0.0F;
+    }
+
+    float total = 0.0F;
+    for (const auto& settlement : sim.Settlements()) {
+        total += sim.GetWorld().At(settlement.x, settlement.y).fertility;
+    }
+    return total / static_cast<float>(sim.Settlements().size());
+}
+
+int MaxSettlementPopulation(const oikumene::Simulation& sim) {
+    int maximum = 0;
+    for (const auto& settlement : sim.Settlements()) {
+        maximum = std::max(maximum, settlement.population);
+    }
+    return maximum;
 }
 
 int TotalPopulation(const oikumene::Simulation& sim) {
@@ -182,6 +237,7 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
 }
 
 nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation& sim) {
+    const int total_population = TotalPopulation(sim);
     return nlohmann::json{
         {"seed", options.seed},
         {"width", options.width},
@@ -189,15 +245,37 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"turns", options.turns},
         {"initial_bands", options.bands},
         {"active_bands", CountActiveBands(sim)},
+        {"inactive_bands", CountInactiveBands(sim)},
         {"settlements", sim.Settlements().size()},
+        {"camps", CountCamps(sim)},
         {"villages", CountVillages(sim)},
-        {"population_total", TotalPopulation(sim)},
+        {"total_population", total_population},
+        {"population_total", total_population},
+        {"average_settlement_score", AverageSettlementScore(sim)},
+        {"average_settlement_fertility", AverageSettlementFertility(sim)},
+        {"max_settlement_population", MaxSettlementPopulation(sim)},
         {"event_count", sim.Events().Size()},
         {"migration_events", CountEvents(sim, oikumene::EventType::BandMigrated)},
         {"settlement_founded_events", CountEvents(sim, oikumene::EventType::SettlementFounded)},
         {"population_growth_events", CountEvents(sim, oikumene::EventType::PopulationGrowth)},
         {"famine_events", CountEvents(sim, oikumene::EventType::Famine)},
         {"village_upgrade_events", CountEvents(sim, oikumene::EventType::SettlementUpgraded)},
+    };
+}
+
+nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
+    return nlohmann::json{
+        {"turn", sim.CurrentTurn()},
+        {"active_bands", CountActiveBands(sim)},
+        {"inactive_bands", CountInactiveBands(sim)},
+        {"settlements", sim.Settlements().size()},
+        {"camps", CountCamps(sim)},
+        {"villages", CountVillages(sim)},
+        {"total_population", TotalPopulation(sim)},
+        {"event_count", sim.Events().Size()},
+        {"average_settlement_score", AverageSettlementScore(sim)},
+        {"average_settlement_fertility", AverageSettlementFertility(sim)},
+        {"max_settlement_population", MaxSettlementPopulation(sim)},
     };
 }
 
@@ -217,6 +295,10 @@ void WriteEventsJsonl(const std::filesystem::path& path, const oikumene::Simulat
     for (const auto& event : sim.Events().Events()) {
         output << EventToJson(event).dump() << '\n';
     }
+}
+
+void WriteStateSample(std::ofstream& output, const oikumene::Simulation& sim) {
+    output << StateSampleToJson(sim).dump() << '\n';
 }
 
 }  // namespace
@@ -239,8 +321,24 @@ int main(int argc, char** argv) {
 
         oikumene::Simulation sim(std::move(world), sim_params);
         sim.InitializeBands(options.bands);
+
+        std::ofstream states;
+        if (options.sample_every > 0) {
+            states.open(options.out / "states.jsonl");
+            if (!states) {
+                throw std::runtime_error("failed to open " + (options.out / "states.jsonl").string());
+            }
+            WriteStateSample(states, sim);
+        }
+
         for (int i = 0; i < options.turns; ++i) {
             sim.AdvanceOneTurn();
+            if (options.sample_every > 0 && sim.CurrentTurn() % options.sample_every == 0) {
+                WriteStateSample(states, sim);
+            }
+        }
+        if (options.sample_every > 0 && sim.CurrentTurn() % options.sample_every != 0) {
+            WriteStateSample(states, sim);
         }
 
         WriteJson(options.out / "world_report.json", oikumene::ToJson(report));

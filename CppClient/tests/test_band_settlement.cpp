@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "oikumene/core/simulation.hpp"
@@ -177,6 +178,41 @@ void TestSettlementFoundingEventsAreLogged() {
     assert(found_settlement_event);
 }
 
+void TestBandDecisionReasonIsRecordedAfterUpdate() {
+    using namespace oikumene;
+
+    Simulation sim(MakeWorld(42), SimulationParams{});
+    sim.InitializeBands(8);
+    sim.AdvanceOneTurn();
+
+    bool found_reason = false;
+    for (const auto& band : sim.Bands()) {
+        if (!band.last_decision_reason.empty() && band.forage_yield_last_turn > 0.0F && band.current_tile_score >= 0.0F) {
+            found_reason = true;
+        }
+    }
+    assert(found_reason);
+}
+
+void TestSettlementFoundingEventContainsUsefulSummary() {
+    using namespace oikumene;
+
+    Simulation sim(MakeWorld(42), SimulationParams{});
+    sim.InitializeBands(8);
+    for (int i = 0; i < 80; ++i) {
+        sim.AdvanceOneTurn();
+    }
+
+    bool found_summary = false;
+    for (const auto& event : sim.Events().Events()) {
+        if (event.type == EventType::SettlementFounded && event.summary.find("score") != std::string::npos &&
+            event.summary.find("fertility") != std::string::npos) {
+            found_summary = true;
+        }
+    }
+    assert(found_summary);
+}
+
 void TestSimulationResetCreatesFreshState() {
     using namespace oikumene;
 
@@ -196,6 +232,24 @@ void TestSimulationResetCreatesFreshState() {
     assert(sim.Settlements().empty());
     assert(sim.Events().Size() == 0);
     assert(sim.GetWorld().Seed() == 43);
+}
+
+void TestResetBandsClearsSettlementsAndEvents() {
+    using namespace oikumene;
+
+    Simulation sim(MakeWorld(42), SimulationParams{});
+    sim.InitializeBands(8);
+    for (int i = 0; i < 80; ++i) {
+        sim.AdvanceOneTurn();
+    }
+    assert(!sim.Settlements().empty());
+    assert(sim.Events().Size() > 0);
+
+    sim.InitializeBands(8);
+    assert(sim.CurrentTurn() == 0);
+    assert(sim.Settlements().empty());
+    assert(sim.Events().Size() == 0);
+    assert(sim.Bands().size() == 8);
 }
 
 void TestSimulationDeterministicForSameSeed() {
@@ -265,6 +319,10 @@ void TestCampCanUpgradeToVillage() {
 
     SettlementSystem::UpdateSettlements(sim.GetWorld(), params, 20, sim.Settlements(), sim.Events());
     assert(sim.Settlements().front().level == SettlementLevel::Village);
+    assert(sim.Settlements().front().local_food_output_last_turn > 0.0F);
+    assert(sim.Settlements().front().local_wood_output_last_turn >= 0.0F);
+    assert(sim.Settlements().front().food_consumption_last_turn > 0.0F);
+    assert(sim.Settlements().front().upgrade_readiness == 1.0F);
 
     bool found_upgrade_event = false;
     for (const auto& event : sim.Events().Events()) {
@@ -286,7 +344,10 @@ int main() {
     TestSettlementsPreferHighScoreTiles();
     TestSettlementPopulationChangesWithFood();
     TestSettlementFoundingEventsAreLogged();
+    TestBandDecisionReasonIsRecordedAfterUpdate();
+    TestSettlementFoundingEventContainsUsefulSummary();
     TestSimulationResetCreatesFreshState();
+    TestResetBandsClearsSettlementsAndEvents();
     TestSimulationDeterministicForSameSeed();
     TestEventLogIsChronological();
     TestCampCanUpgradeToVillage();

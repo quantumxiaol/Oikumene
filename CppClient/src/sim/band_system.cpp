@@ -59,6 +59,14 @@ std::pair<int, int> StepToward(const World& world, const Band& band, int target_
     return {best_x, best_y};
 }
 
+std::string TileReason(const Tile& tile) {
+    std::ostringstream stream;
+    stream << "score " << tile.settlement_score << ", fertility " << tile.fertility << ", river "
+           << (tile.has_river ? "yes" : "no") << ", coast " << (tile.is_coast ? "yes" : "no") << ", biome "
+           << ToString(tile.biome);
+    return stream.str();
+}
+
 bool CanSettle(const World& world, const SimulationParams& params, const Band& band, const std::vector<Settlement>& settlements) {
     if (!band.active || band.population < 20 || band.food < 10.0F || !world.InBounds(band.x, band.y)) {
         return false;
@@ -73,7 +81,7 @@ void FoundSettlement(const World& world,
                      Band& band,
                      std::vector<Settlement>& settlements,
                      EventLog& event_log) {
-    auto& tile = world.At(band.x, band.y);
+    const auto& tile = world.At(band.x, band.y);
     const int settlement_id = static_cast<int>(settlements.size());
     Settlement settlement;
     settlement.id = settlement_id;
@@ -87,9 +95,13 @@ void FoundSettlement(const World& world,
 
     band.active = false;
     band.state = BandState::Settled;
+    band.current_tile_score = tile.settlement_score;
+    band.best_seen_score = tile.settlement_score;
 
     std::ostringstream summary;
-    summary << "Band " << band.id << " founded camp " << settlement_id << " at " << band.x << "," << band.y;
+    summary << "Band " << band.id << " founded Camp " << settlement_id << " at " << band.x << "," << band.y << ": "
+            << TileReason(tile);
+    band.last_decision_reason = summary.str();
     event_log.Add(SimEvent{
         .turn = turn,
         .type = EventType::SettlementFounded,
@@ -168,6 +180,12 @@ void BandSystem::InitializeBands(const World& world,
         band.y = tile->y;
         band.population = 24 + static_cast<int>((world.Seed() + static_cast<std::uint64_t>(id) * 13ULL) % 27ULL);
         band.food = 18.0F + static_cast<float>((world.Seed() + static_cast<std::uint64_t>(id) * 5ULL) % 16ULL);
+        band.current_tile_score = tile->settlement_score;
+        band.best_seen_score = tile->settlement_score;
+        band.forage_yield_last_turn = ForageYield(*tile);
+        std::ostringstream reason;
+        reason << "Band " << band.id << " spawned at " << band.x << "," << band.y << ": " << TileReason(*tile);
+        band.last_decision_reason = reason.str();
         bands.push_back(band);
     }
 }
@@ -185,8 +203,10 @@ void BandSystem::UpdateBands(const World& world,
 
         ++band.turns_alive;
         const auto& current_tile = world.At(band.x, band.y);
+        band.current_tile_score = current_tile.settlement_score;
+        band.forage_yield_last_turn = ForageYield(current_tile);
         band.food -= static_cast<float>(band.population) * params.band_food_consumption_per_person;
-        band.food += ForageYield(current_tile) * 0.42F;
+        band.food += band.forage_yield_last_turn * 0.42F;
 
         if (CanSettle(world, params, band, settlements)) {
             band.state = BandState::Settling;
@@ -196,6 +216,7 @@ void BandSystem::UpdateBands(const World& world,
 
         const float current_score = CandidateScore(world, current_tile, settlements, band.x, band.y);
         float best_score = current_score;
+        float best_tile_score = current_tile.settlement_score;
         int best_x = band.x;
         int best_y = band.y;
 
@@ -210,11 +231,13 @@ void BandSystem::UpdateBands(const World& world,
                 const float score = CandidateScore(world, tile, settlements, band.x, band.y);
                 if (score > best_score + 0.045F) {
                     best_score = score;
+                    best_tile_score = tile.settlement_score;
                     best_x = x;
                     best_y = y;
                 }
             }
         }
+        band.best_seen_score = best_tile_score;
 
         if (best_x != band.x || best_y != band.y) {
             const auto [next_x, next_y] = StepToward(world, band, best_x, best_y);
@@ -224,19 +247,31 @@ void BandSystem::UpdateBands(const World& world,
                 band.target_y = best_y;
                 band.x = next_x;
                 band.y = next_y;
+                const auto& target_tile = world.At(best_x, best_y);
+                std::ostringstream reason;
+                reason << "Band " << band.id << " migrated toward better site: score " << current_tile.settlement_score
+                       << " -> " << target_tile.settlement_score << ", fertility " << target_tile.fertility
+                       << ", river " << (target_tile.has_river ? "yes" : "no") << ", forage "
+                       << band.forage_yield_last_turn;
+                band.last_decision_reason = reason.str();
                 event_log.Add(SimEvent{
                     .turn = turn,
                     .type = EventType::BandMigrated,
                     .actor_id = band.id,
                     .x = band.x,
                     .y = band.y,
-                    .summary = "Band migrated toward a better settlement site",
+                    .summary = band.last_decision_reason,
                 });
                 continue;
             }
         }
 
         band.state = band.food < static_cast<float>(band.population) * 0.35F ? BandState::Foraging : BandState::Exploring;
+        std::ostringstream reason;
+        reason << "Band " << band.id << " " << (band.state == BandState::Foraging ? "foraged" : "explored")
+               << ": current score " << current_tile.settlement_score << ", best nearby " << band.best_seen_score
+               << ", forage " << band.forage_yield_last_turn << ", food " << band.food;
+        band.last_decision_reason = reason.str();
     }
 }
 

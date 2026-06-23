@@ -108,6 +108,19 @@ int VillageCount(const std::vector<Settlement>& settlements) {
     return count;
 }
 
+int TotalPopulation(const std::vector<Band>& bands, const std::vector<Settlement>& settlements) {
+    int total = 0;
+    for (const auto& band : bands) {
+        if (band.active) {
+            total += band.population;
+        }
+    }
+    for (const auto& settlement : settlements) {
+        total += settlement.population;
+    }
+    return total;
+}
+
 const Settlement* SettlementById(const std::vector<Settlement>& settlements, int id) {
     for (const auto& settlement : settlements) {
         if (settlement.id == id) {
@@ -142,6 +155,13 @@ const Band* ActiveBandAt(const std::vector<Band>& bands, int x, int y) {
         }
     }
     return nullptr;
+}
+
+std::string Truncate(std::string text, std::size_t limit) {
+    if (text.size() <= limit) {
+        return text;
+    }
+    return text.substr(0, limit > 3 ? limit - 3 : limit) + "...";
 }
 
 void StepTurns(AppState& state, int turns) {
@@ -286,7 +306,7 @@ void DrawEventLogPanel(const AppState& state) {
     }
 
     const int width = 430;
-    const int height = 230;
+    const int height = 314;
     const int x = GetScreenWidth() - width - 18;
     const int y = GetScreenHeight() - height - 18;
     DrawPanelBackground(x, y, width, height);
@@ -294,13 +314,10 @@ void DrawEventLogPanel(const AppState& state) {
 
     const auto& events = state.simulation.Events().Events();
     int line_y = y + 48;
-    const int first = std::max(0, static_cast<int>(events.size()) - 8);
+    const int first = std::max(0, static_cast<int>(events.size()) - 12);
     for (int i = first; i < static_cast<int>(events.size()); ++i) {
         const auto& event = events[static_cast<std::size_t>(i)];
-        std::string line = "T" + std::to_string(event.turn) + " " + ToString(event.type) + ": " + event.summary;
-        if (line.size() > 58) {
-            line = line.substr(0, 55) + "...";
-        }
+        std::string line = Truncate("T" + std::to_string(event.turn) + " " + ToString(event.type) + ": " + event.summary, 60);
         DrawText(line.c_str(), x + 16, line_y, 15, Color{202, 211, 218, 255});
         line_y += 21;
     }
@@ -338,6 +355,16 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                   std::to_string(band->target_x) + "," + std::to_string(band->target_y))
                      .c_str(),
                  34, y, 17, Color{245, 245, 236, 255});
+        y += 22;
+        DrawText(("Current score " + Fixed(band->current_tile_score) + "  Best seen " + Fixed(band->best_seen_score))
+                     .c_str(),
+                 34, y, 17, Color{245, 245, 236, 255});
+        y += 22;
+        DrawText(("Forage last turn " + Fixed(band->forage_yield_last_turn)).c_str(), 34, y, 17,
+                 Color{245, 245, 236, 255});
+        y += 22;
+        DrawText(Truncate("Reason: " + band->last_decision_reason, 58).c_str(), 34, y, 16,
+                 Color{220, 226, 210, 255});
         y += 26;
     }
 
@@ -353,8 +380,13 @@ void DrawInspectorDetails(const AppState& state, int& y) {
         DrawText(("Food " + Fixed(settlement->stockpile.food) + "  Wood " + Fixed(settlement->stockpile.wood)).c_str(),
                  34, y, 17, Color{238, 218, 144, 255});
         y += 22;
-        DrawText(("Local food " + Fixed(LocalFoodOutput(state.simulation.GetWorld(), *settlement, state.simulation_params)) +
-                  "  wood " + Fixed(LocalWoodOutput(state.simulation.GetWorld(), *settlement, state.simulation_params)))
+        DrawText(("Food out " + Fixed(settlement->local_food_output_last_turn) + "  Wood out " +
+                  Fixed(settlement->local_wood_output_last_turn))
+                     .c_str(),
+                 34, y, 17, Color{238, 218, 144, 255});
+        y += 22;
+        DrawText(("Consumption " + Fixed(settlement->food_consumption_last_turn) + "  Upgrade " +
+                  Fixed(settlement->upgrade_readiness * 100.0F, 0) + "%")
                      .c_str(),
                  34, y, 17, Color{238, 218, 144, 255});
     }
@@ -394,7 +426,8 @@ void DrawDebugPanel(const AppState& state) {
               std::to_string(state.simulation.Bands().size()) + "  Camps " +
               std::to_string(static_cast<int>(state.simulation.Settlements().size()) -
                              VillageCount(state.simulation.Settlements())) +
-              "  Villages " + std::to_string(VillageCount(state.simulation.Settlements())))
+              "  Villages " + std::to_string(VillageCount(state.simulation.Settlements())) + "  Pop " +
+              std::to_string(TotalPopulation(state.simulation.Bands(), state.simulation.Settlements())))
                  .c_str(),
              34, 280, 16, Color{202, 211, 218, 255});
 

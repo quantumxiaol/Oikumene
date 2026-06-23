@@ -156,4 +156,12 @@ if(BUILD_TESTING)
     add_test(NAME oikumene_world_generation_tests COMMAND oikumene_world_generation_tests)
     add_test(NAME oikumene_world_generation_balance_tests COMMAND oikumene_world_generation_balance_tests)
     add_test(NAME oikumene_band_settlement_tests COMMAND oikumene_band_settlement_tests)
+    add_test(
+        NAME oikumene_sim_batch_smoke
+        COMMAND
+            ${CMAKE_COMMAND}
+            -DEXE=$<TARGET_FILE:oikumene_sim_batch>
+            -DOUT=${CMAKE_CURRENT_BINARY_DIR}/sim_batch_smoke
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_sim_batch.cmake
+    )
 endif()

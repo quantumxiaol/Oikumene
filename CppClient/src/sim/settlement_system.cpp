@@ -4,6 +4,21 @@
 #include <sstream>
 
 namespace oikumene {
+namespace {
+
+float UpgradeReadiness(const Settlement& settlement) {
+    if (settlement.level == SettlementLevel::Village) {
+        return 1.0F;
+    }
+
+    const float population = std::min(1.0F, static_cast<float>(settlement.population) / 80.0F);
+    const float age = std::min(1.0F, static_cast<float>(settlement.turns_since_founded) / 20.0F);
+    const float food = std::min(1.0F, settlement.stockpile.food / 60.0F);
+    const float wood = std::min(1.0F, settlement.stockpile.wood / 30.0F);
+    return std::min(std::min(population, age), std::min(food, wood));
+}
+
+}  // namespace
 
 float LocalFoodOutput(const World& world, const Settlement& settlement, const SimulationParams& params) {
     float output = 0.0F;
@@ -63,49 +78,66 @@ void SettlementSystem::UpdateSettlements(const World& world,
                                          EventLog& event_log) {
     for (auto& settlement : settlements) {
         ++settlement.turns_since_founded;
-        settlement.stockpile.food += LocalFoodOutput(world, settlement, params);
-        settlement.stockpile.wood += LocalWoodOutput(world, settlement, params);
-        settlement.stockpile.food -= static_cast<float>(settlement.population) * params.settlement_food_consumption_per_person;
+        settlement.local_food_output_last_turn = LocalFoodOutput(world, settlement, params);
+        settlement.local_wood_output_last_turn = LocalWoodOutput(world, settlement, params);
+        settlement.food_consumption_last_turn =
+            static_cast<float>(settlement.population) * params.settlement_food_consumption_per_person;
+        settlement.stockpile.food += settlement.local_food_output_last_turn;
+        settlement.stockpile.wood += settlement.local_wood_output_last_turn;
+        settlement.stockpile.food -= settlement.food_consumption_last_turn;
 
         if (settlement.stockpile.food > static_cast<float>(settlement.population) * 0.55F) {
             const int growth = std::max(1, static_cast<int>(static_cast<float>(settlement.population) * 0.018F));
             settlement.population += growth;
             settlement.stockpile.food -= static_cast<float>(growth) * 0.7F;
+            std::ostringstream summary;
+            summary << "Camp " << settlement.id << " population grew to " << settlement.population << ", food surplus "
+                    << settlement.stockpile.food << ", food output " << settlement.local_food_output_last_turn
+                    << ", wood output " << settlement.local_wood_output_last_turn;
             event_log.Add(SimEvent{
                 .turn = turn,
                 .type = EventType::PopulationGrowth,
                 .actor_id = settlement.id,
                 .x = settlement.x,
                 .y = settlement.y,
-                .summary = "Settlement population grew",
+                .summary = summary.str(),
             });
         } else if (settlement.stockpile.food < 0.0F) {
+            const float deficit = settlement.stockpile.food;
             const int loss = std::max(1, static_cast<int>(static_cast<float>(settlement.population) * 0.025F));
             settlement.population = std::max(1, settlement.population - loss);
             settlement.stockpile.food = 0.0F;
+            std::ostringstream summary;
+            summary << "Camp " << settlement.id << " famine, food deficit " << deficit << ", population "
+                    << settlement.population;
             event_log.Add(SimEvent{
                 .turn = turn,
                 .type = EventType::Famine,
                 .actor_id = settlement.id,
                 .x = settlement.x,
                 .y = settlement.y,
-                .summary = "Settlement suffered food shortage",
+                .summary = summary.str(),
             });
         }
 
+        settlement.upgrade_readiness = UpgradeReadiness(settlement);
         if (settlement.level == SettlementLevel::Camp && settlement.population >= 80 &&
             settlement.turns_since_founded >= 20 && settlement.stockpile.food >= 60.0F &&
             settlement.stockpile.wood >= 30.0F) {
             settlement.level = SettlementLevel::Village;
+            settlement.upgrade_readiness = 1.0F;
             settlement.stockpile.food -= 35.0F;
             settlement.stockpile.wood -= 18.0F;
+            std::ostringstream summary;
+            summary << "Camp " << settlement.id << " upgraded to Village, pop " << settlement.population << ", food "
+                    << settlement.stockpile.food << ", wood " << settlement.stockpile.wood;
             event_log.Add(SimEvent{
                 .turn = turn,
                 .type = EventType::SettlementUpgraded,
                 .actor_id = settlement.id,
                 .x = settlement.x,
                 .y = settlement.y,
-                .summary = "Camp upgraded to village",
+                .summary = summary.str(),
             });
         }
     }

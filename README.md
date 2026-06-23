@@ -159,7 +159,7 @@ cd CppClient
 
 ```bash
 cd CppClient
-./build/oikumene_sim_batch --seed 42 --width 80 --height 56 --bands 8 --turns 200 --out ../runs/sim_seed42
+./build/oikumene_sim_batch --seed 42 --width 80 --height 56 --bands 8 --turns 200 --sample-every 50 --out ../runs/sim_seed42_t200
 ```
 
 输出：
@@ -168,6 +168,9 @@ cd CppClient
 - `final_state.json`
 - `events.jsonl`
 - `world_report.json`
+- `states.jsonl`：仅在传入 `--sample-every N` 时生成。
+
+`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度和最大 settlement 人口。`final_state.json` 会保留 Band / Settlement 的调试字段，例如迁徙原因、上一回合采集产出、本地食物/木材产出、消耗和升级进度。
 
 ## 开发格式化
 
@@ -190,4 +193,5 @@ Phase 2 后续重点：
 - 让 settlement 生产模型更明确：粮食、木材、浅层矿产、财富。
 - 增加村庄经济面板和曲线。
 - 让 band / settlement 事件在 UI 中可筛选。
+- 批量跑多个 seed，观察定居速度、Village 升级速度和饥荒频率。
 - 进入 Phase 3：polity、首都、控制力场和自然边界。

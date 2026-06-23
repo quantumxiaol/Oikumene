@@ -22,6 +22,10 @@ struct Settlement {
     SettlementLevel level = SettlementLevel::Camp;
     Stockpile stockpile;
     int turns_since_founded = 0;
+    float local_food_output_last_turn = 0.0F;
+    float local_wood_output_last_turn = 0.0F;
+    float food_consumption_last_turn = 0.0F;
+    float upgrade_readiness = 0.0F;
 };
 
 }  // namespace oikumene

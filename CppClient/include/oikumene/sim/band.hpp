@@ -25,6 +25,10 @@ struct Band {
     int turns_alive = 0;
     BandState state = BandState::Exploring;
     bool active = true;
+    std::string last_decision_reason;
+    float current_tile_score = 0.0F;
+    float best_seen_score = 0.0F;
+    float forage_yield_last_turn = 0.0F;
 };
 
 }  // namespace oikumene
