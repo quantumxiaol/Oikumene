@@ -132,6 +132,8 @@ nlohmann::json SettlementToJson(const oikumene::Settlement& settlement) {
         {"x", settlement.x},
         {"y", settlement.y},
         {"founder_band_id", settlement.founder_band_id},
+        {"polity_id", settlement.polity_id},
+        {"is_capital", settlement.is_capital},
         {"population", settlement.population},
         {"level", oikumene::ToString(settlement.level)},
         {"stockpile", StockpileToJson(settlement.stockpile)},
@@ -146,6 +148,48 @@ nlohmann::json SettlementToJson(const oikumene::Settlement& settlement) {
         {"ore_output_last_turn", settlement.ore_output_last_turn},
         {"carrying_capacity", settlement.carrying_capacity},
         {"carrying_capacity_ratio", settlement.carrying_capacity_ratio},
+    };
+}
+
+nlohmann::json PolityBudgetToJson(const oikumene::PolityBudget& budget) {
+    return nlohmann::json{
+        {"food_income", budget.food_income},
+        {"wood_income", budget.wood_income},
+        {"ore_income", budget.ore_income},
+        {"wealth_income", budget.wealth_income},
+        {"food_maintenance", budget.food_maintenance},
+        {"wood_maintenance", budget.wood_maintenance},
+        {"admin_maintenance", budget.admin_maintenance},
+        {"control_maintenance", budget.control_maintenance},
+        {"food_surplus", budget.food_surplus},
+        {"wood_surplus", budget.wood_surplus},
+        {"wealth_surplus", budget.wealth_surplus},
+    };
+}
+
+nlohmann::json PolityToJson(const oikumene::Polity& polity) {
+    return nlohmann::json{
+        {"id", polity.id},
+        {"name", polity.name},
+        {"level", oikumene::ToString(polity.level)},
+        {"capital_settlement_id", polity.capital_settlement_id},
+        {"member_settlement_ids", polity.member_settlement_ids},
+        {"population", polity.population},
+        {"food", polity.food},
+        {"wood", polity.wood},
+        {"ore", polity.ore},
+        {"wealth", polity.wealth},
+        {"control_power", polity.control_power},
+        {"admin_range", polity.admin_range},
+        {"legitimacy", polity.legitimacy},
+        {"stability", polity.stability},
+        {"admin_load", polity.admin_load},
+        {"admin_capacity", polity.admin_capacity},
+        {"overextension", polity.overextension},
+        {"controlled_tile_count", polity.controlled_tile_count},
+        {"contested_tile_count", polity.contested_tile_count},
+        {"founded_turn", polity.founded_turn},
+        {"budget", PolityBudgetToJson(polity.budget)},
     };
 }
 
@@ -232,6 +276,71 @@ float AverageCarryingCapacity(const oikumene::Simulation& sim) {
     return total / static_cast<float>(sim.Settlements().size());
 }
 
+float ControlledLandRatio(const oikumene::Simulation& sim) {
+    int land = 0;
+    int controlled = 0;
+    for (const auto& tile : sim.GetWorld().Tiles()) {
+        if (tile.is_ocean || tile.is_lake) {
+            continue;
+        }
+        ++land;
+        controlled += tile.controller_polity_id != oikumene::kInvalidPolityId ? 1 : 0;
+    }
+    return land <= 0 ? 0.0F : static_cast<float>(controlled) / static_cast<float>(land);
+}
+
+int CountContestedTiles(const oikumene::Simulation& sim) {
+    int count = 0;
+    for (const auto& tile : sim.GetWorld().Tiles()) {
+        count += tile.is_contested ? 1 : 0;
+    }
+    return count;
+}
+
+float AverageAdminLoad(const oikumene::Simulation& sim) {
+    if (sim.Polities().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& polity : sim.Polities()) {
+        total += polity.admin_load;
+    }
+    return total / static_cast<float>(sim.Polities().size());
+}
+
+float AverageAdminCapacity(const oikumene::Simulation& sim) {
+    if (sim.Polities().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& polity : sim.Polities()) {
+        total += polity.admin_capacity;
+    }
+    return total / static_cast<float>(sim.Polities().size());
+}
+
+float AverageOverextension(const oikumene::Simulation& sim) {
+    if (sim.Polities().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& polity : sim.Polities()) {
+        total += polity.overextension;
+    }
+    return total / static_cast<float>(sim.Polities().size());
+}
+
+float AverageStability(const oikumene::Simulation& sim) {
+    if (sim.Polities().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& polity : sim.Polities()) {
+        total += polity.stability;
+    }
+    return total / static_cast<float>(sim.Polities().size());
+}
+
 float AverageSettlementScore(const oikumene::Simulation& sim) {
     if (sim.Settlements().empty()) {
         return 0.0F;
@@ -306,12 +415,17 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
     for (const auto& settlement : sim.Settlements()) {
         settlements.push_back(SettlementToJson(settlement));
     }
+    nlohmann::json polities = nlohmann::json::array();
+    for (const auto& polity : sim.Polities()) {
+        polities.push_back(PolityToJson(polity));
+    }
 
     return nlohmann::json{
         {"turn", sim.CurrentTurn()},
         {"status", sim.StatusSummary()},
         {"active_bands", CountActiveBands(sim)},
         {"settlements", settlements},
+        {"polities", polities},
         {"bands", bands},
         {"improved_tiles", ImprovedTilesToJson(sim)},
         {"event_count", sim.Events().Size()},
@@ -345,6 +459,13 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"total_food_consumption_last_turn", TotalFoodConsumptionLastTurn(sim)},
         {"total_wood_output_last_turn", TotalWoodOutputLastTurn(sim)},
         {"average_carrying_capacity", AverageCarryingCapacity(sim)},
+        {"polities", sim.Polities().size()},
+        {"controlled_land_ratio", ControlledLandRatio(sim)},
+        {"contested_tiles", CountContestedTiles(sim)},
+        {"average_admin_load", AverageAdminLoad(sim)},
+        {"average_admin_capacity", AverageAdminCapacity(sim)},
+        {"average_overextension", AverageOverextension(sim)},
+        {"average_stability", AverageStability(sim)},
         {"event_count", sim.Events().Size()},
         {"migration_events", CountEvents(sim, oikumene::EventType::BandMigrated)},
         {"settlement_founded_events", CountEvents(sim, oikumene::EventType::SettlementFounded)},
@@ -379,6 +500,13 @@ nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
         {"total_food_consumption_last_turn", TotalFoodConsumptionLastTurn(sim)},
         {"total_wood_output_last_turn", TotalWoodOutputLastTurn(sim)},
         {"average_carrying_capacity", AverageCarryingCapacity(sim)},
+        {"polities", sim.Polities().size()},
+        {"controlled_land_ratio", ControlledLandRatio(sim)},
+        {"contested_tiles", CountContestedTiles(sim)},
+        {"average_admin_load", AverageAdminLoad(sim)},
+        {"average_admin_capacity", AverageAdminCapacity(sim)},
+        {"average_overextension", AverageOverextension(sim)},
+        {"average_stability", AverageStability(sim)},
     };
 }
 

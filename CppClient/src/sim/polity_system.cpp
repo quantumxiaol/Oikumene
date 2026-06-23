@@ -12,6 +12,7 @@ namespace {
 constexpr float kFoundingFoodThreshold = 70.0F;
 constexpr int kFoundingPopulationThreshold = 120;
 constexpr float kCapitalSeparationCost = 22.0F;
+constexpr float kTributeRate = 0.15F;
 
 PolityId NextPolityId(const std::vector<Polity>& polities) {
     PolityId next = 0;
@@ -96,6 +97,106 @@ void RecalculatePolityAggregates(std::vector<Settlement>& settlements, std::vect
         const float member_bonus = static_cast<float>(polity.member_settlement_ids.size()) * 1.2F;
         polity.admin_range = 16.0F + std::sqrt(static_cast<float>(std::max(0, polity.population))) * 0.22F + member_bonus;
         polity.control_power = 38.0F + static_cast<float>(polity.population) * 0.045F;
+    }
+}
+
+float PolityLevelAdminBonus(PolityLevel level) {
+    switch (level) {
+        case PolityLevel::Chiefdom:
+            return 0.0F;
+        case PolityLevel::CityState:
+            return 24.0F;
+        case PolityLevel::Kingdom:
+            return 58.0F;
+    }
+    return 0.0F;
+}
+
+float AverageCapitalPathCost(const World& world,
+                             const std::vector<Settlement>& settlements,
+                             const Polity& polity,
+                             const Settlement& capital) {
+    if (polity.member_settlement_ids.size() <= 1) {
+        return 0.0F;
+    }
+
+    float total = 0.0F;
+    int measured = 0;
+    for (const int settlement_id : polity.member_settlement_ids) {
+        if (settlement_id == polity.capital_settlement_id) {
+            continue;
+        }
+        const auto* settlement = SettlementById(settlements, settlement_id);
+        if (settlement == nullptr) {
+            continue;
+        }
+        float cost = TerrainPathCost(world, capital.x, capital.y, settlement->x, settlement->y, 120.0F);
+        if (!std::isfinite(cost)) {
+            cost = 120.0F;
+        }
+        total += cost;
+        ++measured;
+    }
+    return measured <= 0 ? 0.0F : total / static_cast<float>(measured);
+}
+
+void RecalculatePolityBudgetsAndAdministration(const World& world,
+                                               const std::vector<Settlement>& settlements,
+                                               std::vector<Polity>& polities) {
+    for (auto& polity : polities) {
+        polity.budget = PolityBudget{};
+        const auto* capital = SettlementById(settlements, polity.capital_settlement_id);
+        if (capital == nullptr) {
+            polity.admin_load = 0.0F;
+            polity.admin_capacity = 0.0F;
+            polity.overextension = 0.0F;
+            polity.stability = 0.0F;
+            polity.legitimacy = 0.0F;
+            continue;
+        }
+
+        for (const int settlement_id : polity.member_settlement_ids) {
+            const auto* settlement = SettlementById(settlements, settlement_id);
+            if (settlement == nullptr) {
+                continue;
+            }
+            const float food_surplus =
+                std::max(0.0F, settlement->local_food_output_last_turn - settlement->food_consumption_last_turn);
+            polity.budget.food_income += food_surplus * kTributeRate;
+            polity.budget.wood_income += std::max(0.0F, settlement->local_wood_output_last_turn) * kTributeRate;
+            polity.budget.ore_income += std::max(0.0F, settlement->ore_output_last_turn) * kTributeRate;
+            polity.budget.wealth_income += static_cast<float>(settlement->population) * 0.018F;
+        }
+
+        const float average_distance = AverageCapitalPathCost(world, settlements, polity, *capital);
+        const float member_count = static_cast<float>(polity.member_settlement_ids.size());
+        polity.admin_load = member_count * 8.0F + static_cast<float>(polity.controlled_tile_count) * 0.08F +
+                            static_cast<float>(polity.contested_tile_count) * 0.25F + average_distance * 1.2F;
+        polity.admin_capacity = 40.0F + static_cast<float>(capital->population) * 0.08F + PolityLevelAdminBonus(polity.level);
+        polity.overextension =
+            polity.admin_capacity <= 0.0F ? 1.0F : std::max(0.0F, polity.admin_load / polity.admin_capacity - 1.0F);
+
+        polity.budget.food_maintenance = member_count * 1.5F + static_cast<float>(polity.controlled_tile_count) * 0.006F;
+        polity.budget.wood_maintenance = member_count * 0.32F;
+        polity.budget.admin_maintenance = polity.admin_load * 0.055F;
+        polity.budget.control_maintenance = static_cast<float>(polity.controlled_tile_count) * 0.012F +
+                                            static_cast<float>(polity.contested_tile_count) * 0.055F;
+        polity.budget.food_surplus = polity.budget.food_income - polity.budget.food_maintenance;
+        polity.budget.wood_surplus = polity.budget.wood_income - polity.budget.wood_maintenance;
+        polity.budget.wealth_surplus =
+            polity.budget.wealth_income - polity.budget.admin_maintenance - polity.budget.control_maintenance;
+
+        const float contested_pressure =
+            polity.controlled_tile_count <= 0
+                ? 0.0F
+                : static_cast<float>(polity.contested_tile_count) / static_cast<float>(polity.controlled_tile_count);
+        const float deficit_pressure = polity.budget.wealth_surplus < 0.0F ? std::min(0.35F, -polity.budget.wealth_surplus * 0.025F)
+                                                                            : 0.0F;
+        polity.stability =
+            std::clamp(1.0F - polity.overextension * 0.45F - contested_pressure * 0.35F - deficit_pressure, 0.10F, 1.0F);
+        polity.legitimacy = std::clamp(1.0F - polity.overextension * 0.25F - deficit_pressure * 0.20F, 0.15F, 1.0F);
+        polity.control_power =
+            (38.0F + static_cast<float>(polity.population) * 0.045F) * (0.65F + polity.stability * 0.35F);
     }
 }
 
@@ -211,6 +312,7 @@ void PolitySystem::UpdatePolities(World& world,
     RecalculatePolityAggregates(settlements, polities);
     JoinNearbySettlements(world, turn, settlements, polities, event_log);
     RecalculatePolityAggregates(settlements, polities);
+    RecalculatePolityBudgetsAndAdministration(world, settlements, polities);
 
     std::vector<int> previous_counts;
     previous_counts.reserve(polities.size());
@@ -219,6 +321,7 @@ void PolitySystem::UpdatePolities(World& world,
     }
 
     const ControlFieldStats stats = RecomputeControlField(world, settlements, polities);
+    RecalculatePolityBudgetsAndAdministration(world, settlements, polities);
     if (turn > 0 && turn % 25 == 0) {
         for (std::size_t i = 0; i < polities.size(); ++i) {
             if (polities[i].controlled_tile_count > previous_counts[i]) {

@@ -18,6 +18,7 @@
 #include "oikumene/render/map_layer.hpp"
 #include "oikumene/sim/band_system.hpp"
 #include "oikumene/sim/settlement_system.hpp"
+#include "oikumene/ui/legend_panel.hpp"
 #include "oikumene/world/biome.hpp"
 #include "oikumene/world/resource.hpp"
 #include "oikumene/world/world_generator.hpp"
@@ -53,7 +54,16 @@ Rectangle DebugPanelBounds() {
 }
 
 Rectangle HelpPanelBounds() {
-    return Rectangle{static_cast<float>(GetScreenWidth() - 390), 18.0F, 364.0F, 310.0F};
+    return Rectangle{static_cast<float>(GetScreenWidth() - 390), 18.0F, 364.0F, 342.0F};
+}
+
+Rectangle LegendPanelBounds() {
+    constexpr int width = 920;
+    constexpr int height = 660;
+    return Rectangle{std::max(18.0F, (static_cast<float>(GetScreenWidth()) - static_cast<float>(width)) * 0.5F),
+                     std::max(18.0F, (static_cast<float>(GetScreenHeight()) - static_cast<float>(height)) * 0.5F),
+                     std::min(static_cast<float>(width), static_cast<float>(GetScreenWidth() - 36)),
+                     std::min(static_cast<float>(height), static_cast<float>(GetScreenHeight() - 36))};
 }
 
 Rectangle EventLogPanelBounds() {
@@ -251,6 +261,9 @@ std::vector<Rectangle> UiCaptureRectangles(const AppState& state) {
     if (state.show_help_panel) {
         rectangles.push_back(HelpPanelBounds());
     }
+    if (state.show_legend_panel) {
+        rectangles.push_back(LegendPanelBounds());
+    }
     if (state.show_event_log_panel) {
         rectangles.push_back(EventLogPanelBounds());
     }
@@ -431,6 +444,9 @@ void HandleInput(AppState& state) {
     if (IsKeyPressed(KEY_F1)) {
         state.show_help_panel = !state.show_help_panel;
     }
+    if (IsKeyPressed(KEY_F2)) {
+        state.show_legend_panel = !state.show_legend_panel;
+    }
     if (IsKeyPressed(KEY_F11)) {
         ToggleFullscreen();
     }
@@ -512,7 +528,7 @@ void DrawHud(const AppState& state) {
                  .c_str(),
              30, 82, 16, Color{202, 211, 218, 255});
     DrawText(("A " + std::string(state.controller.IsRunning() ? "run" : "pause") +
-              "  Space step  N +10  Tab details  E events  Home fit")
+              "  Space step  N +10  Tab details  F2 legend  Home fit")
                  .c_str(),
              30, 106, 15, Color{152, 164, 174, 255});
     DrawText(("Polities " + std::to_string(state.simulation.Polities().size()) + "  Control " +
@@ -675,6 +691,18 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                       "  Wood " + Fixed(polity->wood, 0))
                          .c_str(),
                      34, y, 17, Color{238, 218, 144, 255});
+            y += 22;
+            DrawText(("Admin " + Fixed(polity->admin_load, 1) + "/" + Fixed(polity->admin_capacity, 1) +
+                      "  Over " + Fixed(polity->overextension * 100.0F, 0) + "%  Stability " +
+                      Fixed(polity->stability * 100.0F, 0) + "%")
+                         .c_str(),
+                     34, y, 17, Color{238, 218, 144, 255});
+            y += 22;
+            DrawText(("Budget food " + Fixed(polity->budget.food_income, 1) + "  wood " +
+                      Fixed(polity->budget.wood_income, 1) + "  wealth " +
+                      Fixed(polity->budget.wealth_surplus, 1))
+                         .c_str(),
+                     34, y, 17, Color{238, 218, 144, 255});
         }
     }
 }
@@ -730,7 +758,7 @@ void DrawDebugPanel(const AppState& state) {
 }
 
 void DrawHelpPanel() {
-    DrawPanelBackground(GetScreenWidth() - 390, 18, 364, 310);
+    DrawPanelBackground(GetScreenWidth() - 390, 18, 364, 342);
     DrawText("Help", GetScreenWidth() - 370, 36, 22, RAYWHITE);
     DrawText("1-8      switch map layers", GetScreenWidth() - 370, 72, 16, Color{202, 211, 218, 255});
     DrawText("R        generate next seed", GetScreenWidth() - 370, 96, 16, Color{202, 211, 218, 255});
@@ -740,8 +768,9 @@ void DrawHelpPanel() {
     DrawText("Shift+N  step 100 turns", GetScreenWidth() - 370, 192, 16, Color{202, 211, 218, 255});
     DrawText("A        toggle auto-run", GetScreenWidth() - 370, 216, 16, Color{202, 211, 218, 255});
     DrawText("E        toggle events panel", GetScreenWidth() - 370, 240, 16, Color{202, 211, 218, 255});
-    DrawText("WASD/arrows pan, right-drag map", GetScreenWidth() - 370, 264, 16, Color{202, 211, 218, 255});
-    DrawText("C center selected, Home/F fit world", GetScreenWidth() - 370, 288, 16, Color{202, 211, 218, 255});
+    DrawText("F2       toggle legend panel", GetScreenWidth() - 370, 264, 16, Color{202, 211, 218, 255});
+    DrawText("WASD/arrows pan, right-drag map", GetScreenWidth() - 370, 288, 16, Color{202, 211, 218, 255});
+    DrawText("C center selected, Home/F fit world", GetScreenWidth() - 370, 312, 16, Color{202, 211, 218, 255});
 }
 
 }  // namespace
@@ -788,6 +817,9 @@ int OikumeneApp::Run() {
             DrawHelpPanel();
         }
         DrawEventLogPanel(state);
+        if (state.show_legend_panel) {
+            DrawLegendPanel(LegendPanelBounds());
+        }
         EndDrawing();
 
         if (state.pending_screenshot.has_value()) {

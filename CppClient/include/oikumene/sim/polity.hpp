@@ -16,6 +16,22 @@ enum class PolityLevel {
 
 [[nodiscard]] std::string ToString(PolityLevel level);
 
+struct PolityBudget {
+    float food_income = 0.0F;
+    float wood_income = 0.0F;
+    float ore_income = 0.0F;
+    float wealth_income = 0.0F;
+
+    float food_maintenance = 0.0F;
+    float wood_maintenance = 0.0F;
+    float admin_maintenance = 0.0F;
+    float control_maintenance = 0.0F;
+
+    float food_surplus = 0.0F;
+    float wood_surplus = 0.0F;
+    float wealth_surplus = 0.0F;
+};
+
 struct Polity {
     PolityId id = kInvalidPolityId;
     std::string name;
@@ -30,6 +46,12 @@ struct Polity {
     float wealth = 0.0F;
     float control_power = 0.0F;
     float admin_range = 0.0F;
+    float legitimacy = 1.0F;
+    float stability = 1.0F;
+    float admin_load = 0.0F;
+    float admin_capacity = 0.0F;
+    float overextension = 0.0F;
+    PolityBudget budget;
     std::uint32_t debug_color_index = 0;
     int controlled_tile_count = 0;
     int contested_tile_count = 0;

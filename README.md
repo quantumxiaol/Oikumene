@@ -11,7 +11,7 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 
 ## 当前状态
 
-当前已经进入 Phase 3.5 入口：
+当前已经进入 Phase 3.6：
 
 - C++ 主程序能打开 Raylib 窗口，生成 80x56 世界地图。
 - 支持 Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore 图层。
@@ -21,11 +21,13 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 - 已有最小村庄经济：村庄会在周围建设 Farm、LumberCamp、Pasture、ShallowMine，并受 carrying capacity 约束。
 - 已有早期政治共同体：Village 可形成 Chiefdom，附近聚落会按地形成本加入，首都和成员村庄会向外扩散控制力。
 - 已有 Polity / Control 图层，可查看不同 polity 的控制范围、争议区和首都。
+- 已有 polity 资源池与行政维护：food/wood/ore/wealth 收入、行政负担、行政容量、overextension、stability 会影响控制力扩散。
+- 已有图例系统：`F2` 打开 Legend 面板，`docs/LEGEND.md` 维护图标和覆盖层说明。
 - UI 底部有轻量播放控制条：Play/Pause、Step、+10、+100、TPS 调整、Reset Bands。
 - 已有 headless 工具：
   - `oikumene_worldgen_batch`：批量生成世界并输出世界生成报告。
   - `oikumene_sim_batch`：无窗口跑部落/定居仿真并输出 summary、final_state、events。
-  - `oikumene_sim_balance_batch`：批量跑多个 seed，输出人口、农田、牧场、伐木、粮食供需和承载力指标。
+  - `oikumene_sim_balance_batch`：批量跑多个 seed，输出人口、农田、牧场、伐木、粮食供需、承载力、polity 行政和稳定性指标。
 
 ## C++ 依赖
 
@@ -112,6 +114,7 @@ cp CppClient/config/settings.example.json CppClient/config/settings.json
 ## 窗口快捷键
 
 - `1`-`8`：切换地图图层：Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl。
+- `F2`：显示/隐藏图例面板。
 - `R`：使用新 seed 重新生成世界，并重置仿真。
 - `B`：在当前世界上重置 band。
 - `H`：重新检测 Python Agent 服务是否在线。
@@ -152,6 +155,7 @@ ctest --test-dir build --output-on-failure
 - 地图相机数学、缩放稳定性、选择优先级和 UI 点击阻挡。
 - band 迁徙、定居、settlement 成长、village 升级、牧场建设、仿真确定性和事件顺序。
 - Chiefdom 形成、附近聚落加入、远处聚落不加入、控制力场地形阻隔、河谷扩散、海洋阻断和争议区。
+- Polity 资源收入、行政负担、行政容量、overextension、stability，以及图例符号注册完整性。
 
 ## 批处理工具
 
@@ -183,7 +187,7 @@ cd CppClient
 - `world_report.json`
 - `states.jsonl`：仅在传入 `--sample-every N` 时生成。
 
-`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗和平均承载力。`final_state.json` 会保留 Band / Settlement 的调试字段，并导出 `improved_tiles` 摘要。
+`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension 和 stability。`final_state.json` 会保留 Band / Settlement / Polity 的调试字段，并导出 `improved_tiles` 摘要。
 
 批量检查村庄经济平衡：
 
@@ -210,6 +214,10 @@ cd CppClient
 - `mean_contested_tiles`：控制力接近导致的争议区数量。
 - `mean_largest_polity_population`：最大政治共同体人口。
 - `mean_member_settlements_per_polity`：平均每个 polity 吸纳多少聚落。
+- `mean_polity_food_income` / `mean_polity_wood_income` / `mean_polity_wealth_income`：polity 层资源收入。
+- `mean_admin_load` / `mean_admin_capacity`：行政负担和行政容量。
+- `mean_overextension` / `mean_stability`：治理过载和稳定度。
+- `mean_control_maintenance`：控制范围带来的维护成本。
 
 ## 开发格式化
 
@@ -230,6 +238,6 @@ clang-format -i CppClient/include/oikumene/**/*.hpp CppClient/src/**/*.cpp CppCl
 Phase 3 后续重点：
 
 - 继续调 Polity / Control 图层的可读性：边界线、首都图标、成员聚落标记。
-- 让 polity 拥有更明确的资源池、行政范围和维护成本。
+- 继续校准 polity 资源池、行政范围、维护成本和稳定度对控制力的影响。
 - 增加 polity-level technology，但暂时不做战争和贸易。
 - 后续再进入 Trade，再进入 War ROI。

@@ -54,6 +54,14 @@ struct Metrics {
     float controlled_land_ratio = 0.0F;
     float average_member_settlements_per_polity = 0.0F;
     float polity_formation_turn_mean = 0.0F;
+    float average_polity_food_income = 0.0F;
+    float average_polity_wood_income = 0.0F;
+    float average_polity_wealth_income = 0.0F;
+    float average_admin_load = 0.0F;
+    float average_admin_capacity = 0.0F;
+    float average_overextension = 0.0F;
+    float average_stability = 0.0F;
+    float average_control_maintenance = 0.0F;
 };
 
 void PrintUsage() {
@@ -186,15 +194,43 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     metrics.polities = static_cast<int>(sim.Polities().size());
     int member_sum = 0;
     float formation_turn_sum = 0.0F;
+    float food_income_sum = 0.0F;
+    float wood_income_sum = 0.0F;
+    float wealth_income_sum = 0.0F;
+    float admin_load_sum = 0.0F;
+    float admin_capacity_sum = 0.0F;
+    float overextension_sum = 0.0F;
+    float stability_sum = 0.0F;
+    float control_maintenance_sum = 0.0F;
     for (const auto& polity : sim.Polities()) {
         metrics.largest_polity_population = std::max(metrics.largest_polity_population, polity.population);
         member_sum += static_cast<int>(polity.member_settlement_ids.size());
         formation_turn_sum += static_cast<float>(polity.founded_turn);
+        food_income_sum += polity.budget.food_income;
+        wood_income_sum += polity.budget.wood_income;
+        wealth_income_sum += polity.budget.wealth_income;
+        admin_load_sum += polity.admin_load;
+        admin_capacity_sum += polity.admin_capacity;
+        overextension_sum += polity.overextension;
+        stability_sum += polity.stability;
+        control_maintenance_sum += polity.budget.control_maintenance;
     }
     metrics.average_member_settlements_per_polity =
         metrics.polities <= 0 ? 0.0F : static_cast<float>(member_sum) / static_cast<float>(metrics.polities);
     metrics.polity_formation_turn_mean =
         metrics.polities <= 0 ? 0.0F : formation_turn_sum / static_cast<float>(metrics.polities);
+    metrics.average_polity_food_income = metrics.polities <= 0 ? 0.0F : food_income_sum / static_cast<float>(metrics.polities);
+    metrics.average_polity_wood_income = metrics.polities <= 0 ? 0.0F : wood_income_sum / static_cast<float>(metrics.polities);
+    metrics.average_polity_wealth_income =
+        metrics.polities <= 0 ? 0.0F : wealth_income_sum / static_cast<float>(metrics.polities);
+    metrics.average_admin_load = metrics.polities <= 0 ? 0.0F : admin_load_sum / static_cast<float>(metrics.polities);
+    metrics.average_admin_capacity =
+        metrics.polities <= 0 ? 0.0F : admin_capacity_sum / static_cast<float>(metrics.polities);
+    metrics.average_overextension =
+        metrics.polities <= 0 ? 0.0F : overextension_sum / static_cast<float>(metrics.polities);
+    metrics.average_stability = metrics.polities <= 0 ? 0.0F : stability_sum / static_cast<float>(metrics.polities);
+    metrics.average_control_maintenance =
+        metrics.polities <= 0 ? 0.0F : control_maintenance_sum / static_cast<float>(metrics.polities);
     metrics.famine_events = CountEvents(sim, oikumene::EventType::Famine);
     metrics.farm_events = CountEvents(sim, oikumene::EventType::FarmBuilt);
     metrics.lumber_events = CountEvents(sim, oikumene::EventType::LumberCampBuilt);
@@ -226,6 +262,14 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"largest_polity_population", metrics.largest_polity_population},
         {"average_member_settlements_per_polity", metrics.average_member_settlements_per_polity},
         {"polity_formation_turn_mean", metrics.polity_formation_turn_mean},
+        {"average_polity_food_income", metrics.average_polity_food_income},
+        {"average_polity_wood_income", metrics.average_polity_wood_income},
+        {"average_polity_wealth_income", metrics.average_polity_wealth_income},
+        {"average_admin_load", metrics.average_admin_load},
+        {"average_admin_capacity", metrics.average_admin_capacity},
+        {"average_overextension", metrics.average_overextension},
+        {"average_stability", metrics.average_stability},
+        {"average_control_maintenance", metrics.average_control_maintenance},
         {"total_food_output_last_turn", metrics.total_food_output},
         {"total_food_consumption_last_turn", metrics.total_food_consumption},
         {"total_wood_output_last_turn", metrics.total_wood_output},
@@ -244,6 +288,9 @@ void WriteCsvHeader(std::ofstream& output) {
               "farm_count,lumbercamp_count,pasture_count,shallow_mine_count,worked_tile_count,"
               "polities,controlled_land_ratio,contested_tiles,largest_polity_population,"
               "average_member_settlements_per_polity,polity_formation_turn_mean,"
+              "average_polity_food_income,average_polity_wood_income,average_polity_wealth_income,"
+              "average_admin_load,average_admin_capacity,average_overextension,average_stability,"
+              "average_control_maintenance,"
               "total_food_output_last_turn,total_food_consumption_last_turn,total_wood_output_last_turn,"
               "average_carrying_capacity,food_output_consumption_ratio,farm_share_of_worked_tiles,"
               "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events\n";
@@ -256,7 +303,11 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.shallow_mines << ',' << metrics.worked_tiles << ',' << metrics.polities << ','
            << metrics.controlled_land_ratio << ',' << metrics.contested_tiles << ','
            << metrics.largest_polity_population << ',' << metrics.average_member_settlements_per_polity << ','
-           << metrics.polity_formation_turn_mean << ',' << metrics.total_food_output << ','
+           << metrics.polity_formation_turn_mean << ',' << metrics.average_polity_food_income << ','
+           << metrics.average_polity_wood_income << ',' << metrics.average_polity_wealth_income << ','
+           << metrics.average_admin_load << ',' << metrics.average_admin_capacity << ','
+           << metrics.average_overextension << ',' << metrics.average_stability << ','
+           << metrics.average_control_maintenance << ',' << metrics.total_food_output << ','
            << metrics.total_food_consumption << ',' << metrics.total_wood_output << ','
            << metrics.average_carrying_capacity << ',' << metrics.food_output_consumption_ratio << ','
            << metrics.farm_share_of_worked_tiles << ',' << metrics.famine_events << ',' << metrics.farm_events << ','
@@ -312,6 +363,14 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_member_settlements_per_polity",
          mean([](const Metrics& item) { return item.average_member_settlements_per_polity; })},
         {"mean_polity_formation_turn", mean([](const Metrics& item) { return item.polity_formation_turn_mean; })},
+        {"mean_polity_food_income", mean([](const Metrics& item) { return item.average_polity_food_income; })},
+        {"mean_polity_wood_income", mean([](const Metrics& item) { return item.average_polity_wood_income; })},
+        {"mean_polity_wealth_income", mean([](const Metrics& item) { return item.average_polity_wealth_income; })},
+        {"mean_admin_load", mean([](const Metrics& item) { return item.average_admin_load; })},
+        {"mean_admin_capacity", mean([](const Metrics& item) { return item.average_admin_capacity; })},
+        {"mean_overextension", mean([](const Metrics& item) { return item.average_overextension; })},
+        {"mean_stability", mean([](const Metrics& item) { return item.average_stability; })},
+        {"mean_control_maintenance", mean([](const Metrics& item) { return item.average_control_maintenance; })},
         {"mean_food_output", mean([](const Metrics& item) { return item.total_food_output; })},
         {"mean_food_consumption", mean([](const Metrics& item) { return item.total_food_consumption; })},
         {"mean_food_output_consumption_ratio",

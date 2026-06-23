@@ -36,7 +36,11 @@ foreach(token
         "\"lumbercamp_count\""
         "\"worked_tile_count\""
         "\"total_food_output_last_turn\""
-        "\"average_carrying_capacity\"")
+        "\"average_carrying_capacity\""
+        "\"polities\""
+        "\"controlled_land_ratio\""
+        "\"average_admin_load\""
+        "\"average_stability\"")
     string(FIND "${summary}" "${token}" token_index)
     if(token_index EQUAL -1)
         message(FATAL_ERROR "summary.json is missing ${token}")
@@ -49,7 +53,12 @@ foreach(token
         "\"local_food_output_last_turn\""
         "\"upgrade_readiness\""
         "\"carrying_capacity\""
-        "\"improved_tiles\"")
+        "\"improved_tiles\""
+        "\"polity_id\""
+        "\"polities\""
+        "\"admin_load\""
+        "\"overextension\""
+        "\"budget\"")
     string(FIND "${final_state}" "${token}" token_index)
     if(token_index EQUAL -1)
         message(FATAL_ERROR "final_state.json is missing ${token}")

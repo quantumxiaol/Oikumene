@@ -95,6 +95,8 @@ add_executable(oikumene_app
     src/render/map_layer.cpp
     src/render/map_renderer.cpp
     src/render/selection.cpp
+    src/render/symbol_registry.cpp
+    src/ui/legend_panel.cpp
 )
 
 target_link_libraries(oikumene_app PRIVATE oikumene_core)
@@ -193,7 +195,19 @@ add_executable(oikumene_control_field_tests
 )
 target_link_libraries(oikumene_control_field_tests PRIVATE oikumene_core)
 
-foreach(target_name oikumene_camera_controller_tests oikumene_selection_tests)
+add_executable(oikumene_polity_economy_tests
+    tests/test_polity_economy.cpp
+)
+target_link_libraries(oikumene_polity_economy_tests PRIVATE oikumene_core)
+
+add_executable(oikumene_symbol_registry_tests
+    tests/test_symbol_registry.cpp
+    src/render/color_palette.cpp
+    src/render/symbol_registry.cpp
+)
+target_link_libraries(oikumene_symbol_registry_tests PRIVATE oikumene_core)
+
+foreach(target_name oikumene_camera_controller_tests oikumene_selection_tests oikumene_symbol_registry_tests)
     if(raylib_FOUND)
         target_link_libraries(${target_name} PRIVATE raylib)
     else()
@@ -214,6 +228,8 @@ if(BUILD_TESTING)
     add_test(NAME oikumene_selection_tests COMMAND oikumene_selection_tests)
     add_test(NAME oikumene_polity_tests COMMAND oikumene_polity_tests)
     add_test(NAME oikumene_control_field_tests COMMAND oikumene_control_field_tests)
+    add_test(NAME oikumene_polity_economy_tests COMMAND oikumene_polity_economy_tests)
+    add_test(NAME oikumene_symbol_registry_tests COMMAND oikumene_symbol_registry_tests)
     add_test(
         NAME oikumene_sim_batch_smoke
         COMMAND

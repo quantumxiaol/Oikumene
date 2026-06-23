@@ -115,6 +115,25 @@ void TestContestedTilesAppearBetweenClosePolities() {
     assert(stats.contested_tiles > 0);
 }
 
+void TestOverextensionReducesEffectiveControlStrength() {
+    using namespace oikumene;
+    World stable_world = MakePlainWorld(18, 7);
+    World overextended_world = MakePlainWorld(18, 7);
+    std::vector<Settlement> settlements{MakeVillage(0, 3, 3, 180)};
+    std::vector<Polity> stable{MakePolity(0, 0)};
+    std::vector<Polity> overextended{MakePolity(0, 0)};
+    stable.front().stability = 1.0F;
+    stable.front().overextension = 0.0F;
+    overextended.front().stability = 0.45F;
+    overextended.front().overextension = 1.3F;
+
+    const auto stable_stats = RecomputeControlField(stable_world, settlements, stable);
+    const auto overextended_stats = RecomputeControlField(overextended_world, settlements, overextended);
+    assert(stable_stats.controlled_land_tiles > 0);
+    assert(overextended_stats.controlled_land_tiles > 0);
+    assert(stable_world.At(8, 3).control_strength > overextended_world.At(8, 3).control_strength);
+}
+
 }  // namespace
 
 int main() {
@@ -122,6 +141,7 @@ int main() {
     TestRiverCorridorImprovesControlSpread();
     TestOceanBlocksEarlyControl();
     TestContestedTilesAppearBetweenClosePolities();
+    TestOverextensionReducesEffectiveControlStrength();
 
     std::cout << "oikumene_control_field_tests passed\n";
     return 0;

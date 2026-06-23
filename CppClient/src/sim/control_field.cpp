@@ -28,14 +28,18 @@ bool IsLand(const Tile& tile) {
     return !tile.is_ocean && !tile.is_lake;
 }
 
-float SourcePowerFor(const Settlement& settlement, bool capital) {
+float EffectiveControlMultiplier(const Polity& polity) {
+    return std::clamp(polity.stability * (1.0F - polity.overextension * 0.35F), 0.58F, 1.10F);
+}
+
+float SourcePowerFor(const Polity& polity, const Settlement& settlement, bool capital) {
+    float base = 0.0F;
     if (capital) {
-        return 38.0F + static_cast<float>(settlement.population) * 0.045F;
+        base = 38.0F + static_cast<float>(settlement.population) * 0.045F;
+    } else if (settlement.level == SettlementLevel::Village) {
+        base = 18.0F + static_cast<float>(settlement.population) * 0.025F;
     }
-    if (settlement.level == SettlementLevel::Village) {
-        return 18.0F + static_cast<float>(settlement.population) * 0.025F;
-    }
-    return 0.0F;
+    return base * EffectiveControlMultiplier(polity);
 }
 
 struct QueueNode {
@@ -252,7 +256,7 @@ ControlFieldStats RecomputeControlField(World& world,
 
     for (const auto& polity : polities) {
         if (const auto* capital = SettlementById(settlements, polity.capital_settlement_id)) {
-            DiffuseFromSource(world, *capital, polity.id, SourcePowerFor(*capital, true),
+            DiffuseFromSource(world, *capital, polity.id, SourcePowerFor(polity, *capital, true),
                               std::min(params.max_path_cost, polity.admin_range * 1.15F), best, second_best, best_polity);
         }
         for (const int settlement_id : polity.member_settlement_ids) {
@@ -260,7 +264,7 @@ ControlFieldStats RecomputeControlField(World& world,
                 continue;
             }
             if (const auto* settlement = SettlementById(settlements, settlement_id)) {
-                DiffuseFromSource(world, *settlement, polity.id, SourcePowerFor(*settlement, false),
+                DiffuseFromSource(world, *settlement, polity.id, SourcePowerFor(polity, *settlement, false),
                                   std::min(params.max_path_cost, polity.admin_range * 0.90F), best, second_best,
                                   best_polity);
             }

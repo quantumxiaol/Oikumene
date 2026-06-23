@@ -39,6 +39,12 @@ foreach(token
     "\"mean_controlled_land_ratio\""
     "\"mean_contested_tiles\""
     "\"mean_largest_polity_population\""
+    "\"mean_polity_food_income\""
+    "\"mean_admin_load\""
+    "\"mean_admin_capacity\""
+    "\"mean_overextension\""
+    "\"mean_stability\""
+    "\"mean_control_maintenance\""
 )
     string(FIND "${summary}" "${token}" token_index)
     if(token_index EQUAL -1)
