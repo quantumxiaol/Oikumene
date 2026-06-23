@@ -177,6 +177,104 @@ void TestSettlementFoundingEventsAreLogged() {
     assert(found_settlement_event);
 }
 
+void TestSimulationResetCreatesFreshState() {
+    using namespace oikumene;
+
+    Simulation sim(MakeWorld(42), SimulationParams{});
+    sim.InitializeBands(8);
+    for (int i = 0; i < 80; ++i) {
+        sim.AdvanceOneTurn();
+    }
+    assert(sim.CurrentTurn() == 80);
+    assert(!sim.Settlements().empty());
+    assert(sim.Events().Size() > 0);
+
+    sim = Simulation(MakeWorld(43), SimulationParams{});
+    sim.InitializeBands(5);
+    assert(sim.CurrentTurn() == 0);
+    assert(sim.Bands().size() == 5);
+    assert(sim.Settlements().empty());
+    assert(sim.Events().Size() == 0);
+    assert(sim.GetWorld().Seed() == 43);
+}
+
+void TestSimulationDeterministicForSameSeed() {
+    using namespace oikumene;
+
+    Simulation left(MakeWorld(42), SimulationParams{});
+    Simulation right(MakeWorld(42), SimulationParams{});
+    left.InitializeBands(8);
+    right.InitializeBands(8);
+
+    for (int i = 0; i < 120; ++i) {
+        left.AdvanceOneTurn();
+        right.AdvanceOneTurn();
+    }
+
+    assert(left.CurrentTurn() == right.CurrentTurn());
+    assert(left.Bands().size() == right.Bands().size());
+    assert(left.Settlements().size() == right.Settlements().size());
+    assert(left.Events().Size() == right.Events().Size());
+
+    for (std::size_t i = 0; i < left.Bands().size(); ++i) {
+        assert(left.Bands()[i].x == right.Bands()[i].x);
+        assert(left.Bands()[i].y == right.Bands()[i].y);
+        assert(left.Bands()[i].population == right.Bands()[i].population);
+        assert(left.Bands()[i].active == right.Bands()[i].active);
+        assert(left.Bands()[i].state == right.Bands()[i].state);
+    }
+
+    for (std::size_t i = 0; i < left.Settlements().size(); ++i) {
+        assert(left.Settlements()[i].x == right.Settlements()[i].x);
+        assert(left.Settlements()[i].y == right.Settlements()[i].y);
+        assert(left.Settlements()[i].population == right.Settlements()[i].population);
+        assert(left.Settlements()[i].level == right.Settlements()[i].level);
+    }
+}
+
+void TestEventLogIsChronological() {
+    using namespace oikumene;
+
+    Simulation sim(MakeWorld(42), SimulationParams{});
+    sim.InitializeBands(8);
+    for (int i = 0; i < 120; ++i) {
+        sim.AdvanceOneTurn();
+    }
+
+    Turn previous = 0;
+    for (const auto& event : sim.Events().Events()) {
+        assert(event.turn >= previous);
+        previous = event.turn;
+    }
+}
+
+void TestCampCanUpgradeToVillage() {
+    using namespace oikumene;
+
+    Simulation sim(MakeWorld(42), SimulationParams{});
+    SimulationParams params;
+    Settlement settlement;
+    settlement.id = 0;
+    settlement.x = 20;
+    settlement.y = 20;
+    settlement.population = 80;
+    settlement.turns_since_founded = 20;
+    settlement.stockpile.food = 200.0F;
+    settlement.stockpile.wood = 100.0F;
+    sim.Settlements().push_back(settlement);
+
+    SettlementSystem::UpdateSettlements(sim.GetWorld(), params, 20, sim.Settlements(), sim.Events());
+    assert(sim.Settlements().front().level == SettlementLevel::Village);
+
+    bool found_upgrade_event = false;
+    for (const auto& event : sim.Events().Events()) {
+        if (event.type == EventType::SettlementUpgraded) {
+            found_upgrade_event = true;
+        }
+    }
+    assert(found_upgrade_event);
+}
+
 }  // namespace
 
 int main() {
@@ -188,6 +286,10 @@ int main() {
     TestSettlementsPreferHighScoreTiles();
     TestSettlementPopulationChangesWithFood();
     TestSettlementFoundingEventsAreLogged();
+    TestSimulationResetCreatesFreshState();
+    TestSimulationDeterministicForSameSeed();
+    TestEventLogIsChronological();
+    TestCampCanUpgradeToVillage();
 
     std::cout << "oikumene_band_settlement_tests passed\n";
     return 0;

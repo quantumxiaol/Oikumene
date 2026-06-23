@@ -1,0 +1,22 @@
+{
+  "window": {
+    "width": 1280,
+    "height": 720,
+    "fullscreen": false,
+    "borderless": false,
+    "vsync": true
+  },
+  "ui": {
+    "scale": 1.0,
+    "show_debug_panel": true,
+    "show_help_panel": false
+  },
+  "simulation": {
+    "default_seed": 42,
+    "world_width": 80,
+    "world_height": 56,
+    "initial_bands": 8,
+    "auto_run": false,
+    "turns_per_second": 4.0
+  }
+}

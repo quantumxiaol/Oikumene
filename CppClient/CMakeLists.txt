@@ -39,6 +39,8 @@ endif()
 include(cmake/ThirdParty.cmake)
 
 add_library(oikumene_core STATIC
+    src/app/app_config.cpp
+    src/app/command_line.cpp
     src/ai/heuristic_decision_provider.cpp
     src/ai/remote_decision_provider.cpp
     src/core/simulation.cpp
@@ -82,6 +84,7 @@ endif()
 
 add_executable(oikumene_app
     src/main.cpp
+    src/app/oikumene_app.cpp
     src/render/camera_controller.cpp
     src/render/color_palette.cpp
     src/render/map_layer.cpp
@@ -117,6 +120,16 @@ add_executable(oikumene_worldgen_batch
 )
 target_link_libraries(oikumene_worldgen_batch PRIVATE oikumene_core)
 
+add_executable(oikumene_sim_batch
+    tools/sim_batch.cpp
+)
+target_link_libraries(oikumene_sim_batch PRIVATE oikumene_core)
+
+add_executable(oikumene_app_config_tests
+    tests/test_app_config.cpp
+)
+target_link_libraries(oikumene_app_config_tests PRIVATE oikumene_core)
+
 add_executable(oikumene_decision_tests
     tests/test_decision_models.cpp
 )
@@ -138,6 +151,7 @@ add_executable(oikumene_band_settlement_tests
 target_link_libraries(oikumene_band_settlement_tests PRIVATE oikumene_core)
 
 if(BUILD_TESTING)
+    add_test(NAME oikumene_app_config_tests COMMAND oikumene_app_config_tests)
     add_test(NAME oikumene_decision_tests COMMAND oikumene_decision_tests)
     add_test(NAME oikumene_world_generation_tests COMMAND oikumene_world_generation_tests)
     add_test(NAME oikumene_world_generation_balance_tests COMMAND oikumene_world_generation_balance_tests)
