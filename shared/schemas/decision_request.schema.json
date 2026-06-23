@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oikumene.local/schemas/decision_request.schema.json",
+  "title": "DecisionBatchRequest",
+  "type": "object",
+  "required": ["protocol_version", "requests"],
+  "properties": {
+    "protocol_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["request_id", "turn", "polity_id", "candidate_actions"],
+        "properties": {
+          "protocol_version": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "turn": {
+            "type": "integer"
+          },
+          "strategic_turn": {
+            "type": "integer"
+          },
+          "polity_id": {
+            "type": "integer"
+          },
+          "report": {
+            "type": "object"
+          },
+          "candidate_actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["action_id", "type"],
+              "properties": {
+                "action_id": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "target": {
+                  "type": "string"
+                },
+                "cost": {
+                  "type": "number"
+                },
+                "estimated_benefit": {
+                  "type": "number"
+                },
+                "risk": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

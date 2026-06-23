@@ -1,0 +1,21 @@
+{
+  "protocol_version": "0.1",
+  "responses": [
+    {
+      "protocol_version": "0.1",
+      "request_id": "turn_10_polity_1",
+      "turn": 10,
+      "polity_id": 1,
+      "selected_actions": [
+        {
+          "action_id": "research_mining",
+          "priority": 0.7,
+          "commitment": "medium"
+        }
+      ],
+      "diplomatic_messages": [],
+      "rationale_short": "Mock heuristic response: selected the highest benefit minus risk candidate action.",
+      "confidence": 0.55
+    }
+  ]
+}

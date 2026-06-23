@@ -54,3 +54,7 @@ _deps/
 .vscode/ipch/
 .vscode/.cache/
 *.code-workspace
+
+# Simulation outputs
+runs/*
+!runs/.gitkeep

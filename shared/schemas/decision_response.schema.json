@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oikumene.local/schemas/decision_response.schema.json",
+  "title": "DecisionBatchResponse",
+  "type": "object",
+  "required": ["protocol_version", "responses"],
+  "properties": {
+    "protocol_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "responses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["request_id", "turn", "polity_id", "selected_actions"],
+        "properties": {
+          "protocol_version": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "turn": {
+            "type": "integer"
+          },
+          "polity_id": {
+            "type": "integer"
+          },
+          "selected_actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["action_id", "priority", "commitment"],
+              "properties": {
+                "action_id": {
+                  "type": "string"
+                },
+                "priority": {
+                  "type": "number"
+                },
+                "commitment": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "diplomatic_messages": {
+            "type": "array"
+          },
+          "rationale_short": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

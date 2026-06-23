@@ -1,0 +1,42 @@
+{
+  "protocol_version": "0.1",
+  "requests": [
+    {
+      "protocol_version": "0.1",
+      "request_id": "turn_10_polity_1",
+      "turn": 10,
+      "strategic_turn": 2,
+      "polity_id": 1,
+      "report": {
+        "name": "Barkaquin Confederacy",
+        "government_level": "chiefdom",
+        "population": 842,
+        "stockpiles": {
+          "food": 1240,
+          "wood": 330,
+          "ore": 42,
+          "metal": 8,
+          "wealth": 19
+        }
+      },
+      "candidate_actions": [
+        {
+          "action_id": "research_mining",
+          "type": "RESEARCH_TECH",
+          "target": "mining",
+          "cost": 40,
+          "estimated_benefit": 0.8,
+          "risk": 0.1
+        },
+        {
+          "action_id": "open_trade_2",
+          "type": "OPEN_TRADE",
+          "target": "polity:2",
+          "cost": 8,
+          "estimated_benefit": 0.58,
+          "risk": 0.12
+        }
+      ]
+    }
+  ]
+}
