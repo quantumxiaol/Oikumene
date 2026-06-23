@@ -77,7 +77,12 @@ cmake --build build-make
 
 当前窗口内快捷键：
 
-- `R`：重新检测 Python Agent 服务是否在线。
+- `1`-`7`：切换地图图层：Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore。
+- `R`：使用新 seed 重新生成世界。
+- `H`：重新检测 Python Agent 服务是否在线。
+- `W/A/S/D`：平移地图。
+- 鼠标滚轮：缩放地图。
+- 鼠标 hover：查看 tile 信息。
 - `Space`：推进占位模拟回合。
 
 ## 测试
@@ -94,6 +99,20 @@ ctest --test-dir build --output-on-failure
 cd CppClient
 cmake --build build-make
 ctest --test-dir build-make --output-on-failure
+```
+
+## 开发格式化
+
+仓库包含：
+
+- `.editorconfig`：统一 UTF-8、LF、缩进和结尾换行。
+- `.clang-format`：C++20 代码格式化配置。
+- `PythonAgentServer/pyproject.toml` 中的 `ruff` 配置：Python lint/format 规则。
+
+C++ 格式化示例：
+
+```bash
+clang-format -i CppClient/include/oikumene/**/*.hpp CppClient/src/**/*.cpp CppClient/tests/*.cpp
 ```
 
 ## 下一阶段

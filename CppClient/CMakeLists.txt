@@ -43,6 +43,11 @@ add_library(oikumene_core STATIC
     src/ai/remote_decision_provider.cpp
     src/core/simulation.cpp
     src/network/http_client.cpp
+    src/world/biome.cpp
+    src/world/resource.cpp
+    src/world/world.cpp
+    src/world/world_generation_params.cpp
+    src/world/world_generator.cpp
 )
 
 target_include_directories(oikumene_core
@@ -69,6 +74,10 @@ endif()
 
 add_executable(oikumene_app
     src/main.cpp
+    src/render/camera_controller.cpp
+    src/render/color_palette.cpp
+    src/render/map_layer.cpp
+    src/render/map_renderer.cpp
 )
 
 target_link_libraries(oikumene_app PRIVATE oikumene_core)

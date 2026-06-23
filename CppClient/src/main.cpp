@@ -1,10 +1,20 @@
 #include <chrono>
+#include <cstdint>
+#include <optional>
+#include <sstream>
 #include <string>
 
 #include <raylib.h>
 
 #include "oikumene/ai/remote_decision_provider.hpp"
 #include "oikumene/core/simulation.hpp"
+#include "oikumene/render/camera_controller.hpp"
+#include "oikumene/render/map_layer.hpp"
+#include "oikumene/render/map_renderer.hpp"
+#include "oikumene/world/biome.hpp"
+#include "oikumene/world/resource.hpp"
+#include "oikumene/world/world_generation_params.hpp"
+#include "oikumene/world/world_generator.hpp"
 
 namespace {
 
@@ -22,6 +32,26 @@ std::string StatusText(const oikumene::HealthStatus& status) {
     return "offline";
 }
 
+void DrawPanelBackground(int x, int y, int width, int height) {
+    DrawRectangle(x, y, width, height, Color{18, 22, 26, 226});
+    DrawRectangleLines(x, y, width, height, Color{78, 86, 94, 255});
+}
+
+std::string Fixed(float value, int precision = 2) {
+    std::ostringstream stream;
+    stream.setf(std::ios::fixed);
+    stream.precision(precision);
+    stream << value;
+    return stream.str();
+}
+
+std::uint64_t NextSeed(std::uint64_t seed) {
+    seed ^= seed >> 12U;
+    seed ^= seed << 25U;
+    seed ^= seed >> 27U;
+    return seed * 2685821657736338717ULL;
+}
+
 }  // namespace
 
 int main() {
@@ -35,38 +65,92 @@ int main() {
     oikumene::RemoteDecisionProvider remote_provider("127.0.0.1", 8000, std::chrono::milliseconds(900));
     auto health = remote_provider.CheckHealth();
 
+    oikumene::WorldGenerationParams generation_params;
+    generation_params.seed = 42;
+    auto world = oikumene::WorldGenerator::Generate(generation_params);
+
+    oikumene::CameraController camera;
+    oikumene::MapRenderer renderer;
+    oikumene::MapLayer current_layer = oikumene::MapLayer::Biome;
+
     while (!WindowShouldClose()) {
+        camera.Update();
+
         if (IsKeyPressed(KEY_R)) {
+            generation_params.seed = NextSeed(generation_params.seed);
+            world = oikumene::WorldGenerator::Generate(generation_params);
+        }
+        if (IsKeyPressed(KEY_H)) {
             health = remote_provider.CheckHealth();
         }
         if (IsKeyPressed(KEY_SPACE)) {
             simulation.AdvanceOneTurn();
         }
+        if (IsKeyPressed(KEY_ONE)) {
+            current_layer = oikumene::MapLayer::Biome;
+        }
+        if (IsKeyPressed(KEY_TWO)) {
+            current_layer = oikumene::MapLayer::Elevation;
+        }
+        if (IsKeyPressed(KEY_THREE)) {
+            current_layer = oikumene::MapLayer::Rainfall;
+        }
+        if (IsKeyPressed(KEY_FOUR)) {
+            current_layer = oikumene::MapLayer::Temperature;
+        }
+        if (IsKeyPressed(KEY_FIVE)) {
+            current_layer = oikumene::MapLayer::Fertility;
+        }
+        if (IsKeyPressed(KEY_SIX)) {
+            current_layer = oikumene::MapLayer::Resources;
+        }
+        if (IsKeyPressed(KEY_SEVEN)) {
+            current_layer = oikumene::MapLayer::SettlementScore;
+        }
+
+        std::optional<std::pair<int, int>> hover_tile;
+        int hover_x = 0;
+        int hover_y = 0;
+        if (camera.ScreenToTile(GetMousePosition(), world, hover_x, hover_y)) {
+            hover_tile = std::pair<int, int>{hover_x, hover_y};
+        }
 
         BeginDrawing();
         ClearBackground(Color{18, 22, 26, 255});
 
-        DrawText("Oikumene", 40, 38, 42, RAYWHITE);
-        DrawText("The Habitable World / 人居界", 42, 86, 20, Color{180, 190, 198, 255});
+        renderer.Draw(world, camera, current_layer, hover_tile);
 
-        DrawRectangle(40, 136, 960, 1, Color{68, 76, 84, 255});
+        DrawPanelBackground(18, 18, 372, hover_tile.has_value() ? 318 : 206);
+        DrawText("Oikumene / The Habitable World", 34, 34, 22, RAYWHITE);
+        DrawText(("Layer: " + oikumene::ToString(current_layer)).c_str(), 34, 68, 18, Color{220, 225, 230, 255});
+        DrawText(("Seed: " + std::to_string(generation_params.seed)).c_str(), 34, 94, 18, Color{184, 194, 202, 255});
+        DrawText(("World: " + std::to_string(world.Width()) + " x " + std::to_string(world.Height())).c_str(), 34,
+                 120, 18, Color{184, 194, 202, 255});
+        DrawText(("Python Agent: " + StatusText(health)).c_str(), 34, 146, 18, StatusColor(health.online));
+        DrawText(("Sim: " + simulation.StatusSummary()).c_str(), 34, 172, 18, Color{184, 194, 202, 255});
 
-        DrawText("Phase 0 scaffold", 42, 170, 22, Color{220, 225, 230, 255});
-        DrawText(simulation.StatusSummary().c_str(), 42, 204, 20, Color{180, 190, 198, 255});
+        DrawText("1-7 layers  R new seed  H health  WASD pan  wheel zoom", 34, 198, 16, Color{152, 164, 174, 255});
 
-        DrawText("Python Agent Server:", 42, 254, 22, Color{220, 225, 230, 255});
-        DrawText(StatusText(health).c_str(), 292, 254, 22, StatusColor(health.online));
-
-        const std::string service = health.service.empty() ? "service: unknown" : "service: " + health.service;
-        DrawText(service.c_str(), 42, 290, 18, Color{160, 170, 180, 255});
-        DrawText("Press R to retry health check", 42, 340, 18, Color{160, 170, 180, 255});
-        DrawText("Press Space to advance the placeholder simulation turn", 42, 368, 18, Color{160, 170, 180, 255});
-
-        DrawRectangleLines(40, 430, 960, 120, Color{68, 76, 84, 255});
-        DrawText("Next phases: world generation, settlement simulation, control fields, trade/war ROI.", 64, 468, 19,
-                 Color{210, 216, 222, 255});
-        DrawText("LLM/Python will remain advisory; C++ will own and validate world state.", 64, 500, 19,
-                 Color{210, 216, 222, 255});
+        if (hover_tile.has_value()) {
+            const auto& tile = world.At(hover_x, hover_y);
+            int y = 232;
+            DrawText(("Tile: " + std::to_string(tile.x) + ", " + std::to_string(tile.y)).c_str(), 34, y, 17,
+                     RAYWHITE);
+            y += 22;
+            DrawText(("Biome: " + oikumene::ToString(tile.biome)).c_str(), 34, y, 17, Color{202, 211, 218, 255});
+            y += 22;
+            DrawText(("Resource: " + oikumene::ToString(tile.resource)).c_str(), 34, y, 17,
+                     Color{202, 211, 218, 255});
+            y += 22;
+            DrawText(("Elevation " + Fixed(tile.elevation) + "  Temp " + Fixed(tile.temperature)).c_str(), 34, y, 17,
+                     Color{202, 211, 218, 255});
+            y += 22;
+            DrawText(("Rain " + Fixed(tile.rainfall) + "  Fertility " + Fixed(tile.fertility)).c_str(), 34, y, 17,
+                     Color{202, 211, 218, 255});
+            y += 22;
+            DrawText(("Move " + Fixed(tile.movement_cost) + "  Settle " + Fixed(tile.settlement_score)).c_str(), 34,
+                     y, 17, Color{202, 211, 218, 255});
+        }
 
         EndDrawing();
     }
