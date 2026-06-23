@@ -13,6 +13,46 @@ oikumene::World MakeWorld(std::uint64_t seed = 42) {
     return oikumene::WorldGenerator::Generate(params);
 }
 
+oikumene::World MakeSmallPastureWorld() {
+    using namespace oikumene;
+
+    World world(7, 7, 20240623);
+    for (auto& tile : world.Tiles()) {
+        tile.is_ocean = false;
+        tile.is_lake = false;
+        tile.biome = Biome::Grassland;
+        tile.fertility = 0.45F;
+        tile.rainfall = 0.42F;
+        tile.temperature = 0.62F;
+        tile.soil_quality = 0.46F;
+        tile.forest_cover = 0.0F;
+        tile.resource = ResourceKind::None;
+        tile.improvement = ImprovementKind::None;
+        tile.worked_by_settlement_id = -1;
+    }
+
+    auto& farm = world.At(3, 2);
+    farm.soil_quality = 0.82F;
+    farm.fertility = 0.78F;
+    farm.has_river = true;
+
+    auto& lumber = world.At(2, 3);
+    lumber.biome = Biome::Forest;
+    lumber.fertility = 0.52F;
+    lumber.soil_quality = 0.48F;
+    lumber.forest_cover = 0.82F;
+    lumber.resource = ResourceKind::Wood;
+
+    auto& pasture = world.At(4, 3);
+    pasture.biome = Biome::Grassland;
+    pasture.fertility = 0.58F;
+    pasture.soil_quality = 0.34F;
+    pasture.rainfall = 0.38F;
+    pasture.resource = ResourceKind::Horse;
+
+    return world;
+}
+
 bool WorkableSettlementTile(const oikumene::Tile& tile) {
     return !tile.is_ocean && !tile.is_lake && tile.biome != oikumene::Biome::Mountain &&
            tile.biome != oikumene::Biome::Snow && tile.soil_quality > 0.0F;
@@ -35,7 +75,7 @@ oikumene::Settlement MakeSettlementAtBestSoil(const oikumene::World& world) {
     settlement.x = best->x;
     settlement.y = best->y;
     settlement.population = 80;
-    settlement.turns_since_founded = 20;
+    settlement.turns_since_founded = 0;
     settlement.stockpile.food = 120.0F;
     settlement.stockpile.wood = 80.0F;
     return settlement;
@@ -62,7 +102,7 @@ void TestVillageBuildsFarmOnFertileTile() {
     Simulation sim(MakeWorld(42), SimulationParams{});
     sim.Settlements().push_back(MakeSettlementAtBestSoil(sim.GetWorld()));
     sim.Settlements().front().level = SettlementLevel::Village;
-    RunSettlementUpdate(sim, 1);
+    RunSettlementUpdate(sim, 6);
     assert(CountImprovement(sim.GetWorld(), ImprovementKind::Farm) > 0);
 }
 
@@ -88,7 +128,8 @@ void TestFarmIncreasesFoodOutput() {
 
     Simulation sim(MakeWorld(42), SimulationParams{});
     sim.Settlements().push_back(MakeSettlementAtBestSoil(sim.GetWorld()));
-    RunSettlementUpdate(sim, 2);
+    sim.Settlements().front().level = SettlementLevel::Village;
+    RunSettlementUpdate(sim, 6);
     assert(CountImprovement(sim.GetWorld(), ImprovementKind::Farm) > 0);
     assert(sim.Settlements().front().local_food_output_last_turn > 0.0F);
 }
@@ -140,6 +181,26 @@ void TestTileImprovementIsDeterministicForSameSeed() {
     assert(left.Settlements().front().population == right.Settlements().front().population);
 }
 
+void TestPastureBuildsOnOpenGrassland() {
+    using namespace oikumene;
+
+    Simulation sim(MakeSmallPastureWorld(), SimulationParams{});
+    Settlement settlement;
+    settlement.id = 0;
+    settlement.x = 3;
+    settlement.y = 3;
+    settlement.level = SettlementLevel::Village;
+    settlement.population = 130;
+    settlement.stockpile.food = 180.0F;
+    settlement.stockpile.wood = 120.0F;
+    sim.Settlements().push_back(settlement);
+
+    RunSettlementUpdate(sim, 14);
+    assert(CountImprovement(sim.GetWorld(), ImprovementKind::Farm) > 0);
+    assert(CountImprovement(sim.GetWorld(), ImprovementKind::LumberCamp) > 0);
+    assert(CountImprovement(sim.GetWorld(), ImprovementKind::Pasture) > 0);
+}
+
 }  // namespace
 
 int main() {
@@ -149,6 +210,7 @@ int main() {
     TestCarryingCapacityLimitsPopulationGrowth();
     TestNoFarmOnOceanOrMountain();
     TestTileImprovementIsDeterministicForSameSeed();
+    TestPastureBuildsOnOpenGrassland();
 
     std::cout << "oikumene_settlement_economy_tests passed\n";
     return 0;

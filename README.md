@@ -23,6 +23,7 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 - 已有 headless 工具：
   - `oikumene_worldgen_batch`：批量生成世界并输出世界生成报告。
   - `oikumene_sim_batch`：无窗口跑部落/定居仿真并输出 summary、final_state、events。
+  - `oikumene_sim_balance_batch`：批量跑多个 seed，输出人口、农田、牧场、伐木、粮食供需和承载力指标。
 
 ## C++ 依赖
 
@@ -145,7 +146,7 @@ ctest --test-dir build --output-on-failure
 - 世界生成基础约束。
 - 世界生成平衡性。
 - app 配置和命令行解析。
-- band 迁徙、定居、settlement 成长、village 升级、仿真确定性和事件顺序。
+- band 迁徙、定居、settlement 成长、village 升级、牧场建设、仿真确定性和事件顺序。
 
 ## 批处理工具
 
@@ -178,6 +179,27 @@ cd CppClient
 - `states.jsonl`：仅在传入 `--sample-every N` 时生成。
 
 `summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗和平均承载力。`final_state.json` 会保留 Band / Settlement 的调试字段，并导出 `improved_tiles` 摘要。
+
+批量检查村庄经济平衡：
+
+```bash
+cd CppClient
+./build/oikumene_sim_balance_batch --start-seed 0 --count 20 --width 80 --height 56 --bands 8 --turns 200 --out ../runs/sim_balance_check
+```
+
+输出：
+
+- `summary.csv`
+- `summary.json`
+
+这个工具用于调 `SimulationParams` 和 `settlement_system.cpp` 中的农田增长、承载力、粮食产出、伐木速度、牧场建设等参数。重点看：
+
+- `mean_total_population`：多个 seed 的平均人口。
+- `mean_farms` / `mean_lumbercamps` / `mean_pastures`：不同改良是否都能稳定出现。
+- `mean_farm_share_of_worked_tiles`：农田是否过快铺满已开发地。
+- `mean_food_output_consumption_ratio`：粮食是否过剩或过紧。
+- `mean_wood_output`：伐木场是否真的被劳动力使用。
+- `mean_famine_events`：是否出现异常饥荒。
 
 ## 开发格式化
 

@@ -127,6 +127,11 @@ add_executable(oikumene_sim_batch
 )
 target_link_libraries(oikumene_sim_batch PRIVATE oikumene_core)
 
+add_executable(oikumene_sim_balance_batch
+    tools/sim_balance_batch.cpp
+)
+target_link_libraries(oikumene_sim_balance_batch PRIVATE oikumene_core)
+
 add_executable(oikumene_app_config_tests
     tests/test_app_config.cpp
 )
@@ -177,5 +182,13 @@ if(BUILD_TESTING)
             -DEXE=$<TARGET_FILE:oikumene_sim_batch>
             -DOUT=${CMAKE_CURRENT_BINARY_DIR}/sim_batch_smoke
             -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_sim_batch.cmake
+    )
+    add_test(
+        NAME oikumene_sim_balance_batch_smoke
+        COMMAND
+            ${CMAKE_COMMAND}
+            -DEXE=$<TARGET_FILE:oikumene_sim_balance_batch>
+            -DOUT=${CMAKE_CURRENT_BINARY_DIR}/sim_balance_batch_smoke
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_sim_balance_batch.cmake
     )
 endif()
