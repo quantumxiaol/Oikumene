@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "oikumene/sim/stockpile.hpp"
 
@@ -26,6 +27,12 @@ struct Settlement {
     float local_wood_output_last_turn = 0.0F;
     float food_consumption_last_turn = 0.0F;
     float upgrade_readiness = 0.0F;
+    int work_radius = 2;
+    std::vector<int> worked_tile_indices;
+    float ore_output_last_turn = 0.0F;
+    float carrying_capacity = 45.0F;
+    float carrying_capacity_ratio = 0.0F;
+    int worked_tile_count = 0;
 };
 
 }  // namespace oikumene

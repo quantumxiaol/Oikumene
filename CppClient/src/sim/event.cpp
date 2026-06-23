@@ -14,6 +14,20 @@ std::string ToString(EventType type) {
             return "Famine";
         case EventType::SettlementUpgraded:
             return "SettlementUpgraded";
+        case EventType::TileImproved:
+            return "TileImproved";
+        case EventType::FarmBuilt:
+            return "FarmBuilt";
+        case EventType::LumberCampBuilt:
+            return "LumberCampBuilt";
+        case EventType::PastureBuilt:
+            return "PastureBuilt";
+        case EventType::ShallowMineBuilt:
+            return "ShallowMineBuilt";
+        case EventType::ForestCleared:
+            return "ForestCleared";
+        case EventType::CarryingCapacityReached:
+            return "CarryingCapacityReached";
     }
     return "Unknown";
 }

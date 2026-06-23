@@ -44,6 +44,32 @@ void DrawPanelBackground(int x, int y, int width, int height) {
     DrawRectangleLines(x, y, width, height, Color{78, 86, 94, 205});
 }
 
+Rectangle PlaybackBarBounds() {
+    return Rectangle{16.0F, static_cast<float>(GetScreenHeight() - 58), 718.0F, 42.0F};
+}
+
+Rectangle PlaybackButton(int index, float width) {
+    const Rectangle bar = PlaybackBarBounds();
+    float x = bar.x + 12.0F;
+    constexpr float gap = 8.0F;
+    const float widths[] = {98.0F, 66.0F, 66.0F, 72.0F, 64.0F, 92.0F, 64.0F, 108.0F};
+    for (int i = 0; i < index; ++i) {
+        x += widths[i] + gap;
+    }
+    return Rectangle{x, bar.y + 8.0F, width, 26.0F};
+}
+
+bool DrawButton(Rectangle rect, const std::string& label, bool active = false) {
+    const Vector2 mouse = GetMousePosition();
+    const bool hovered = CheckCollisionPointRec(mouse, rect);
+    const Color fill = active ? Color{52, 112, 86, 230}
+                              : hovered ? Color{54, 62, 70, 230} : Color{32, 38, 44, 220};
+    DrawRectangleRec(rect, fill);
+    DrawRectangleLinesEx(rect, 1.0F, Color{96, 106, 116, 230});
+    DrawText(label.c_str(), static_cast<int>(rect.x + 10.0F), static_cast<int>(rect.y + 6.0F), 14, RAYWHITE);
+    return hovered && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+}
+
 std::string Fixed(float value, int precision = 2) {
     std::ostringstream stream;
     stream.setf(std::ios::fixed);
@@ -165,9 +191,7 @@ std::string Truncate(std::string text, std::size_t limit) {
 }
 
 void StepTurns(AppState& state, int turns) {
-    for (int i = 0; i < turns; ++i) {
-        state.simulation.AdvanceOneTurn();
-    }
+    state.controller.StepTurns(state.simulation, turns);
 }
 
 void BuildSimulation(AppState& state, std::uint64_t seed) {
@@ -180,7 +204,7 @@ void BuildSimulation(AppState& state, std::uint64_t seed) {
     state.report = BuildWorldGenerationReport(state.simulation.GetWorld());
     state.selected_band_id = -1;
     state.selected_settlement_id = -1;
-    state.auto_run_accumulator = 0.0F;
+    state.controller.SetRunning(false);
 }
 
 void SelectAtHover(AppState& state) {
@@ -253,7 +277,13 @@ void HandleInput(AppState& state) {
         StepTurns(state, IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT) ? 100 : 10);
     }
     if (IsKeyPressed(KEY_A)) {
-        state.auto_run = !state.auto_run;
+        state.controller.ToggleRunning();
+    }
+    if (IsKeyPressed(KEY_MINUS)) {
+        state.controller.SetTurnsPerSecond(state.controller.TurnsPerSecond() - 1.0F);
+    }
+    if (IsKeyPressed(KEY_EQUAL)) {
+        state.controller.SetTurnsPerSecond(state.controller.TurnsPerSecond() + 1.0F);
     }
     if (IsKeyPressed(KEY_TAB)) {
         state.show_debug_panel = !state.show_debug_panel;
@@ -271,7 +301,7 @@ void HandleInput(AppState& state) {
     if (IsKeyPressed(KEY_F11)) {
         ToggleFullscreen();
     }
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !CheckCollisionPointRec(GetMousePosition(), PlaybackBarBounds())) {
         SelectAtHover(state);
     }
     if (IsKeyPressed(KEY_M)) {
@@ -287,18 +317,7 @@ void HandleInput(AppState& state) {
 }
 
 void AdvanceAutoRun(AppState& state) {
-    if (!state.auto_run) {
-        return;
-    }
-
-    const float turns_per_second = std::max(0.25F, state.config.simulation.turns_per_second);
-    state.auto_run_accumulator += GetFrameTime() * turns_per_second;
-    const int turns = std::min(25, static_cast<int>(state.auto_run_accumulator));
-    if (turns <= 0) {
-        return;
-    }
-    state.auto_run_accumulator -= static_cast<float>(turns);
-    StepTurns(state, turns);
+    state.controller.Update(GetFrameTime(), state.simulation);
 }
 
 void UpdateHover(AppState& state) {
@@ -353,9 +372,43 @@ void DrawHud(const AppState& state) {
               std::to_string(TotalPopulation(state.simulation.Bands(), state.simulation.Settlements())))
                  .c_str(),
              30, 82, 16, Color{202, 211, 218, 255});
-    DrawText(("A " + std::string(state.auto_run ? "run" : "pause") + "  Space step  N +10  Tab details  E events  C center")
+    DrawText(("A " + std::string(state.controller.IsRunning() ? "run" : "pause") +
+              "  Space step  N +10  Tab details  E events  C center")
                  .c_str(),
              30, 106, 15, Color{152, 164, 174, 255});
+}
+
+void DrawPlaybackBar(AppState& state) {
+    const Rectangle bar = PlaybackBarBounds();
+    DrawPanelBackground(static_cast<int>(bar.x), static_cast<int>(bar.y), static_cast<int>(bar.width),
+                        static_cast<int>(bar.height));
+
+    if (DrawButton(PlaybackButton(0, 98.0F), state.controller.IsRunning() ? "Pause" : "Play",
+                   state.controller.IsRunning())) {
+        state.controller.ToggleRunning();
+    }
+    if (DrawButton(PlaybackButton(1, 66.0F), "Step")) {
+        StepTurns(state, 1);
+    }
+    if (DrawButton(PlaybackButton(2, 66.0F), "+10")) {
+        StepTurns(state, 10);
+    }
+    if (DrawButton(PlaybackButton(3, 72.0F), "+100")) {
+        StepTurns(state, 100);
+    }
+    if (DrawButton(PlaybackButton(4, 64.0F), "TPS -")) {
+        state.controller.SetTurnsPerSecond(state.controller.TurnsPerSecond() - 1.0F);
+    }
+    DrawButton(PlaybackButton(5, 92.0F), "TPS " + Fixed(state.controller.TurnsPerSecond(), 1));
+    if (DrawButton(PlaybackButton(6, 64.0F), "TPS +")) {
+        state.controller.SetTurnsPerSecond(state.controller.TurnsPerSecond() + 1.0F);
+    }
+    if (DrawButton(PlaybackButton(7, 108.0F), "Reset Bands")) {
+        state.simulation.InitializeBands(state.config.simulation.initial_bands);
+        state.selected_band_id = -1;
+        state.selected_settlement_id = -1;
+        state.status_message = "Reset bands on current world";
+    }
 }
 
 void DrawInspectorDetails(const AppState& state, int& y) {
@@ -376,6 +429,14 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                   Fixed(tile.settlement_score))
                      .c_str(),
                  34, y, 17, Color{202, 211, 218, 255});
+        y += 22;
+        DrawText(("Improve " + ToString(tile.improvement) + "  WorkedBy " +
+                  std::to_string(tile.worked_by_settlement_id))
+                     .c_str(),
+                 34, y, 17, Color{202, 211, 218, 255});
+        y += 22;
+        DrawText(("Soil " + Fixed(tile.soil_quality) + "  Forest " + Fixed(tile.forest_cover)).c_str(), 34, y, 17,
+                 Color{202, 211, 218, 255});
         y += 26;
     }
 
@@ -424,6 +485,16 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                   Fixed(settlement->upgrade_readiness * 100.0F, 0) + "%")
                      .c_str(),
                  34, y, 17, Color{238, 218, 144, 255});
+        y += 22;
+        DrawText(("Ore out " + Fixed(settlement->ore_output_last_turn) + "  Worked " +
+                  std::to_string(settlement->worked_tile_count))
+                     .c_str(),
+                 34, y, 17, Color{238, 218, 144, 255});
+        y += 22;
+        DrawText(("Capacity " + Fixed(settlement->carrying_capacity, 0) + "  Ratio " +
+                  Fixed(settlement->carrying_capacity_ratio * 100.0F, 0) + "%")
+                     .c_str(),
+                 34, y, 17, Color{238, 218, 144, 255});
     }
 }
 
@@ -442,8 +513,8 @@ void DrawDebugPanel(const AppState& state) {
              34, 256, 18, Color{184, 194, 202, 255});
     DrawText(("Python Agent: " + StatusText(state.health)).c_str(), 34, 282, 18, StatusColor(state.health.online));
     DrawText(("Sim: " + state.simulation.StatusSummary()).c_str(), 34, 308, 18, Color{184, 194, 202, 255});
-    DrawText(("Auto-run: " + std::string(state.auto_run ? "on" : "off") + "  TPS " +
-              Fixed(state.config.simulation.turns_per_second, 1) + "  Events: " +
+    DrawText(("Auto-run: " + std::string(state.controller.IsRunning() ? "on" : "off") + "  TPS " +
+              Fixed(state.controller.TurnsPerSecond(), 1) + "  Events: " +
               std::to_string(state.simulation.Events().Size()))
                  .c_str(),
              34, 332, 18, Color{184, 194, 202, 255});
@@ -510,8 +581,11 @@ int OikumeneApp::Run() {
     state.config = config_;
     state.show_debug_panel = config_.ui.show_debug_panel;
     state.show_help_panel = config_.ui.show_help_panel;
-    state.auto_run = config_.simulation.auto_run;
+    state.controller.SetTurnsPerSecond(config_.simulation.turns_per_second);
+    state.controller.SetRunning(config_.simulation.auto_run);
     BuildSimulation(state, config_.simulation.default_seed);
+    state.controller.SetTurnsPerSecond(config_.simulation.turns_per_second);
+    state.controller.SetRunning(config_.simulation.auto_run);
     state.camera.FitToWorld(state.simulation.GetWorld(), GetScreenWidth(), GetScreenHeight());
     state.health = state.remote_provider.CheckHealth();
 
@@ -525,6 +599,7 @@ int OikumeneApp::Run() {
         state.renderer.Draw(state.simulation.GetWorld(), state.camera, state.current_layer, state.hover_tile);
         state.renderer.DrawEntities(state.simulation.Bands(), state.simulation.Settlements(), state.camera);
         DrawHud(state);
+        DrawPlaybackBar(state);
         DrawDebugPanel(state);
         if (state.show_help_panel) {
             DrawHelpPanel();

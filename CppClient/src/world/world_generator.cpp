@@ -383,6 +383,23 @@ void WorldGenerator::GenerateResources() {
             tile.resource_amount = Clamp01(0.35F + geology * 0.45F + Random01(tile.x, tile.y, 137) * 0.35F);
         }
     }
+
+    for (auto& tile : world_.Tiles()) {
+        tile.improvement = ImprovementKind::None;
+        tile.worked_by_settlement_id = -1;
+        tile.improvement_progress = 0.0F;
+        tile.soil_quality = IsLand(tile) ? Clamp01(tile.fertility * 0.78F + tile.rainfall * 0.14F +
+                                                   (tile.has_river || tile.is_coast ? 0.10F : 0.0F))
+                                         : 0.0F;
+        tile.forest_cover = 0.0F;
+        if (tile.biome == Biome::Forest) {
+            tile.forest_cover = Clamp01(0.62F + tile.rainfall * 0.28F);
+        } else if (tile.biome == Biome::Rainforest) {
+            tile.forest_cover = Clamp01(0.82F + tile.rainfall * 0.16F);
+        } else if (tile.resource == ResourceKind::Wood || tile.resource == ResourceKind::Bamboo) {
+            tile.forest_cover = 0.58F;
+        }
+    }
 }
 
 void WorldGenerator::ComputeMovementCost() {

@@ -6,6 +6,8 @@
 
 #include "oikumene/app/app_config.hpp"
 #include "oikumene/app/command_line.hpp"
+#include "oikumene/core/simulation.hpp"
+#include "oikumene/world/world_generator.hpp"
 
 namespace {
 
@@ -79,6 +81,32 @@ void TestCommandLineOverridesConfig() {
     assert(parsed.config.simulation.auto_run);
 }
 
+void TestCommandLineSeedOverridesConfig() {
+    using namespace oikumene;
+
+    AppConfig base;
+    base.simulation.default_seed = 777;
+    const auto parsed = ParseCommandLine({"--seed", "42"}, base);
+    assert(parsed.error.empty());
+    assert(parsed.config.simulation.default_seed == 42);
+}
+
+void TestStartupWorldUsesCommandLineSeed() {
+    using namespace oikumene;
+
+    AppConfig base;
+    base.simulation.default_seed = 777;
+    const auto parsed = ParseCommandLine({"--seed", "42"}, base);
+    assert(parsed.error.empty());
+
+    WorldGenerationParams params;
+    params.seed = parsed.config.simulation.default_seed;
+    params.width = parsed.config.simulation.world_width;
+    params.height = parsed.config.simulation.world_height;
+    Simulation sim(WorldGenerator::Generate(params), SimulationParams{});
+    assert(sim.GetWorld().Seed() == 42);
+}
+
 void TestCommandLineRejectsInvalidValues() {
     using namespace oikumene;
 
@@ -98,6 +126,8 @@ int main() {
     TestAppConfigJsonRoundTrip();
     TestAppConfigLoadSaveRoundTrip();
     TestCommandLineOverridesConfig();
+    TestCommandLineSeedOverridesConfig();
+    TestStartupWorldUsesCommandLineSeed();
     TestCommandLineRejectsInvalidValues();
 
     std::cout << "oikumene_app_config_tests passed\n";

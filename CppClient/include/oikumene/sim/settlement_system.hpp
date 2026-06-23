@@ -15,7 +15,7 @@ namespace oikumene {
 
 class SettlementSystem {
 public:
-    static void UpdateSettlements(const World& world,
+    static void UpdateSettlements(World& world,
                                   const SimulationParams& params,
                                   Turn turn,
                                   std::vector<Settlement>& settlements,

@@ -41,6 +41,7 @@ include(cmake/ThirdParty.cmake)
 add_library(oikumene_core STATIC
     src/app/app_config.cpp
     src/app/command_line.cpp
+    src/app/simulation_controller.cpp
     src/ai/heuristic_decision_provider.cpp
     src/ai/remote_decision_provider.cpp
     src/core/simulation.cpp
@@ -53,6 +54,7 @@ add_library(oikumene_core STATIC
     src/sim/settlement_system.cpp
     src/sim/simulation_params.cpp
     src/world/biome.cpp
+    src/world/improvement.cpp
     src/world/resource.cpp
     src/world/world.cpp
     src/world/world_generation_report.cpp
@@ -130,6 +132,11 @@ add_executable(oikumene_app_config_tests
 )
 target_link_libraries(oikumene_app_config_tests PRIVATE oikumene_core)
 
+add_executable(oikumene_simulation_controller_tests
+    tests/test_simulation_controller.cpp
+)
+target_link_libraries(oikumene_simulation_controller_tests PRIVATE oikumene_core)
+
 add_executable(oikumene_decision_tests
     tests/test_decision_models.cpp
 )
@@ -150,12 +157,19 @@ add_executable(oikumene_band_settlement_tests
 )
 target_link_libraries(oikumene_band_settlement_tests PRIVATE oikumene_core)
 
+add_executable(oikumene_settlement_economy_tests
+    tests/test_settlement_economy.cpp
+)
+target_link_libraries(oikumene_settlement_economy_tests PRIVATE oikumene_core)
+
 if(BUILD_TESTING)
     add_test(NAME oikumene_app_config_tests COMMAND oikumene_app_config_tests)
+    add_test(NAME oikumene_simulation_controller_tests COMMAND oikumene_simulation_controller_tests)
     add_test(NAME oikumene_decision_tests COMMAND oikumene_decision_tests)
     add_test(NAME oikumene_world_generation_tests COMMAND oikumene_world_generation_tests)
     add_test(NAME oikumene_world_generation_balance_tests COMMAND oikumene_world_generation_balance_tests)
     add_test(NAME oikumene_band_settlement_tests COMMAND oikumene_band_settlement_tests)
+    add_test(NAME oikumene_settlement_economy_tests COMMAND oikumene_settlement_economy_tests)
     add_test(
         NAME oikumene_sim_batch_smoke
         COMMAND

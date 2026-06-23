@@ -122,6 +122,11 @@ nlohmann::json BandToJson(const oikumene::Band& band) {
 }
 
 nlohmann::json SettlementToJson(const oikumene::Settlement& settlement) {
+    nlohmann::json worked_tiles = nlohmann::json::array();
+    for (const int tile_index : settlement.worked_tile_indices) {
+        worked_tiles.push_back(tile_index);
+    }
+
     return nlohmann::json{
         {"id", settlement.id},
         {"x", settlement.x},
@@ -135,6 +140,12 @@ nlohmann::json SettlementToJson(const oikumene::Settlement& settlement) {
         {"local_wood_output_last_turn", settlement.local_wood_output_last_turn},
         {"food_consumption_last_turn", settlement.food_consumption_last_turn},
         {"upgrade_readiness", settlement.upgrade_readiness},
+        {"work_radius", settlement.work_radius},
+        {"worked_tile_indices", worked_tiles},
+        {"worked_tile_count", settlement.worked_tile_count},
+        {"ore_output_last_turn", settlement.ore_output_last_turn},
+        {"carrying_capacity", settlement.carrying_capacity},
+        {"carrying_capacity_ratio", settlement.carrying_capacity_ratio},
     };
 }
 
@@ -168,6 +179,57 @@ int CountEvents(const oikumene::Simulation& sim, oikumene::EventType type) {
         count += event.type == type ? 1 : 0;
     }
     return count;
+}
+
+int CountImprovement(const oikumene::Simulation& sim, oikumene::ImprovementKind kind) {
+    int count = 0;
+    for (const auto& tile : sim.GetWorld().Tiles()) {
+        count += tile.improvement == kind ? 1 : 0;
+    }
+    return count;
+}
+
+int CountWorkedTiles(const oikumene::Simulation& sim) {
+    int count = 0;
+    for (const auto& tile : sim.GetWorld().Tiles()) {
+        count += tile.worked_by_settlement_id >= 0 ? 1 : 0;
+    }
+    return count;
+}
+
+float TotalFoodOutputLastTurn(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    for (const auto& settlement : sim.Settlements()) {
+        total += settlement.local_food_output_last_turn;
+    }
+    return total;
+}
+
+float TotalFoodConsumptionLastTurn(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    for (const auto& settlement : sim.Settlements()) {
+        total += settlement.food_consumption_last_turn;
+    }
+    return total;
+}
+
+float TotalWoodOutputLastTurn(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    for (const auto& settlement : sim.Settlements()) {
+        total += settlement.local_wood_output_last_turn;
+    }
+    return total;
+}
+
+float AverageCarryingCapacity(const oikumene::Simulation& sim) {
+    if (sim.Settlements().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& settlement : sim.Settlements()) {
+        total += settlement.carrying_capacity;
+    }
+    return total / static_cast<float>(sim.Settlements().size());
 }
 
 float AverageSettlementScore(const oikumene::Simulation& sim) {
@@ -215,6 +277,25 @@ int TotalPopulation(const oikumene::Simulation& sim) {
     return total;
 }
 
+nlohmann::json ImprovedTilesToJson(const oikumene::Simulation& sim) {
+    nlohmann::json tiles = nlohmann::json::array();
+    for (const auto& tile : sim.GetWorld().Tiles()) {
+        if (tile.improvement == oikumene::ImprovementKind::None && tile.worked_by_settlement_id < 0) {
+            continue;
+        }
+        tiles.push_back(nlohmann::json{
+            {"x", tile.x},
+            {"y", tile.y},
+            {"improvement", oikumene::ToString(tile.improvement)},
+            {"worked_by_settlement_id", tile.worked_by_settlement_id},
+            {"soil_quality", tile.soil_quality},
+            {"forest_cover", tile.forest_cover},
+            {"resource", oikumene::ToString(tile.resource)},
+        });
+    }
+    return tiles;
+}
+
 nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
     nlohmann::json bands = nlohmann::json::array();
     for (const auto& band : sim.Bands()) {
@@ -232,6 +313,7 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
         {"active_bands", CountActiveBands(sim)},
         {"settlements", settlements},
         {"bands", bands},
+        {"improved_tiles", ImprovedTilesToJson(sim)},
         {"event_count", sim.Events().Size()},
     };
 }
@@ -254,12 +336,25 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"average_settlement_score", AverageSettlementScore(sim)},
         {"average_settlement_fertility", AverageSettlementFertility(sim)},
         {"max_settlement_population", MaxSettlementPopulation(sim)},
+        {"farm_count", CountImprovement(sim, oikumene::ImprovementKind::Farm)},
+        {"lumbercamp_count", CountImprovement(sim, oikumene::ImprovementKind::LumberCamp)},
+        {"pasture_count", CountImprovement(sim, oikumene::ImprovementKind::Pasture)},
+        {"shallow_mine_count", CountImprovement(sim, oikumene::ImprovementKind::ShallowMine)},
+        {"worked_tile_count", CountWorkedTiles(sim)},
+        {"total_food_output_last_turn", TotalFoodOutputLastTurn(sim)},
+        {"total_food_consumption_last_turn", TotalFoodConsumptionLastTurn(sim)},
+        {"total_wood_output_last_turn", TotalWoodOutputLastTurn(sim)},
+        {"average_carrying_capacity", AverageCarryingCapacity(sim)},
         {"event_count", sim.Events().Size()},
         {"migration_events", CountEvents(sim, oikumene::EventType::BandMigrated)},
         {"settlement_founded_events", CountEvents(sim, oikumene::EventType::SettlementFounded)},
         {"population_growth_events", CountEvents(sim, oikumene::EventType::PopulationGrowth)},
         {"famine_events", CountEvents(sim, oikumene::EventType::Famine)},
         {"village_upgrade_events", CountEvents(sim, oikumene::EventType::SettlementUpgraded)},
+        {"farm_built_events", CountEvents(sim, oikumene::EventType::FarmBuilt)},
+        {"lumbercamp_built_events", CountEvents(sim, oikumene::EventType::LumberCampBuilt)},
+        {"pasture_built_events", CountEvents(sim, oikumene::EventType::PastureBuilt)},
+        {"carrying_capacity_reached_events", CountEvents(sim, oikumene::EventType::CarryingCapacityReached)},
     };
 }
 
@@ -276,6 +371,14 @@ nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
         {"average_settlement_score", AverageSettlementScore(sim)},
         {"average_settlement_fertility", AverageSettlementFertility(sim)},
         {"max_settlement_population", MaxSettlementPopulation(sim)},
+        {"farm_count", CountImprovement(sim, oikumene::ImprovementKind::Farm)},
+        {"lumbercamp_count", CountImprovement(sim, oikumene::ImprovementKind::LumberCamp)},
+        {"pasture_count", CountImprovement(sim, oikumene::ImprovementKind::Pasture)},
+        {"worked_tile_count", CountWorkedTiles(sim)},
+        {"total_food_output_last_turn", TotalFoodOutputLastTurn(sim)},
+        {"total_food_consumption_last_turn", TotalFoodConsumptionLastTurn(sim)},
+        {"total_wood_output_last_turn", TotalWoodOutputLastTurn(sim)},
+        {"average_carrying_capacity", AverageCarryingCapacity(sim)},
     };
 }
 

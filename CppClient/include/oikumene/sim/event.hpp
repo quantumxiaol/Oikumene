@@ -12,6 +12,13 @@ enum class EventType {
     PopulationGrowth,
     Famine,
     SettlementUpgraded,
+    TileImproved,
+    FarmBuilt,
+    LumberCampBuilt,
+    PastureBuilt,
+    ShallowMineBuilt,
+    ForestCleared,
+    CarryingCapacityReached,
 };
 
 [[nodiscard]] std::string ToString(EventType type);

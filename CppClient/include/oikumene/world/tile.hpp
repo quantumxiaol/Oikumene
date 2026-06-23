@@ -1,6 +1,7 @@
 #pragma once
 
 #include "oikumene/world/biome.hpp"
+#include "oikumene/world/improvement.hpp"
 #include "oikumene/world/resource.hpp"
 
 namespace oikumene {
@@ -20,6 +21,11 @@ struct Tile {
     Biome biome = Biome::Ocean;
     ResourceKind resource = ResourceKind::None;
     float resource_amount = 0.0F;
+    ImprovementKind improvement = ImprovementKind::None;
+    int worked_by_settlement_id = -1;
+    float soil_quality = 0.0F;
+    float forest_cover = 0.0F;
+    float improvement_progress = 0.0F;
 
     bool is_ocean = false;
     bool is_lake = false;

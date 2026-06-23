@@ -155,7 +155,7 @@ void TestSettlementPopulationChangesWithFood() {
 
     const int before = sim.Settlements().front().population;
     for (int i = 0; i < 20; ++i) {
-        SettlementSystem::UpdateSettlements(sim.GetWorld(), params, i, sim.Settlements(), sim.Events());
+        SettlementSystem::UpdateSettlements(sim.MutableWorld(), params, i, sim.Settlements(), sim.Events());
     }
     assert(sim.Settlements().front().population > before);
 }
@@ -234,6 +234,18 @@ void TestSimulationResetCreatesFreshState() {
     assert(sim.GetWorld().Seed() == 43);
 }
 
+void TestRegenerateWorldChangesSeed() {
+    using namespace oikumene;
+
+    Simulation sim(MakeWorld(42), SimulationParams{});
+    sim.InitializeBands(8);
+    assert(sim.GetWorld().Seed() == 42);
+
+    sim = Simulation(MakeWorld(43), SimulationParams{});
+    sim.InitializeBands(8);
+    assert(sim.GetWorld().Seed() == 43);
+}
+
 void TestResetBandsClearsSettlementsAndEvents() {
     using namespace oikumene;
 
@@ -250,6 +262,18 @@ void TestResetBandsClearsSettlementsAndEvents() {
     assert(sim.Settlements().empty());
     assert(sim.Events().Size() == 0);
     assert(sim.Bands().size() == 8);
+}
+
+void TestResetBandsDoesNotChangeSeed() {
+    using namespace oikumene;
+
+    Simulation sim(MakeWorld(42), SimulationParams{});
+    sim.InitializeBands(8);
+    for (int i = 0; i < 20; ++i) {
+        sim.AdvanceOneTurn();
+    }
+    sim.InitializeBands(8);
+    assert(sim.GetWorld().Seed() == 42);
 }
 
 void TestSimulationDeterministicForSameSeed() {
@@ -317,7 +341,7 @@ void TestCampCanUpgradeToVillage() {
     settlement.stockpile.wood = 100.0F;
     sim.Settlements().push_back(settlement);
 
-    SettlementSystem::UpdateSettlements(sim.GetWorld(), params, 20, sim.Settlements(), sim.Events());
+    SettlementSystem::UpdateSettlements(sim.MutableWorld(), params, 20, sim.Settlements(), sim.Events());
     assert(sim.Settlements().front().level == SettlementLevel::Village);
     assert(sim.Settlements().front().local_food_output_last_turn > 0.0F);
     assert(sim.Settlements().front().local_wood_output_last_turn >= 0.0F);
@@ -347,7 +371,9 @@ int main() {
     TestBandDecisionReasonIsRecordedAfterUpdate();
     TestSettlementFoundingEventContainsUsefulSummary();
     TestSimulationResetCreatesFreshState();
+    TestRegenerateWorldChangesSeed();
     TestResetBandsClearsSettlementsAndEvents();
+    TestResetBandsDoesNotChangeSeed();
     TestSimulationDeterministicForSameSeed();
     TestEventLogIsChronological();
     TestCampCanUpgradeToVillage();

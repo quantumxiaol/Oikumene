@@ -48,6 +48,42 @@ void DrawResourceMarker(const Tile& tile, Vector2 position, float tile_size) {
     }
 }
 
+void DrawImprovementOverlay(const Tile& tile, Vector2 position, float tile_size) {
+    const Vector2 center{position.x + tile_size * 0.50F, position.y + tile_size * 0.50F};
+    switch (tile.improvement) {
+        case ImprovementKind::Farm: {
+            const Color color{226, 202, 104, 210};
+            DrawRectangleV(Vector2{position.x + tile_size * 0.22F, position.y + tile_size * 0.22F},
+                           Vector2{tile_size * 0.56F, tile_size * 0.56F}, color);
+            DrawLineEx(Vector2{position.x + tile_size * 0.28F, center.y},
+                       Vector2{position.x + tile_size * 0.72F, center.y}, 1.0F, Color{112, 93, 44, 210});
+            DrawLineEx(Vector2{center.x, position.y + tile_size * 0.28F},
+                       Vector2{center.x, position.y + tile_size * 0.72F}, 1.0F, Color{112, 93, 44, 210});
+            break;
+        }
+        case ImprovementKind::LumberCamp:
+            DrawRectangleV(Vector2{center.x - tile_size * 0.16F, center.y - tile_size * 0.16F},
+                           Vector2{tile_size * 0.32F, tile_size * 0.32F}, Color{128, 78, 42, 230});
+            break;
+        case ImprovementKind::Pasture:
+            DrawCircleV(center, std::max(2.0F, tile_size * 0.20F), Color{166, 218, 124, 220});
+            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), tile_size * 0.24F,
+                            Color{76, 108, 54, 220});
+            break;
+        case ImprovementKind::ShallowMine:
+            DrawCircleV(center, std::max(2.0F, tile_size * 0.18F), Color{54, 56, 58, 235});
+            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), tile_size * 0.22F,
+                            Color{206, 210, 214, 220});
+            break;
+        case ImprovementKind::ForagingGround:
+            DrawCircleV(center, std::max(1.5F, tile_size * 0.12F), Color{80, 190, 108, 210});
+            break;
+        case ImprovementKind::Road:
+        case ImprovementKind::None:
+            break;
+    }
+}
+
 }  // namespace
 
 void MapRenderer::Draw(const World& world,
@@ -74,6 +110,8 @@ void MapRenderer::Draw(const World& world,
                        Vector2{position.x + tile_size * 0.85F, position.y + tile_size * 0.50F},
                        std::max(1.0F, tile_size * flow_width), Color{44, 135, 225, 255});
         }
+
+        DrawImprovementOverlay(tile, position, tile_size);
 
         if (layer == MapLayer::Resources) {
             DrawResourceMarker(tile, position, tile_size);

@@ -18,6 +18,8 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 - 已有河流 overlay、资源 marker、band / settlement marker、hover tile inspector。
 - `Simulation` 拥有唯一权威 `World`，渲染读取 `simulation.GetWorld()`。
 - 已有 band 迁徙、采集、定居、camp 升级 village、事件日志。
+- 已有最小村庄经济：村庄会在周围建设 Farm、LumberCamp、Pasture、ShallowMine，并受 carrying capacity 约束。
+- UI 底部有轻量播放控制条：Play/Pause、Step、+10、+100、TPS 调整、Reset Bands。
 - 已有 headless 工具：
   - `oikumene_worldgen_batch`：批量生成世界并输出世界生成报告。
   - `oikumene_sim_batch`：无窗口跑部落/定居仿真并输出 summary、final_state、events。
@@ -111,6 +113,7 @@ cp CppClient/config/settings.example.json CppClient/config/settings.json
 - `B`：在当前世界上重置 band。
 - `H`：重新检测 Python Agent 服务是否在线。
 - `A`：开启/关闭自动推进。
+- `-` / `=`：降低/提高自动推进 TPS。
 - `Space`：推进 1 个仿真回合。
 - `N`：推进 10 个仿真回合。
 - `Shift+N`：推进 100 个仿真回合。
@@ -174,7 +177,7 @@ cd CppClient
 - `world_report.json`
 - `states.jsonl`：仅在传入 `--sample-every N` 时生成。
 
-`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度和最大 settlement 人口。`final_state.json` 会保留 Band / Settlement 的调试字段，例如迁徙原因、上一回合采集产出、本地食物/木材产出、消耗和升级进度。
+`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗和平均承载力。`final_state.json` 会保留 Band / Settlement 的调试字段，并导出 `improved_tiles` 摘要。
 
 ## 开发格式化
 
@@ -198,4 +201,5 @@ Phase 2 后续重点：
 - 增加村庄经济面板和曲线。
 - 让 band / settlement 事件在 UI 中可筛选。
 - 批量跑多个 seed，观察定居速度、Village 升级速度和饥荒频率。
+- 继续平衡 Farm/LumberCamp/Pasture 的建设速度、人口增长速度和 carrying capacity。
 - 进入 Phase 3：polity、首都、控制力场和自然边界。
