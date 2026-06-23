@@ -1,0 +1,56 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+build/
+build-*/
+out/
+bin/
+
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# C/C++ 编译产生的中间文件和二进制程序
+*.o
+*.obj
+*.out
+*.app
+*.exe
+*.d
+
+# 动态/静态链接库 (包括 Python 的 C++ 绑定扩展)
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.pyd
+
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Trash-*
+
+
+# Clangd 的代码补全缓存库
+.cache/
+.clangd/
+
+# VS Code 的本地缓存
+.vscode/ipch/
+.vscode/.cache/
+*.code-workspace

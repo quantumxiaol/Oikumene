@@ -1,0 +1,15 @@
+{
+    // 告诉 VS Code 的 Python 插件，虚拟环境在子目录里
+    "python.defaultInterpreterPath": "${workspaceFolder}/PythonAgentServer/.venv/bin/python",
+    
+    // 告诉 Python 插件，代码分析的根目录在哪里
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/PythonAgentServer/src"
+    ],
+    
+    // 终端启动时，自动激活子目录的虚拟环境（可选，但极度推荐）
+    "python.terminal.activateEnvironment": true,
+    
+    // 告诉 CMake 插件，C++ 的源码根目录在哪里
+    "cmake.sourceDirectory": "${workspaceFolder}/CppClient"
+}
