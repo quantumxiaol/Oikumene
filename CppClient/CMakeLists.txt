@@ -46,6 +46,7 @@ add_library(oikumene_core STATIC
     src/world/biome.cpp
     src/world/resource.cpp
     src/world/world.cpp
+    src/world/world_generation_report.cpp
     src/world/world_generation_params.cpp
     src/world/world_generator.cpp
 )
@@ -104,11 +105,17 @@ if(APPLE)
     )
 endif()
 
-add_executable(oikumene_tests
+add_executable(oikumene_decision_tests
     tests/test_decision_models.cpp
 )
-target_link_libraries(oikumene_tests PRIVATE oikumene_core)
+target_link_libraries(oikumene_decision_tests PRIVATE oikumene_core)
+
+add_executable(oikumene_world_generation_tests
+    tests/test_world_generation.cpp
+)
+target_link_libraries(oikumene_world_generation_tests PRIVATE oikumene_core)
 
 if(BUILD_TESTING)
-    add_test(NAME oikumene_tests COMMAND oikumene_tests)
+    add_test(NAME oikumene_decision_tests COMMAND oikumene_decision_tests)
+    add_test(NAME oikumene_world_generation_tests COMMAND oikumene_world_generation_tests)
 endif()

@@ -2,7 +2,53 @@
 
 #include "oikumene/render/color_palette.hpp"
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+
 namespace oikumene {
+namespace {
+
+void DrawResourceMarker(const Tile& tile, Vector2 position, float tile_size) {
+    if (tile.resource == ResourceKind::None) {
+        return;
+    }
+
+    const Vector2 center{position.x + tile_size * 0.50F, position.y + tile_size * 0.50F};
+    const float radius = std::max(2.0F, tile_size * 0.24F);
+    const Color color = ColorForResource(tile.resource);
+
+    switch (tile.resource) {
+        case ResourceKind::Horse:
+            DrawTriangle(Vector2{center.x, center.y - radius}, Vector2{center.x - radius, center.y + radius},
+                         Vector2{center.x + radius, center.y + radius}, color);
+            break;
+        case ResourceKind::Stone:
+            DrawRectangleV(Vector2{center.x - radius, center.y - radius}, Vector2{radius * 2.0F, radius * 2.0F}, color);
+            break;
+        case ResourceKind::MeteoricIron: {
+            std::array<Vector2, 5> points{};
+            for (int i = 0; i < 5; ++i) {
+                const float angle = -1.5708F + static_cast<float>(i) * 6.28318F / 5.0F;
+                points[static_cast<std::size_t>(i)] =
+                    Vector2{center.x + std::cos(angle) * radius, center.y + std::sin(angle) * radius};
+            }
+            for (int i = 0; i < 5; ++i) {
+                DrawLineEx(points[static_cast<std::size_t>(i)], points[static_cast<std::size_t>((i + 2) % 5)],
+                           std::max(1.0F, tile_size * 0.10F), color);
+            }
+            break;
+        }
+        case ResourceKind::None:
+            break;
+        default:
+            DrawCircleV(center, radius, color);
+            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius, Color{18, 22, 26, 220});
+            break;
+    }
+}
+
+}  // namespace
 
 void MapRenderer::Draw(const World& world,
                        const CameraController& camera,
@@ -22,15 +68,15 @@ void MapRenderer::Draw(const World& world,
         const Color color = ColorForTile(tile, layer);
         DrawRectangleV(position, Vector2{tile_size + 0.75F, tile_size + 0.75F}, color);
 
-        if (tile.has_river && layer != MapLayer::Resources) {
+        if (tile.has_river) {
+            const float flow_width = std::clamp(tile.river_flow * 0.035F, 0.12F, 0.34F);
             DrawLineEx(Vector2{position.x + tile_size * 0.15F, position.y + tile_size * 0.50F},
                        Vector2{position.x + tile_size * 0.85F, position.y + tile_size * 0.50F},
-                       std::max(1.0F, tile_size * 0.16F), Color{44, 135, 225, 255});
+                       std::max(1.0F, tile_size * flow_width), Color{44, 135, 225, 255});
         }
 
-        if (layer == MapLayer::Resources && tile.resource != ResourceKind::None) {
-            DrawCircleV(Vector2{position.x + tile_size * 0.50F, position.y + tile_size * 0.50F},
-                        std::max(2.0F, tile_size * 0.28F), ColorForResource(tile.resource));
+        if (layer == MapLayer::Resources) {
+            DrawResourceMarker(tile, position, tile_size);
         }
     }
 

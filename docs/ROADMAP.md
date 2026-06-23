@@ -14,6 +14,14 @@
 - Seed-stable world generation.
 - Raylib map layer rendering.
 
+## Phase 1.5: Worldgen Audit And Map Semantics
+
+- River semantics fixed as an overlay (`has_river`, `river_flow`) instead of replacing primary biome.
+- Simplified flow accumulation for river generation.
+- World generation report with biome/resource counts, ratios, means, and top settlement candidates.
+- Resource layer renders dimmed terrain plus resource markers.
+- Screenshot and report export under `runs/worldgen_seed_<seed>/`.
+
 ## Phase 2: Bands and Settlements
 
 - Hunting/gathering bands.

@@ -4,7 +4,6 @@
 #include <array>
 #include <cmath>
 #include <limits>
-#include <unordered_set>
 
 namespace oikumene {
 namespace {
@@ -107,6 +106,7 @@ void WorldGenerator::ClassifyOceanAndLand() {
         tile.is_lake = false;
         tile.has_river = false;
         tile.is_coast = false;
+        tile.river_flow = 0.0F;
         tile.biome = tile.is_ocean ? Biome::Ocean : Biome::Grassland;
     }
 
@@ -178,124 +178,83 @@ void WorldGenerator::GenerateRainfall() {
 }
 
 void WorldGenerator::GenerateRiversAndLakes() {
-    struct Candidate {
-        int x = 0;
-        int y = 0;
-        float score = 0.0F;
-    };
+    const int tile_count = static_cast<int>(world_.Tiles().size());
+    std::vector<int> downslope(static_cast<std::size_t>(tile_count), -1);
+    std::vector<int> order(static_cast<std::size_t>(tile_count), 0);
 
-    std::vector<Candidate> candidates;
-    candidates.reserve(world_.Tiles().size());
-    for (const auto& tile : world_.Tiles()) {
-        if (!tile.is_ocean && tile.elevation > params_.hill_level && tile.rainfall > 0.26F) {
-            candidates.push_back(Candidate{
-                .x = tile.x,
-                .y = tile.y,
-                .score = tile.elevation * 0.62F + tile.rainfall * 0.30F + Random01(tile.x, tile.y, 89) * 0.08F,
-            });
+    for (int index = 0; index < tile_count; ++index) {
+        order[static_cast<std::size_t>(index)] = index;
+    }
+
+    for (auto& tile : world_.Tiles()) {
+        tile.has_river = false;
+        tile.river_flow = 0.0F;
+        if (!tile.is_ocean) {
+            tile.river_flow = 0.35F + tile.rainfall * 1.25F + std::max(0.0F, tile.elevation - params_.sea_level) * 0.25F;
         }
     }
 
-    std::sort(candidates.begin(), candidates.end(), [](const Candidate& lhs, const Candidate& rhs) {
-        return lhs.score > rhs.score;
-    });
-
-    std::vector<int> river_visits(world_.Tiles().size(), 0);
-    int started = 0;
-    for (const auto& source : candidates) {
-        if (started >= params_.river_sources) {
-            break;
-        }
-
-        std::vector<std::pair<int, int>> path;
-        std::unordered_set<int> seen;
-        int x = source.x;
-        int y = source.y;
-
-        for (int step = 0; step < params_.river_max_steps; ++step) {
-            if (!world_.InBounds(x, y)) {
-                break;
-            }
-
-            const auto& tile = world_.At(x, y);
-            const int index = IndexOf(world_, x, y);
-            if (tile.is_ocean || seen.contains(index)) {
-                break;
-            }
-
-            seen.insert(index);
-            path.emplace_back(x, y);
-
-            float best_score = std::numeric_limits<float>::max();
-            int best_x = x;
-            int best_y = y;
-            const float current_elevation = tile.elevation;
-
-            for (const auto& [dx, dy] : NeighborOffsets8()) {
-                const int nx = x + dx;
-                const int ny = y + dy;
-                if (!world_.InBounds(nx, ny)) {
-                    continue;
-                }
-
-                const auto& next = world_.At(nx, ny);
-                float score = next.elevation + Random01(nx, ny, 97) * 0.012F;
-                if (next.is_ocean) {
-                    score -= 0.20F;
-                }
-                if (next.has_river) {
-                    score -= 0.05F;
-                }
-                if (score < best_score) {
-                    best_score = score;
-                    best_x = nx;
-                    best_y = ny;
-                }
-            }
-
-            if (best_x == x && best_y == y) {
-                break;
-            }
-
-            const auto& best = world_.At(best_x, best_y);
-            if (!best.is_ocean && best.elevation >= current_elevation - 0.002F) {
-                if (path.size() >= static_cast<std::size_t>(params_.river_min_length) && tile.rainfall > 0.38F &&
-                    tile.elevation < params_.hill_level + 0.08F) {
-                    world_.At(x, y).is_lake = true;
-                }
-                break;
-            }
-
-            x = best_x;
-            y = best_y;
-        }
-
-        if (path.size() < static_cast<std::size_t>(params_.river_min_length)) {
+    for (const auto& tile : world_.Tiles()) {
+        if (tile.is_ocean) {
             continue;
         }
 
-        ++started;
-        for (const auto& [px, py] : path) {
-            auto& river_tile = world_.At(px, py);
-            if (!river_tile.is_ocean && !river_tile.is_lake) {
-                river_tile.has_river = true;
-                ++river_visits[static_cast<std::size_t>(IndexOf(world_, px, py))];
+        float best_score = tile.elevation - params_.lake_basin_threshold;
+        int best_index = -1;
+        for (const auto& [dx, dy] : NeighborOffsets8()) {
+            const int nx = tile.x + dx;
+            const int ny = tile.y + dy;
+            if (!world_.InBounds(nx, ny)) {
+                continue;
             }
+
+            const auto& neighbor = world_.At(nx, ny);
+            float score = neighbor.elevation + Random01(nx, ny, 149) * 0.004F;
+            if (neighbor.is_ocean) {
+                score -= 0.22F;
+            }
+
+            if (score < best_score) {
+                best_score = score;
+                best_index = IndexOf(world_, nx, ny);
+            }
+        }
+        downslope[static_cast<std::size_t>(IndexOf(world_, tile.x, tile.y))] = best_index;
+    }
+
+    std::sort(order.begin(), order.end(), [this](int lhs, int rhs) {
+        return world_.Tiles()[static_cast<std::size_t>(lhs)].elevation >
+               world_.Tiles()[static_cast<std::size_t>(rhs)].elevation;
+    });
+
+    int lake_tiles = 0;
+    for (int index : order) {
+        auto& tile = world_.Tiles()[static_cast<std::size_t>(index)];
+        if (tile.is_ocean) {
+            continue;
+        }
+
+        const int target = downslope[static_cast<std::size_t>(index)];
+        if (target >= 0) {
+            world_.Tiles()[static_cast<std::size_t>(target)].river_flow += tile.river_flow;
+        } else if (lake_tiles < params_.max_lake_tiles && tile.elevation < params_.hill_level &&
+                   tile.rainfall > 0.42F && !tile.is_coast &&
+                   Random01(tile.x, tile.y, 157) > 0.52F) {
+            tile.is_lake = true;
+            tile.has_river = false;
+            tile.river_flow = 0.0F;
+            ++lake_tiles;
         }
     }
 
     for (auto& tile : world_.Tiles()) {
         if (tile.is_ocean || tile.is_lake) {
+            tile.has_river = false;
             continue;
         }
 
-        const float basin = Noise2D(static_cast<float>(tile.x) / world_.Width(),
-                                    static_cast<float>(tile.y) / world_.Height(), 103, 7.5F);
-        if (tile.elevation < params_.sea_level + 0.055F && tile.rainfall > 0.54F && basin > 0.82F &&
-            !tile.is_coast) {
-            tile.is_lake = true;
-            tile.has_river = false;
-        }
+        const float threshold = params_.river_flow_threshold + (tile.elevation < params_.sea_level + 0.08F ? 1.4F : 0.0F);
+        tile.has_river = tile.river_flow >= threshold;
     }
 }
 
@@ -314,11 +273,6 @@ void WorldGenerator::GenerateBiomes() {
         if (tile.is_lake) {
             tile.biome = Biome::Lake;
             tile.fertility = 0.25F;
-            continue;
-        }
-        if (tile.has_river) {
-            tile.biome = Biome::River;
-            tile.fertility = Clamp01(tile.fertility + 0.18F);
             continue;
         }
         if (tile.is_coast) {
@@ -341,14 +295,14 @@ void WorldGenerator::GenerateBiomes() {
             tile.fertility *= 0.35F;
             continue;
         }
-        if (tile.elevation >= params_.hill_level) {
-            tile.biome = Biome::Hill;
-            tile.fertility *= 0.65F;
-            continue;
-        }
         if (tile.rainfall < 0.20F) {
             tile.biome = Biome::Desert;
             tile.fertility *= 0.18F;
+            continue;
+        }
+        if (tile.elevation >= params_.hill_level && tile.rainfall < 0.32F) {
+            tile.biome = Biome::Hill;
+            tile.fertility *= 0.55F;
             continue;
         }
         if (tile.rainfall > 0.76F && tile.temperature > 0.62F) {
@@ -364,10 +318,21 @@ void WorldGenerator::GenerateBiomes() {
         if (tile.rainfall > 0.47F) {
             tile.biome = Biome::Forest;
             tile.fertility = Clamp01(tile.fertility + 0.04F);
+            if (tile.elevation >= params_.hill_level) {
+                tile.fertility *= 0.82F;
+            }
+            continue;
+        }
+        if (tile.elevation >= params_.hill_level) {
+            tile.biome = Biome::Hill;
+            tile.fertility *= 0.65F;
             continue;
         }
 
         tile.biome = Biome::Grassland;
+        if (tile.has_river) {
+            tile.fertility = Clamp01(tile.fertility + 0.12F);
+        }
     }
 }
 
@@ -375,7 +340,7 @@ void WorldGenerator::GenerateResources() {
     for (auto& tile : world_.Tiles()) {
         tile.resource = ResourceKind::None;
         tile.resource_amount = 0.0F;
-        if (!IsLand(tile) || tile.biome == Biome::River) {
+        if (!IsLand(tile)) {
             continue;
         }
 

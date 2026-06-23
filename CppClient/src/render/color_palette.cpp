@@ -113,8 +113,7 @@ Color ColorForTile(const Tile& tile, MapLayer layer) {
         case MapLayer::Fertility:
             return Greens(tile.fertility);
         case MapLayer::Resources:
-            return tile.resource == ResourceKind::None ? LerpColor(ColorForBiome(tile.biome), Color{20, 22, 24, 255}, 0.62F)
-                                                       : ColorForResource(tile.resource);
+            return LerpColor(ColorForBiome(tile.biome), Color{20, 22, 24, 255}, 0.50F);
         case MapLayer::SettlementScore:
             return LerpColor(Color{52, 50, 56, 255}, Color{238, 214, 93, 255}, tile.settlement_score);
     }

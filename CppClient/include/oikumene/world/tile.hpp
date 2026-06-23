@@ -25,6 +25,7 @@ struct Tile {
     bool is_lake = false;
     bool has_river = false;
     bool is_coast = false;
+    float river_flow = 0.0F;
 
     int owner_polity_id = -1;
     int settlement_id = -1;

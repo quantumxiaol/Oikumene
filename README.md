@@ -80,6 +80,10 @@ cmake --build build-make
 - `1`-`7`：切换地图图层：Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore。
 - `R`：使用新 seed 重新生成世界。
 - `H`：重新检测 Python Agent 服务是否在线。
+- `Tab`：显示/隐藏调试面板。
+- `F1`：显示/隐藏帮助面板。
+- `P`：导出当前窗口截图到 `runs/worldgen_seed_<seed>/layer_<layer>.png`。
+- `M`：导出世界生成报告到 `runs/worldgen_seed_<seed>/report.json`。
 - `W/A/S/D`：平移地图。
 - 鼠标滚轮：缩放地图。
 - 鼠标 hover：查看 tile 信息。
