@@ -87,4 +87,38 @@ void MapRenderer::Draw(const World& world,
     }
 }
 
+void MapRenderer::DrawEntities(const std::vector<Band>& bands,
+                               const std::vector<Settlement>& settlements,
+                               const CameraController& camera) const {
+    const float tile_size = camera.TileSize();
+
+    for (const auto& settlement : settlements) {
+        const Vector2 position = camera.TileToScreen(settlement.x, settlement.y);
+        const Vector2 center{position.x + tile_size * 0.50F, position.y + tile_size * 0.50F};
+        const float radius = std::max(3.0F, tile_size * (settlement.level == SettlementLevel::Village ? 0.42F : 0.34F));
+        const Color fill = settlement.level == SettlementLevel::Village ? Color{246, 235, 185, 255}
+                                                                        : Color{238, 218, 144, 255};
+        DrawRectangleV(Vector2{center.x - radius, center.y - radius}, Vector2{radius * 2.0F, radius * 2.0F}, fill);
+        DrawRectangleLinesEx(Rectangle{center.x - radius, center.y - radius, radius * 2.0F, radius * 2.0F}, 2.0F,
+                             Color{65, 42, 25, 255});
+        if (settlement.level == SettlementLevel::Village) {
+            DrawTriangle(Vector2{center.x, center.y - radius * 1.55F}, Vector2{center.x - radius, center.y - radius},
+                         Vector2{center.x + radius, center.y - radius}, Color{170, 74, 48, 255});
+        }
+    }
+
+    for (const auto& band : bands) {
+        if (!band.active) {
+            continue;
+        }
+        const Vector2 position = camera.TileToScreen(band.x, band.y);
+        const Vector2 center{position.x + tile_size * 0.50F, position.y + tile_size * 0.50F};
+        const float radius = std::max(3.0F, tile_size * 0.32F);
+        DrawTriangle(Vector2{center.x, center.y - radius}, Vector2{center.x - radius, center.y + radius},
+                     Vector2{center.x + radius, center.y + radius}, Color{245, 245, 236, 255});
+        DrawTriangleLines(Vector2{center.x, center.y - radius}, Vector2{center.x - radius, center.y + radius},
+                          Vector2{center.x + radius, center.y + radius}, Color{26, 28, 30, 255});
+    }
+}
+
 }  // namespace oikumene

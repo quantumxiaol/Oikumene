@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include <cctype>
 #include <cstdint>
@@ -21,6 +22,11 @@
 #include "oikumene/world/world_generator.hpp"
 
 namespace {
+
+struct AppOptions {
+    std::uint64_t seed = 42;
+    int bands = 8;
+};
 
 Color StatusColor(bool online) {
     return online ? Color{80, 210, 120, 255} : Color{230, 90, 75, 255};
@@ -56,6 +62,22 @@ std::uint64_t NextSeed(std::uint64_t seed) {
     return seed * 2685821657736338717ULL;
 }
 
+AppOptions ParseArgs(int argc, char** argv) {
+    AppOptions options;
+    for (int i = 1; i < argc; ++i) {
+        const std::string arg = argv[i];
+        if (arg == "--seed" && i + 1 < argc) {
+            options.seed = static_cast<std::uint64_t>(std::stoull(argv[++i]));
+            continue;
+        }
+        if (arg == "--bands" && i + 1 < argc) {
+            options.bands = std::max(0, std::stoi(argv[++i]));
+            continue;
+        }
+    }
+    return options;
+}
+
 std::filesystem::path RunsDirectory() {
     const auto cwd = std::filesystem::current_path();
     if (cwd.filename() == "CppClient") {
@@ -89,9 +111,35 @@ bool WriteReportJson(const oikumene::WorldGenerationReport& report, std::filesys
     return true;
 }
 
+int ActiveBandCount(const std::vector<oikumene::Band>& bands) {
+    int count = 0;
+    for (const auto& band : bands) {
+        count += band.active ? 1 : 0;
+    }
+    return count;
+}
+
+int VillageCount(const std::vector<oikumene::Settlement>& settlements) {
+    int count = 0;
+    for (const auto& settlement : settlements) {
+        count += settlement.level == oikumene::SettlementLevel::Village ? 1 : 0;
+    }
+    return count;
+}
+
+const oikumene::Settlement* SettlementAt(const std::vector<oikumene::Settlement>& settlements, int x, int y) {
+    for (const auto& settlement : settlements) {
+        if (settlement.x == x && settlement.y == y) {
+            return &settlement;
+        }
+    }
+    return nullptr;
+}
+
 }  // namespace
 
-int main() {
+int main(int argc, char** argv) {
+    const AppOptions options = ParseArgs(argc, argv);
     constexpr int screen_width = 1040;
     constexpr int screen_height = 640;
 
@@ -103,15 +151,19 @@ int main() {
     auto health = remote_provider.CheckHealth();
 
     oikumene::WorldGenerationParams generation_params;
-    generation_params.seed = 42;
-    auto world = oikumene::WorldGenerator::Generate(generation_params);
-    auto report = oikumene::BuildWorldGenerationReport(world);
+    generation_params.seed = options.seed;
+    oikumene::SimulationParams simulation_params;
+    simulation_params.initial_band_count = options.bands;
+    simulation = oikumene::Simulation(oikumene::WorldGenerator::Generate(generation_params), simulation_params);
+    simulation.InitializeBands(options.bands);
+    auto report = oikumene::BuildWorldGenerationReport(simulation.GetWorld());
 
     oikumene::CameraController camera;
     oikumene::MapRenderer renderer;
     oikumene::MapLayer current_layer = oikumene::MapLayer::Biome;
     bool show_debug_panel = true;
     bool show_help_panel = false;
+    bool auto_run = false;
     std::string status_message;
     std::optional<std::filesystem::path> pending_screenshot;
 
@@ -120,8 +172,9 @@ int main() {
 
         if (IsKeyPressed(KEY_R)) {
             generation_params.seed = NextSeed(generation_params.seed);
-            world = oikumene::WorldGenerator::Generate(generation_params);
-            report = oikumene::BuildWorldGenerationReport(world);
+            simulation = oikumene::Simulation(oikumene::WorldGenerator::Generate(generation_params), simulation_params);
+            simulation.InitializeBands(options.bands);
+            report = oikumene::BuildWorldGenerationReport(simulation.GetWorld());
             status_message = "Generated seed " + std::to_string(generation_params.seed);
         }
         if (IsKeyPressed(KEY_H)) {
@@ -129,6 +182,12 @@ int main() {
             status_message = "Python health check: " + StatusText(health);
         }
         if (IsKeyPressed(KEY_SPACE)) {
+            simulation.AdvanceOneTurn();
+        }
+        if (IsKeyPressed(KEY_A)) {
+            auto_run = !auto_run;
+        }
+        if (auto_run && GetFrameTime() > 0.0F) {
             simulation.AdvanceOneTurn();
         }
         if (IsKeyPressed(KEY_TAB)) {
@@ -172,52 +231,66 @@ int main() {
         std::optional<std::pair<int, int>> hover_tile;
         int hover_x = 0;
         int hover_y = 0;
-        if (camera.ScreenToTile(GetMousePosition(), world, hover_x, hover_y)) {
+        if (camera.ScreenToTile(GetMousePosition(), simulation.GetWorld(), hover_x, hover_y)) {
             hover_tile = std::pair<int, int>{hover_x, hover_y};
         }
 
         BeginDrawing();
         ClearBackground(Color{18, 22, 26, 255});
 
-        renderer.Draw(world, camera, current_layer, hover_tile);
+        renderer.Draw(simulation.GetWorld(), camera, current_layer, hover_tile);
+        renderer.DrawEntities(simulation.Bands(), simulation.Settlements(), camera);
 
         if (show_debug_panel) {
-            DrawPanelBackground(18, 18, 410, hover_tile.has_value() ? 430 : 326);
+            DrawPanelBackground(18, 18, 430, hover_tile.has_value() ? 514 : 376);
             DrawText("Oikumene / The Habitable World", 34, 34, 22, RAYWHITE);
             DrawText(("Layer: " + oikumene::ToString(current_layer)).c_str(), 34, 68, 18, Color{220, 225, 230, 255});
             DrawText(("Seed: " + std::to_string(generation_params.seed)).c_str(), 34, 94, 18,
                      Color{184, 194, 202, 255});
-            DrawText(("World: " + std::to_string(world.Width()) + " x " + std::to_string(world.Height())).c_str(), 34,
-                     120, 18, Color{184, 194, 202, 255});
+            DrawText(("World: " + std::to_string(simulation.GetWorld().Width()) + " x " +
+                      std::to_string(simulation.GetWorld().Height()))
+                         .c_str(),
+                     34, 120, 18, Color{184, 194, 202, 255});
             DrawText(("Python Agent: " + StatusText(health)).c_str(), 34, 146, 18, StatusColor(health.online));
             DrawText(("Sim: " + simulation.StatusSummary()).c_str(), 34, 172, 18, Color{184, 194, 202, 255});
+            DrawText(("Auto-run: " + std::string(auto_run ? "on" : "off") + "  Events: " +
+                      std::to_string(simulation.Events().Size()))
+                         .c_str(),
+                     34, 196, 18, Color{184, 194, 202, 255});
 
             DrawText(("Land " + Fixed(report.land_ratio * 100.0F, 1) + "%  Ocean " +
                       Fixed((1.0F - report.land_ratio) * 100.0F, 1) + "%  Rivers " +
                       std::to_string(report.river_tiles))
                          .c_str(),
-                     34, 208, 16, Color{202, 211, 218, 255});
+                     34, 232, 16, Color{202, 211, 218, 255});
             DrawText(("Forest " + Fixed(report.forest_ratio * 100.0F, 1) + "%  Desert " +
                       Fixed(report.desert_ratio * 100.0F, 1) + "%  Top settle " +
                       Fixed(report.top_settlement_score))
                          .c_str(),
-                     34, 232, 16, Color{202, 211, 218, 255});
+                     34, 256, 16, Color{202, 211, 218, 255});
             DrawText(("Resources: wood " +
                       std::to_string(report.resource_counts[oikumene::ResourceKind::Wood]) + " horse " +
                       std::to_string(report.resource_counts[oikumene::ResourceKind::Horse]) + " copper " +
                       std::to_string(report.resource_counts[oikumene::ResourceKind::Copper]) + " iron " +
                       std::to_string(report.resource_counts[oikumene::ResourceKind::ShallowIron]))
                          .c_str(),
-                     34, 256, 16, Color{202, 211, 218, 255});
+                     34, 280, 16, Color{202, 211, 218, 255});
+            DrawText(("Bands " + std::to_string(ActiveBandCount(simulation.Bands())) + "/" +
+                      std::to_string(simulation.Bands().size()) + "  Camps " +
+                      std::to_string(static_cast<int>(simulation.Settlements().size()) -
+                                     VillageCount(simulation.Settlements())) +
+                      "  Villages " + std::to_string(VillageCount(simulation.Settlements())))
+                         .c_str(),
+                     34, 304, 16, Color{202, 211, 218, 255});
 
-            DrawText("Tab panel  F1 help  P screenshot  M report", 34, 286, 16, Color{152, 164, 174, 255});
+            DrawText("Tab panel  F1 help  A auto  P screenshot  M report", 34, 334, 16, Color{152, 164, 174, 255});
             if (!status_message.empty()) {
-                DrawText(status_message.c_str(), 34, 310, 15, Color{180, 202, 225, 255});
+                DrawText(status_message.c_str(), 34, 358, 15, Color{180, 202, 225, 255});
             }
 
             if (hover_tile.has_value()) {
-                const auto& tile = world.At(hover_x, hover_y);
-                int y = 342;
+                const auto& tile = simulation.GetWorld().At(hover_x, hover_y);
+                int y = 390;
                 DrawText(("Tile: " + std::to_string(tile.x) + ", " + std::to_string(tile.y)).c_str(), 34, y, 17,
                          RAYWHITE);
                 y += 22;
@@ -237,6 +310,19 @@ int main() {
                           "  Settle " + Fixed(tile.settlement_score))
                              .c_str(),
                          34, y, 17, Color{202, 211, 218, 255});
+                y += 22;
+                if (const auto* settlement = SettlementAt(simulation.Settlements(), hover_x, hover_y)) {
+                    DrawText(("Settlement " + std::to_string(settlement->id) + " " +
+                              oikumene::ToString(settlement->level) + " pop " +
+                              std::to_string(settlement->population))
+                                 .c_str(),
+                             34, y, 17, Color{238, 218, 144, 255});
+                    y += 22;
+                    DrawText(("Food " + Fixed(settlement->stockpile.food) + "  Wood " +
+                              Fixed(settlement->stockpile.wood))
+                                 .c_str(),
+                             34, y, 17, Color{238, 218, 144, 255});
+                }
             }
         }
 
@@ -248,7 +334,8 @@ int main() {
             DrawText("WASD   pan camera", GetScreenWidth() - 360, 120, 16, Color{202, 211, 218, 255});
             DrawText("Wheel  zoom at cursor", GetScreenWidth() - 360, 144, 16, Color{202, 211, 218, 255});
             DrawText("P/M    export screenshot/report", GetScreenWidth() - 360, 168, 16, Color{202, 211, 218, 255});
-            DrawText("Tab    toggle debug panel", GetScreenWidth() - 360, 192, 16, Color{202, 211, 218, 255});
+            DrawText("A      toggle auto-run", GetScreenWidth() - 360, 192, 16, Color{202, 211, 218, 255});
+            DrawText("Tab    toggle debug panel", GetScreenWidth() - 360, 216, 16, Color{202, 211, 218, 255});
         }
 
         EndDrawing();

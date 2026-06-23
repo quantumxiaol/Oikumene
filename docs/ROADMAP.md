@@ -27,6 +27,7 @@
 - Hunting/gathering bands.
 - Settlement scoring.
 - Founding villages near water, fertility, forest, grassland, and shallow resources.
+- Band migration, camp founding, food/wood stockpiles, population growth, and village upgrade.
 
 ## Phase 3: Village Economy and Technology
 

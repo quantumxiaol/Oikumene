@@ -43,6 +43,13 @@ add_library(oikumene_core STATIC
     src/ai/remote_decision_provider.cpp
     src/core/simulation.cpp
     src/network/http_client.cpp
+    src/sim/band.cpp
+    src/sim/band_system.cpp
+    src/sim/event.cpp
+    src/sim/event_log.cpp
+    src/sim/settlement.cpp
+    src/sim/settlement_system.cpp
+    src/sim/simulation_params.cpp
     src/world/biome.cpp
     src/world/resource.cpp
     src/world/world.cpp
@@ -105,6 +112,11 @@ if(APPLE)
     )
 endif()
 
+add_executable(oikumene_worldgen_batch
+    tools/worldgen_batch.cpp
+)
+target_link_libraries(oikumene_worldgen_batch PRIVATE oikumene_core)
+
 add_executable(oikumene_decision_tests
     tests/test_decision_models.cpp
 )
@@ -115,7 +127,19 @@ add_executable(oikumene_world_generation_tests
 )
 target_link_libraries(oikumene_world_generation_tests PRIVATE oikumene_core)
 
+add_executable(oikumene_world_generation_balance_tests
+    tests/test_world_generation_balance.cpp
+)
+target_link_libraries(oikumene_world_generation_balance_tests PRIVATE oikumene_core)
+
+add_executable(oikumene_band_settlement_tests
+    tests/test_band_settlement.cpp
+)
+target_link_libraries(oikumene_band_settlement_tests PRIVATE oikumene_core)
+
 if(BUILD_TESTING)
     add_test(NAME oikumene_decision_tests COMMAND oikumene_decision_tests)
     add_test(NAME oikumene_world_generation_tests COMMAND oikumene_world_generation_tests)
+    add_test(NAME oikumene_world_generation_balance_tests COMMAND oikumene_world_generation_balance_tests)
+    add_test(NAME oikumene_band_settlement_tests COMMAND oikumene_band_settlement_tests)
 endif()

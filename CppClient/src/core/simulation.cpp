@@ -2,21 +2,78 @@
 
 #include <sstream>
 
+#include "oikumene/sim/band_system.hpp"
+#include "oikumene/sim/settlement_system.hpp"
+#include "oikumene/world/world_generation_params.hpp"
+#include "oikumene/world/world_generator.hpp"
+
 namespace oikumene {
 
-Simulation::Simulation() = default;
+Simulation::Simulation() : Simulation(WorldGenerator::Generate(WorldGenerationParams{}), SimulationParams{}) {}
+
+Simulation::Simulation(World world, SimulationParams params) : world_(std::move(world)), params_(params) {}
 
 Turn Simulation::CurrentTurn() const {
     return current_turn_;
 }
 
+const World& Simulation::GetWorld() const {
+    return world_;
+}
+
+World& Simulation::MutableWorld() {
+    return world_;
+}
+
+const std::vector<Band>& Simulation::Bands() const {
+    return bands_;
+}
+
+std::vector<Band>& Simulation::Bands() {
+    return bands_;
+}
+
+const std::vector<Settlement>& Simulation::Settlements() const {
+    return settlements_;
+}
+
+std::vector<Settlement>& Simulation::Settlements() {
+    return settlements_;
+}
+
+const EventLog& Simulation::Events() const {
+    return event_log_;
+}
+
+EventLog& Simulation::Events() {
+    return event_log_;
+}
+
 std::string Simulation::StatusSummary() const {
     std::ostringstream stream;
-    stream << "Turn " << current_turn_ << " - Phase 0 scaffold";
+    int active_bands = 0;
+    for (const auto& band : bands_) {
+        active_bands += band.active ? 1 : 0;
+    }
+    int villages = 0;
+    for (const auto& settlement : settlements_) {
+        villages += settlement.level == SettlementLevel::Village ? 1 : 0;
+    }
+    stream << "Turn " << current_turn_ << " bands " << active_bands << "/" << bands_.size() << " settlements "
+           << settlements_.size() << " villages " << villages;
     return stream.str();
 }
 
+void Simulation::InitializeBands(int count) {
+    settlements_.clear();
+    event_log_.Events().clear();
+    current_turn_ = 0;
+    BandSystem::InitializeBands(world_, params_, count, bands_);
+}
+
 void Simulation::AdvanceOneTurn() {
+    BandSystem::UpdateBands(world_, params_, current_turn_, bands_, settlements_, event_log_);
+    SettlementSystem::UpdateSettlements(world_, params_, current_turn_, settlements_, event_log_);
     ++current_turn_;
 }
 
