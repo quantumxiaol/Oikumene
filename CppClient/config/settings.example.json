@@ -17,6 +17,7 @@
     "world_height": 56,
     "initial_bands": 8,
     "auto_run": false,
+    "enable_routes": true,
     "turns_per_second": 4.0
   }
 }

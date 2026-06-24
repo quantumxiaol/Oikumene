@@ -55,6 +55,7 @@ add_library(oikumene_core STATIC
     src/sim/polity.cpp
     src/sim/polity_system.cpp
     src/sim/route.cpp
+    src/sim/route_audit.cpp
     src/sim/route_planner.cpp
     src/sim/route_system.cpp
     src/sim/settlement.cpp

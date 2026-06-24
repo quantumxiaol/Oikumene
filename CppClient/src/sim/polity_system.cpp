@@ -52,7 +52,7 @@ bool IsEligibleCapital(const Settlement& settlement) {
 }
 
 bool HasNearbyCapital(const World& world, const std::vector<Settlement>& settlements, const std::vector<Polity>& polities,
-                      const Settlement& candidate) {
+                      const Settlement& candidate, bool use_routes) {
     for (const auto& polity : polities) {
         const auto* capital = SettlementById(settlements, polity.capital_settlement_id);
         if (capital == nullptr) {
@@ -61,7 +61,7 @@ bool HasNearbyCapital(const World& world, const std::vector<Settlement>& settlem
         const auto effects = ComputeTechEffects(polity.research);
         const float cost = TerrainPathCost(world, candidate.x, candidate.y, capital->x, capital->y,
                                            kCapitalSeparationCost, effects.control_path_cost_multiplier,
-                                           effects.coastal_control_cost_multiplier, polity.id);
+                                           effects.coastal_control_cost_multiplier, polity.id, use_routes);
         if (cost <= kCapitalSeparationCost) {
             return true;
         }
@@ -119,7 +119,8 @@ float PolityLevelAdminBonus(PolityLevel level) {
 float AverageCapitalPathCost(const World& world,
                              const std::vector<Settlement>& settlements,
                              const Polity& polity,
-                             const Settlement& capital) {
+                             const Settlement& capital,
+                             bool use_routes) {
     if (polity.member_settlement_ids.size() <= 1) {
         return 0.0F;
     }
@@ -137,7 +138,7 @@ float AverageCapitalPathCost(const World& world,
         const auto effects = ComputeTechEffects(polity.research);
         float cost = TerrainPathCost(world, capital.x, capital.y, settlement->x, settlement->y, 120.0F,
                                      effects.control_path_cost_multiplier, effects.coastal_control_cost_multiplier,
-                                     polity.id);
+                                     polity.id, use_routes);
         if (!std::isfinite(cost)) {
             cost = 120.0F;
         }
@@ -149,7 +150,8 @@ float AverageCapitalPathCost(const World& world,
 
 void RecalculatePolityBudgetsAndAdministration(const World& world,
                                                const std::vector<Settlement>& settlements,
-                                               std::vector<Polity>& polities) {
+                                               std::vector<Polity>& polities,
+                                               bool use_routes) {
     for (auto& polity : polities) {
         polity.budget = PolityBudget{};
         const auto* capital = SettlementById(settlements, polity.capital_settlement_id);
@@ -176,7 +178,7 @@ void RecalculatePolityBudgetsAndAdministration(const World& world,
         }
 
         const auto effects = ComputeTechEffects(polity.research);
-        const float average_distance = AverageCapitalPathCost(world, settlements, polity, *capital);
+        const float average_distance = AverageCapitalPathCost(world, settlements, polity, *capital, use_routes);
         const float member_count = static_cast<float>(polity.member_settlement_ids.size());
         polity.admin_load = member_count * 8.0F + static_cast<float>(polity.controlled_tile_count) * 0.08F +
                             static_cast<float>(polity.contested_tile_count) * 0.25F +
@@ -217,6 +219,7 @@ void RecalculatePolityBudgetsAndAdministration(const World& world,
 }
 
 void FoundEligiblePolities(World& world,
+                           const SimulationParams& params,
                            Turn turn,
                            std::vector<Settlement>& settlements,
                            std::vector<Polity>& polities,
@@ -225,7 +228,7 @@ void FoundEligiblePolities(World& world,
         if (settlement.polity_id != kInvalidPolityId || !IsEligibleCapital(settlement)) {
             continue;
         }
-        if (HasNearbyCapital(world, settlements, polities, settlement)) {
+        if (HasNearbyCapital(world, settlements, polities, settlement, params.enable_routes)) {
             continue;
         }
 
@@ -257,6 +260,7 @@ void FoundEligiblePolities(World& world,
 }
 
 void JoinNearbySettlements(World& world,
+                           const SimulationParams& params,
                            Turn turn,
                            std::vector<Settlement>& settlements,
                            std::vector<Polity>& polities,
@@ -276,7 +280,8 @@ void JoinNearbySettlements(World& world,
             const auto effects = ComputeTechEffects(polity.research);
             const float cost =
                 TerrainPathCost(world, settlement.x, settlement.y, capital->x, capital->y, polity.admin_range,
-                                effects.control_path_cost_multiplier, effects.coastal_control_cost_multiplier, polity.id);
+                                effects.control_path_cost_multiplier, effects.coastal_control_cost_multiplier, polity.id,
+                                params.enable_routes);
             if (cost <= polity.admin_range && cost < best_cost) {
                 best_cost = cost;
                 best_polity = &polity;
@@ -327,11 +332,20 @@ void PolitySystem::UpdatePolities(World& world,
                                   std::vector<Settlement>& settlements,
                                   std::vector<Polity>& polities,
                                   EventLog& event_log) {
-    FoundEligiblePolities(world, turn, settlements, polities, event_log);
+    UpdatePolities(world, SimulationParams{}, turn, settlements, polities, event_log);
+}
+
+void PolitySystem::UpdatePolities(World& world,
+                                  const SimulationParams& params,
+                                  Turn turn,
+                                  std::vector<Settlement>& settlements,
+                                  std::vector<Polity>& polities,
+                                  EventLog& event_log) {
+    FoundEligiblePolities(world, params, turn, settlements, polities, event_log);
     RecalculatePolityAggregates(settlements, polities);
-    JoinNearbySettlements(world, turn, settlements, polities, event_log);
+    JoinNearbySettlements(world, params, turn, settlements, polities, event_log);
     RecalculatePolityAggregates(settlements, polities);
-    RecalculatePolityBudgetsAndAdministration(world, settlements, polities);
+    RecalculatePolityBudgetsAndAdministration(world, settlements, polities, params.enable_routes);
 
     std::vector<int> previous_counts;
     previous_counts.reserve(polities.size());
@@ -339,8 +353,10 @@ void PolitySystem::UpdatePolities(World& world,
         previous_counts.push_back(polity.controlled_tile_count);
     }
 
-    const ControlFieldStats stats = RecomputeControlField(world, settlements, polities);
-    RecalculatePolityBudgetsAndAdministration(world, settlements, polities);
+    ControlFieldParams control_params;
+    control_params.use_routes = params.enable_routes;
+    const ControlFieldStats stats = RecomputeControlField(world, settlements, polities, control_params);
+    RecalculatePolityBudgetsAndAdministration(world, settlements, polities, params.enable_routes);
     if (turn > 0 && turn % 25 == 0) {
         for (std::size_t i = 0; i < polities.size(); ++i) {
             if (polities[i].controlled_tile_count > previous_counts[i]) {

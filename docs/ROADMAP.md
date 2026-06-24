@@ -47,6 +47,13 @@
 - Route maintenance, connected settlement/mine stats, route event logs, and RouteNetwork map layer.
 - Route effects on control/path cost, administrative distance, and shallow mine transfer.
 
+## Phase 4.6: Route Effect Audit
+
+- `--disable-routes` switch for the app and headless simulation tools.
+- Routes-on/routes-off batch comparison for population, controlled land, administrative distance, mine connection, ore income, and route maintenance.
+- Split route audit statistics from route construction code.
+- Keep route infrastructure distinct from future trade routes.
+
 ## Phase 5: Trade and War ROI
 
 - Resource complementarity.

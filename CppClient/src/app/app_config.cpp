@@ -38,6 +38,7 @@ nlohmann::json ToJson(const AppConfig& config) {
              {"world_height", config.simulation.world_height},
              {"initial_bands", config.simulation.initial_bands},
              {"auto_run", config.simulation.auto_run},
+             {"enable_routes", config.simulation.enable_routes},
              {"turns_per_second", config.simulation.turns_per_second},
          }},
     };
@@ -64,6 +65,7 @@ AppConfig AppConfigFromJson(const nlohmann::json& json) {
     config.simulation.world_height = JsonValue(simulation, "world_height", config.simulation.world_height);
     config.simulation.initial_bands = JsonValue(simulation, "initial_bands", config.simulation.initial_bands);
     config.simulation.auto_run = JsonValue(simulation, "auto_run", config.simulation.auto_run);
+    config.simulation.enable_routes = JsonValue(simulation, "enable_routes", config.simulation.enable_routes);
     config.simulation.turns_per_second = JsonValue(simulation, "turns_per_second", config.simulation.turns_per_second);
 
     return config;

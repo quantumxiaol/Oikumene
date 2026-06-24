@@ -90,6 +90,7 @@ void DiffuseFromSource(const World& world,
                        float max_cost,
                        float path_cost_multiplier,
                        float coastal_path_cost_multiplier,
+                       bool use_routes,
                        std::vector<float>& best,
                        std::vector<float>& second_best,
                        std::vector<PolityId>& best_polity) {
@@ -140,7 +141,9 @@ void DiffuseFromSource(const World& world,
             if (neighbor.is_coast) {
                 step *= coastal_path_cost_multiplier;
             }
-            step *= RouteControlMultiplier(neighbor, polity_id);
+            if (use_routes) {
+                step *= RouteControlMultiplier(neighbor, polity_id);
+            }
             const int next_index = TileIndex(world, nx, ny);
             const float next_cost = node.cost + step;
             if (next_cost < distances[static_cast<std::size_t>(next_index)] && next_cost <= max_cost) {
@@ -210,7 +213,8 @@ float TerrainPathCost(const World& world,
                       float max_cost,
                       float path_cost_multiplier,
                       float coastal_path_cost_multiplier,
-                      PolityId route_polity_id) {
+                      PolityId route_polity_id,
+                      bool use_routes) {
     if (!world.InBounds(start_x, start_y) || !world.InBounds(end_x, end_y)) {
         return std::numeric_limits<float>::infinity();
     }
@@ -255,7 +259,9 @@ float TerrainPathCost(const World& world,
             if (neighbor.is_coast) {
                 step *= coastal_path_cost_multiplier;
             }
-            step *= RouteControlMultiplier(neighbor, route_polity_id);
+            if (use_routes) {
+                step *= RouteControlMultiplier(neighbor, route_polity_id);
+            }
             const int next_index = TileIndex(world, nx, ny);
             const float next_cost = node.cost + step;
             if (next_cost < distances[static_cast<std::size_t>(next_index)] && next_cost <= max_cost) {
@@ -294,7 +300,7 @@ ControlFieldStats RecomputeControlField(World& world,
         if (const auto* capital = SettlementById(settlements, polity.capital_settlement_id)) {
             DiffuseFromSource(world, *capital, polity.id, SourcePowerFor(polity, *capital, true),
                               std::min(params.max_path_cost, polity.admin_range * 1.15F), path_multiplier,
-                              coastal_multiplier, best, second_best, best_polity);
+                              coastal_multiplier, params.use_routes, best, second_best, best_polity);
         }
         for (const int settlement_id : polity.member_settlement_ids) {
             if (settlement_id == polity.capital_settlement_id) {
@@ -303,7 +309,7 @@ ControlFieldStats RecomputeControlField(World& world,
             if (const auto* settlement = SettlementById(settlements, settlement_id)) {
                 DiffuseFromSource(world, *settlement, polity.id, SourcePowerFor(polity, *settlement, false),
                                   std::min(params.max_path_cost, polity.admin_range * 0.90F), path_multiplier,
-                                  coastal_multiplier, best, second_best, best_polity);
+                                  coastal_multiplier, params.use_routes, best, second_best, best_polity);
             }
         }
     }

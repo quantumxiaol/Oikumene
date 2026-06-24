@@ -126,12 +126,23 @@ void TestRouteIncreasesMineOreTransfer() {
     assert(road_settlements.front().ore_output_last_turn > plain_settlements.front().ore_output_last_turn);
 }
 
+void TestDisableRoutesRemovesRouteTravelBonus() {
+    using namespace oikumene;
+    World world = MakePlainWorld();
+    AddRoad(world);
+
+    const float without_routes = TerrainPathCost(world, 2, 3, 13, 3, 100.0F, 1.0F, 1.0F, 0, false);
+    const float with_routes = TerrainPathCost(world, 2, 3, 13, 3, 100.0F, 1.0F, 1.0F, 0, true);
+    assert(with_routes < without_routes);
+}
+
 }  // namespace
 
 int main() {
     TestRouteReducesAdminDistanceLoad();
     TestRouteStrengthensControlAlongPath();
     TestRouteIncreasesMineOreTransfer();
+    TestDisableRoutesRemovesRouteTravelBonus();
 
     std::cout << "oikumene_route_effects_tests passed\n";
     return 0;

@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "oikumene/sim/route_planner.hpp"
+#include "oikumene/sim/tech_effects.hpp"
 
 namespace oikumene {
 namespace {
@@ -26,6 +27,34 @@ Settlement* MutableSettlementById(std::vector<Settlement>& settlements, int id) 
     return nullptr;
 }
 
+bool IsAdjacentToLand(const World& world, int x, int y) {
+    const int dxs[] = {1, -1, 0, 0};
+    const int dys[] = {0, 0, 1, -1};
+    for (int i = 0; i < 4; ++i) {
+        const int nx = x + dxs[i];
+        const int ny = y + dys[i];
+        if (!world.InBounds(nx, ny)) {
+            continue;
+        }
+        const auto& neighbor = world.At(nx, ny);
+        if (!neighbor.is_ocean && !neighbor.is_lake) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool CanCacheRouteTile(const World& world, const TileCoord& coord, RouteKind kind) {
+    const auto& tile = world.At(coord.x, coord.y);
+    if (tile.is_lake) {
+        return false;
+    }
+    if (!tile.is_ocean) {
+        return true;
+    }
+    return kind == RouteKind::CoastalRoute && IsAdjacentToLand(world, coord.x, coord.y);
+}
+
 bool CanAffordRoute(const Polity& polity, const Settlement& capital, const RouteCandidate& candidate) {
     const bool enough_wood = capital.stockpile.wood >= candidate.build_cost_wood * 0.35F || polity.budget.wood_surplus > 0.15F;
     const bool enough_wealth = polity.budget.wealth_surplus >= -0.5F || candidate.build_cost_wealth <= 0.01F;
@@ -38,7 +67,7 @@ void ApplyRouteToTiles(World& world, const Route& route) {
             continue;
         }
         auto& tile = world.At(coord.x, coord.y);
-        if (tile.is_ocean || tile.is_lake) {
+        if (!CanCacheRouteTile(world, coord, route.kind)) {
             continue;
         }
         if (tile.has_route && tile.route_quality > RouteQuality(route.kind)) {
@@ -84,9 +113,12 @@ void AddRouteBuiltEvent(Turn turn, const Polity& polity, const Route& route, Eve
     });
 }
 
-void RefreshPolityRouteStats(const World& world, const std::vector<Route>& routes, std::vector<Polity>& polities) {
+void RefreshPolityRouteStats(const World& world,
+                             const std::vector<Settlement>& settlements,
+                             const std::vector<Route>& routes,
+                             std::vector<Polity>& polities) {
     for (auto& polity : polities) {
-        const auto stats = BuildRouteNetworkStats(world, routes, polity);
+        const auto stats = BuildRouteNetworkStats(world, settlements, routes, polity);
         polity.route_ids.clear();
         for (const auto& route : routes) {
             if (route.polity_id == polity.id) {
@@ -95,38 +127,16 @@ void RefreshPolityRouteStats(const World& world, const std::vector<Route>& route
         }
         polity.route_maintenance = stats.route_maintenance;
         polity.connected_settlements = stats.connected_settlements;
-        polity.connected_mines = stats.connected_mines;
+        polity.connected_mines = stats.connected_mine_potential;
+        polity.connected_mine_potential = stats.connected_mine_potential;
+        polity.active_connected_mines = stats.active_connected_mines;
+        polity.connected_ore_income = stats.connected_ore_income;
+        polity.unconnected_ore_income = stats.unconnected_ore_income;
         polity.admin_distance_saving = stats.admin_distance_saving;
     }
 }
 
 }  // namespace
-
-RouteNetworkStats BuildRouteNetworkStats(const World& world, const std::vector<Route>& routes, const Polity& polity) {
-    RouteNetworkStats stats;
-    for (const auto& route : routes) {
-        if (route.polity_id != polity.id) {
-            continue;
-        }
-        ++stats.route_count;
-        stats.route_maintenance += route.maintenance;
-        stats.admin_distance_saving += route.path.empty() ? 0.0F : route.route_value * 0.08F;
-        if (route.to_settlement_id >= 0) {
-            ++stats.connected_settlements;
-        }
-        if (route.purpose == RoutePurpose::Resource) {
-            ++stats.connected_mines;
-        }
-    }
-    for (const auto& tile : world.Tiles()) {
-        if (!tile.has_route || tile.route_polity_id != polity.id) {
-            continue;
-        }
-        stats.road_tiles += tile.route_kind == RouteKind::Road ? 1 : 0;
-        stats.trail_tiles += tile.route_kind == RouteKind::Trail ? 1 : 0;
-    }
-    return stats;
-}
 
 bool HasRouteTech(const Polity& polity) {
     return HasTech(polity.research, TechId::Roads);
@@ -150,6 +160,10 @@ void RouteSystem::Reset(World& world, std::vector<Route>& routes, std::vector<Po
         polity.route_maintenance = 0.0F;
         polity.connected_settlements = 0;
         polity.connected_mines = 0;
+        polity.connected_mine_potential = 0;
+        polity.active_connected_mines = 0;
+        polity.connected_ore_income = 0.0F;
+        polity.unconnected_ore_income = 0.0F;
         polity.admin_distance_saving = 0.0F;
     }
 }
@@ -159,7 +173,13 @@ void RouteSystem::UpdateRoutes(World& world,
                                std::vector<Settlement>& settlements,
                                std::vector<Polity>& polities,
                                std::vector<Route>& routes,
-                               EventLog& event_log) {
+                               EventLog& event_log,
+                               bool enable_routes) {
+    if (!enable_routes) {
+        Reset(world, routes, polities);
+        RefreshPolityRouteStats(world, settlements, routes, polities);
+        return;
+    }
     if (polities.empty()) {
         return;
     }
@@ -197,7 +217,7 @@ void RouteSystem::UpdateRoutes(World& world,
         AddRouteBuiltEvent(turn, polity, route, event_log);
     }
 
-    RefreshPolityRouteStats(world, routes, polities);
+    RefreshPolityRouteStats(world, settlements, routes, polities);
 }
 
 }  // namespace oikumene

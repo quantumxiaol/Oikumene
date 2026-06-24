@@ -11,7 +11,7 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 
 ## 当前状态
 
-当前已经进入 Phase 4.5：
+当前已经进入 Phase 4.6：
 
 - C++ 主程序能打开 Raylib 窗口，生成 80x56 世界地图。
 - 支持 Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl、RouteNetwork 图层。
@@ -26,6 +26,7 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 - 科技由 C++ heuristic 选择和推进，暂时不接 LLM；科技效果会影响农田/牧场/矿井产出、行政能力、控制力路径成本和未来军事潜力。
 - 已有显式路线网络：polity 会根据首都-成员村庄、矿点/资源点连接收益自动建设 Trail、Road、RiverRoute、CoastalRoute；路线会降低同 polity 的路径/控制成本，增加矿点转运效率，并产生维护成本。
 - `RouteNetwork` 图层可以直接查看路线；选中路线 tile 时详情面板会显示 route id、类型、目的、维护成本、ROI 和建造原因。
+- 已有路线效果审计：可以用 `--disable-routes` 关闭路线系统，对照控制范围、行政距离、矿产连接、矿产收入、维护成本和人口规模。
 - 已有图例系统：`F2` 打开 Legend 面板，`docs/LEGEND.md` 维护图标和覆盖层说明。
 - UI 底部有轻量播放控制条：Play/Pause、Step、+10、+100、TPS 调整、Reset Bands。
 - 已有 headless 工具：
@@ -87,6 +88,7 @@ cmake --build build
 ```bash
 ./build/oikumene_app --seed 42 --width 80 --height 56 --bands 8 --window 1280x720
 ./build/oikumene_app --seed 42 --bands 8 --auto-run --turns-per-second 4
+./build/oikumene_app --seed 42 --bands 8 --disable-routes
 ```
 
 如果没有安装 Ninja：
@@ -193,13 +195,21 @@ cd CppClient
 - `world_report.json`
 - `states.jsonl`：仅在传入 `--sample-every N` 时生成。
 
-`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension、stability、平均解锁科技数、knowledge income、关键科技解锁率和路线网络规模。`final_state.json` 会保留 Band / Settlement / Polity / Route 的调试字段，并导出 `improved_tiles` 与 `route_tiles` 摘要；每个 polity 会包含 `research`、`unlocked_techs`、`active_effects`、`military_potential`、`tool_efficiency`、`route_ids`、`route_maintenance`、`connected_settlements` 和 `connected_mines`。
+`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension、stability、平均解锁科技数、knowledge income、关键科技解锁率和路线网络规模。传入 `--disable-routes` 时会完全关闭路线建设、路线 tile 缓存、路线路径加成和矿点转运加成，用来做 routes-on/off 对照。`final_state.json` 会保留 Band / Settlement / Polity / Route 的调试字段，并导出 `improved_tiles` 与 `route_tiles` 摘要；每个 polity 会包含 `research`、`unlocked_techs`、`active_effects`、`military_potential`、`tool_efficiency`、`route_ids`、`route_maintenance`、`connected_settlements`、`connected_mines`、`connected_mine_potential`、`active_connected_mines`、`connected_ore_income` 和 `unconnected_ore_income`。
 
-批量检查村庄经济平衡：
+批量检查村庄经济、polity 和路线效果：
 
 ```bash
 cd CppClient
 ./build/oikumene_sim_balance_batch --start-seed 0 --count 20 --width 80 --height 56 --bands 8 --turns 200 --out ../runs/sim_balance_check
+```
+
+路线效果审计建议固定跑一组 routes-on / routes-off：
+
+```bash
+cd CppClient
+./build/oikumene_sim_balance_batch --start-seed 0 --count 20 --width 80 --height 56 --bands 8 --turns 1000 --out ../runs/routes_on_t1000
+./build/oikumene_sim_balance_batch --start-seed 0 --count 20 --width 80 --height 56 --bands 8 --turns 1000 --disable-routes --out ../runs/routes_off_t1000
 ```
 
 输出：
@@ -229,9 +239,27 @@ cd CppClient
 - `mean_ore_income` / `mean_tool_efficiency` / `mean_military_potential`：矿业、工具和未来军事潜力。
 - `mean_routes` / `mean_route_tiles`：平均路线数量和路线 tile 数量。
 - `mean_road_tiles` / `mean_trail_tiles` / `mean_river_route_tiles` / `mean_coastal_route_tiles`：不同路线类型的占比，用来判断路线是否过度依赖人造道路或天然廊道。
-- `mean_connected_settlements` / `mean_connected_mines`：路线实际连接了多少成员聚落和矿点。
-- `mean_route_maintenance` / `mean_admin_distance_saving`：路线维护成本和行政距离收益。
+- `mean_connected_settlements` / `mean_connected_mine_potential`：路线连接了多少成员聚落和潜在矿点目标。
+- `mean_active_connected_mines`：已经被村庄实际开采、且被路线连接的浅层矿井数量。
+- `mean_connected_ore_income` / `mean_unconnected_ore_income`：已连通和未连通浅层矿井的估算 ore income，用来区分“路线接到了矿点”和“村庄真的在开矿”。
+- `mean_admin_distance_cost` / `mean_admin_distance_saving`：平均行政距离成本，以及路线带来的真实路径成本节省。
+- `mean_route_maintenance`：路线维护成本。
 - `mean_ore_income_for_mining_polities`：已解锁 Mining 的 polity 的平均 ore income，方便判断矿点路线是否有实际收益。
+
+一次 20 seed、1000 turn 的参考结果：
+
+| 指标 | 路线开启 | 路线关闭 |
+| --- | ---: | ---: |
+| `mean_total_population` | 2197.60 | 2164.85 |
+| `mean_controlled_land_ratio` | 0.637 | 0.588 |
+| `mean_admin_distance_cost` | 7.404 | 9.235 |
+| `mean_admin_distance_saving` | 7.201 | 0.000 |
+| `mean_routes` | 7.55 | 0.00 |
+| `mean_route_tiles` | 64.85 | 0.00 |
+| `mean_active_connected_mines` | 0.60 | 0.00 |
+| `mean_connected_ore_income` | 0.293 | 0.000 |
+| `mean_unconnected_ore_income` | 0.018 | 0.240 |
+| `mean_route_maintenance` | 0.653 | 0.000 |
 
 ## 开发格式化
 
@@ -244,13 +272,15 @@ cd CppClient
 C++ 格式化示例：
 
 ```bash
-clang-format -i CppClient/include/oikumene/**/*.hpp CppClient/src/**/*.cpp CppClient/tests/*.cpp CppClient/tools/*.cpp
+python3 scripts/format_cpp.py
 ```
+
+脚本会在缺少 `clang-format` 时直接提示 `brew install clang-format`，不会让本地验证失败。
 
 ## 下一阶段
 
-Phase 4.5 后续重点：
+Phase 5.0 后续重点：
 
-- 校准路线建设 ROI，避免路线过稀或过早铺满。
-- 让 Roads、Sailing、Administration 对路线类型和维护成本的影响更清晰。
-- 后续进入 Trade Routes，再进入 Military Potential / War ROI；当前路线网络只是基础设施层，不等同于贸易系统。
+- 在现有 RouteNetwork 上实现贸易候选、资源互补评分和贸易收益。
+- 贸易系统先使用 C++ heuristic，不接 LLM。
+- 暂时不要做战争和 LLM；路线网络只是基础设施层，贸易路线会建立在这套网络之上。

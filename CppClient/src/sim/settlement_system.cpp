@@ -401,6 +401,7 @@ void ProduceFromWorkedTile(World& world,
                            Settlement& settlement,
                            int index,
                            const TechEffects& effects,
+                           bool enable_routes,
                            Turn turn,
                            EventLog& event_log) {
     auto& tile = TileByIndex(world, index);
@@ -437,7 +438,7 @@ void ProduceFromWorkedTile(World& world,
         case ImprovementKind::ShallowMine:
             if (effects.mining_enabled) {
                 const bool route_connected =
-                    tile.has_route && settlement.polity_id != kInvalidPolityId &&
+                    enable_routes && tile.has_route && settlement.polity_id != kInvalidPolityId &&
                     tile.route_polity_id == settlement.polity_id;
                 const float route_multiplier = route_connected ? (1.18F + tile.route_quality * 0.28F) : 1.0F;
                 settlement.ore_output_last_turn +=
@@ -539,7 +540,7 @@ void SettlementSystem::UpdateSettlements(World& world,
         settlement.worked_tile_indices = SelectWorkedTiles(world, settlement, params, effects);
         settlement.worked_tile_count = static_cast<int>(settlement.worked_tile_indices.size());
         for (const int index : settlement.worked_tile_indices) {
-            ProduceFromWorkedTile(world, settlement, index, effects, turn, event_log);
+            ProduceFromWorkedTile(world, settlement, index, effects, params.enable_routes, turn, event_log);
         }
 
         settlement.food_consumption_last_turn =

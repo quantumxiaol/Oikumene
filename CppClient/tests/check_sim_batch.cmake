@@ -38,6 +38,9 @@ foreach(token
         "\"total_food_output_last_turn\""
         "\"average_carrying_capacity\""
         "\"polities\""
+        "\"routes_enabled\""
+        "\"routes\""
+        "\"route_tile_count\""
         "\"controlled_land_ratio\""
         "\"average_admin_load\""
         "\"average_stability\""
@@ -57,6 +60,8 @@ foreach(token
         "\"upgrade_readiness\""
         "\"carrying_capacity\""
         "\"improved_tiles\""
+        "\"routes\""
+        "\"route_tiles\""
         "\"polity_id\""
         "\"polities\""
         "\"admin_load\""
@@ -66,7 +71,9 @@ foreach(token
         "\"unlocked_techs\""
         "\"active_effects\""
         "\"military_potential\""
-        "\"tool_efficiency\"")
+        "\"tool_efficiency\""
+        "\"connected_mine_potential\""
+        "\"active_connected_mines\"")
     string(FIND "${final_state}" "${token}" token_index)
     if(token_index EQUAL -1)
         message(FATAL_ERROR "final_state.json is missing ${token}")

@@ -54,9 +54,43 @@ foreach(token
     "\"mean_ore_income\""
     "\"mean_tool_efficiency\""
     "\"mean_military_potential\""
+    "\"mean_routes\""
+    "\"mean_route_tiles\""
+    "\"mean_admin_distance_cost\""
+    "\"mean_admin_distance_saving\""
+    "\"mean_connected_mine_potential\""
+    "\"mean_active_connected_mines\""
+    "\"mean_connected_ore_income\""
+    "\"mean_unconnected_ore_income\""
 )
     string(FIND "${summary}" "${token}" token_index)
     if(token_index EQUAL -1)
         message(FATAL_ERROR "summary.json is missing ${token}")
+    endif()
+endforeach()
+
+set(OUT_OFF "${OUT}_routes_off")
+file(REMOVE_RECURSE "${OUT_OFF}")
+
+execute_process(
+    COMMAND "${EXE}" --start-seed 0 --count 4 --width 80 --height 56 --bands 8 --turns 80 --disable-routes --out "${OUT_OFF}"
+    RESULT_VARIABLE off_result
+    OUTPUT_VARIABLE off_stdout
+    ERROR_VARIABLE off_stderr
+)
+
+if(NOT off_result EQUAL 0)
+    message(FATAL_ERROR "oikumene_sim_balance_batch --disable-routes failed\nstdout:\n${off_stdout}\nstderr:\n${off_stderr}")
+endif()
+
+file(READ "${OUT_OFF}/summary.json" off_summary)
+foreach(token
+    "\"routes_enabled\": false"
+    "\"mean_routes\""
+    "\"mean_admin_distance_saving\""
+)
+    string(FIND "${off_summary}" "${token}" token_index)
+    if(token_index EQUAL -1)
+        message(FATAL_ERROR "routes-off summary.json is missing ${token}")
     endif()
 endforeach()

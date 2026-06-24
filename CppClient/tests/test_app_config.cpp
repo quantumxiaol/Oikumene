@@ -23,6 +23,7 @@ void TestAppConfigJsonRoundTrip() {
     config.simulation.world_width = 96;
     config.simulation.world_height = 64;
     config.simulation.initial_bands = 12;
+    config.simulation.enable_routes = false;
     config.simulation.turns_per_second = 8.0F;
 
     const auto restored = AppConfigFromJson(ToJson(config));
@@ -34,6 +35,7 @@ void TestAppConfigJsonRoundTrip() {
     assert(restored.simulation.world_width == 96);
     assert(restored.simulation.world_height == 64);
     assert(restored.simulation.initial_bands == 12);
+    assert(!restored.simulation.enable_routes);
     assert(restored.simulation.turns_per_second == 8.0F);
 }
 
@@ -66,7 +68,7 @@ void TestCommandLineOverridesConfig() {
     base.simulation.default_seed = 1;
     const std::vector<std::string> args = {
         "--seed", "42", "--width", "90", "--height", "60", "--bands", "9",
-        "--window", "1024x768", "--turns-per-second", "12.5", "--auto-run",
+        "--window", "1024x768", "--turns-per-second", "12.5", "--auto-run", "--disable-routes",
     };
     const auto parsed = ParseCommandLine(args, base);
     assert(parsed.error.empty());
@@ -79,6 +81,7 @@ void TestCommandLineOverridesConfig() {
     assert(parsed.config.window.height == 768);
     assert(parsed.config.simulation.turns_per_second == 12.5F);
     assert(parsed.config.simulation.auto_run);
+    assert(!parsed.config.simulation.enable_routes);
 }
 
 void TestCommandLineSeedOverridesConfig() {

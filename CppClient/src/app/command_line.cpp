@@ -94,6 +94,10 @@ CommandLineResult ParseCommandLine(const std::vector<std::string>& args, AppConf
                 result.config.simulation.auto_run = true;
                 continue;
             }
+            if (arg == "--disable-routes") {
+                result.config.simulation.enable_routes = false;
+                continue;
+            }
 
             result.error = "unknown argument: " + arg;
             return result;
@@ -126,7 +130,7 @@ CommandLineResult ParseCommandLine(const std::vector<std::string>& args, AppConf
 std::string CommandLineUsage() {
     std::ostringstream stream;
     stream << "usage: oikumene_app [--seed N] [--width N] [--height N] [--bands N] [--window WIDTHxHEIGHT]\n"
-           << "                    [--turns-per-second N] [--fullscreen] [--auto-run]\n";
+           << "                    [--turns-per-second N] [--fullscreen] [--auto-run] [--disable-routes]\n";
     return stream.str();
 }
 

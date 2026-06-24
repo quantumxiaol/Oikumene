@@ -14,6 +14,7 @@ struct ControlFieldParams {
     float max_path_cost = 52.0F;
     float path_cost_multiplier = 1.0F;
     float coastal_path_cost_multiplier = 1.0F;
+    bool use_routes = true;
 };
 
 struct ControlFieldStats {
@@ -33,7 +34,8 @@ struct ControlFieldStats {
                                     float max_cost,
                                     float path_cost_multiplier = 1.0F,
                                     float coastal_path_cost_multiplier = 1.0F,
-                                    PolityId route_polity_id = kInvalidPolityId);
+                                    PolityId route_polity_id = kInvalidPolityId,
+                                    bool use_routes = true);
 
 [[nodiscard]] ControlFieldStats RecomputeControlField(World& world,
                                                       const std::vector<Settlement>& settlements,

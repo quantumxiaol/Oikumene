@@ -27,6 +27,7 @@ struct SimulationConfig {
     int world_height = 56;
     int initial_bands = 8;
     bool auto_run = false;
+    bool enable_routes = true;
     float turns_per_second = 4.0F;
 };
 

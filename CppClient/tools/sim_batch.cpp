@@ -25,12 +25,13 @@ struct Options {
     int bands = 8;
     int turns = 200;
     int sample_every = 0;
+    bool enable_routes = true;
     std::filesystem::path out = "../runs/sim_batch";
 };
 
 void PrintUsage() {
     std::cout << "usage: oikumene_sim_batch [--seed N] [--width N] [--height N] [--bands N] [--turns N]"
-                 " [--sample-every N] [--out PATH]\n";
+                 " [--sample-every N] [--disable-routes] [--out PATH]\n";
 }
 
 bool NeedValue(int argc, int index) {
@@ -67,6 +68,10 @@ Options ParseArgs(int argc, char** argv) {
         }
         if (arg == "--sample-every" && NeedValue(argc, i)) {
             options.sample_every = std::stoi(argv[++i]);
+            continue;
+        }
+        if (arg == "--disable-routes") {
+            options.enable_routes = false;
             continue;
         }
         if (arg == "--out" && NeedValue(argc, i)) {
@@ -247,6 +252,10 @@ nlohmann::json PolityToJson(const oikumene::Polity& polity) {
         {"route_maintenance", polity.route_maintenance},
         {"connected_settlements", polity.connected_settlements},
         {"connected_mines", polity.connected_mines},
+        {"connected_mine_potential", polity.connected_mine_potential},
+        {"active_connected_mines", polity.active_connected_mines},
+        {"connected_ore_income", polity.connected_ore_income},
+        {"unconnected_ore_income", polity.unconnected_ore_income},
         {"admin_distance_saving", polity.admin_distance_saving},
     };
 }
@@ -596,6 +605,7 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"height", options.height},
         {"turns", options.turns},
         {"initial_bands", options.bands},
+        {"routes_enabled", options.enable_routes},
         {"active_bands", CountActiveBands(sim)},
         {"inactive_bands", CountInactiveBands(sim)},
         {"settlements", sim.Settlements().size()},
@@ -725,6 +735,7 @@ int main(int argc, char** argv) {
 
         oikumene::SimulationParams sim_params;
         sim_params.initial_band_count = options.bands;
+        sim_params.enable_routes = options.enable_routes;
 
         auto world = oikumene::WorldGenerator::Generate(world_params);
         const auto report = oikumene::BuildWorldGenerationReport(world);

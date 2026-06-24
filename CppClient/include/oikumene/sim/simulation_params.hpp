@@ -14,6 +14,7 @@ struct SimulationParams {
     int camp_improvement_build_interval = 6;
     int village_improvement_build_interval = 5;
     float settlement_growth_rate = 0.013F;
+    bool enable_routes = true;
 };
 
 }  // namespace oikumene

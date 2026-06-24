@@ -366,6 +366,7 @@ void BuildSimulation(AppState& state, std::uint64_t seed) {
     state.generation_params.width = state.config.simulation.world_width;
     state.generation_params.height = state.config.simulation.world_height;
     state.simulation_params.initial_band_count = state.config.simulation.initial_bands;
+    state.simulation_params.enable_routes = state.config.simulation.enable_routes;
     state.simulation = Simulation(WorldGenerator::Generate(state.generation_params), state.simulation_params);
     state.simulation.InitializeBands(state.config.simulation.initial_bands);
     state.report = BuildWorldGenerationReport(state.simulation.GetWorld());
@@ -615,7 +616,8 @@ void DrawHud(const AppState& state) {
               std::to_string(LargestPolityPopulation(state.simulation.Polities())))
                  .c_str(),
              30, 130, 15, Color{184, 194, 202, 255});
-    DrawText(("Routes " + std::to_string(state.simulation.Routes().size()) + "/" +
+    DrawText((std::string(state.simulation_params.enable_routes ? "Routes " : "Routes off ") +
+              std::to_string(state.simulation.Routes().size()) + "/" +
               std::to_string(RouteTileCount(state.simulation.GetWorld())) + "  Tech avg " +
               Fixed(AverageUnlockedTechs(state.simulation.Polities()), 1) + "  Mining " +
               Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Mining) * 100.0F, 0) + "%  Roads " +
