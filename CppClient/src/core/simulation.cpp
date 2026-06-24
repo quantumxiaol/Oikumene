@@ -9,6 +9,7 @@
 #include "oikumene/sim/settlement_system.hpp"
 #include "oikumene/sim/technology_system.hpp"
 #include "oikumene/sim/trade_system.hpp"
+#include "oikumene/sim/war_planner.hpp"
 #include "oikumene/world/world_generation_params.hpp"
 #include "oikumene/world/world_generator.hpp"
 
@@ -78,6 +79,14 @@ std::vector<DiplomacyRelation>& Simulation::DiplomacyRelations() {
     return diplomacy_relations_;
 }
 
+const std::vector<WarPressure>& Simulation::WarPressures() const {
+    return war_pressures_;
+}
+
+std::vector<WarPressure>& Simulation::WarPressures() {
+    return war_pressures_;
+}
+
 const EventLog& Simulation::Events() const {
     return event_log_;
 }
@@ -106,6 +115,7 @@ void Simulation::InitializeBands(int count) {
     routes_.clear();
     trades_.clear();
     diplomacy_relations_.clear();
+    war_pressures_.clear();
     PolitySystem::Reset(world_, settlements_, polities_);
     RouteSystem::Reset(world_, routes_, polities_);
     TradeSystem::Reset(trades_, polities_);
@@ -124,6 +134,7 @@ void Simulation::AdvanceOneTurn() {
                               params_.enable_routes);
     TradeSystem::UpdateTrades(world_, current_turn_, settlements_, polities_, trades_, event_log_);
     DiplomacySystem::UpdateDiplomacy(world_, current_turn_, polities_, trades_, diplomacy_relations_);
+    war_pressures_ = BuildWarPressures(polities_, diplomacy_relations_);
     ++current_turn_;
 }
 

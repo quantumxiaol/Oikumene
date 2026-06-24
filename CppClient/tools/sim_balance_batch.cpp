@@ -59,6 +59,8 @@ struct Metrics {
     int competitive_relations = 0;
     int dependent_relations = 0;
     int blockade_risk_relations = 0;
+    int war_pressure_candidates = 0;
+    int high_war_pressure_candidates = 0;
     int route_tiles = 0;
     int road_tiles = 0;
     int trail_tiles = 0;
@@ -115,6 +117,12 @@ struct Metrics {
     float average_friendship = 0.0F;
     float average_competition = 0.0F;
     float average_blockade_tendency = 0.0F;
+    float average_war_roi = 0.0F;
+    float max_declaration_pressure = 0.0F;
+    float average_trade_conflict_weight = 0.0F;
+    float average_friendly_penalty = 0.0F;
+    float average_blockade_pressure = 0.0F;
+    float average_dependency_pressure = 0.0F;
 };
 
 void PrintUsage() {
@@ -490,6 +498,30 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         metrics.diplomacy_relations <= 0 ? 0.0F : competition_sum / static_cast<float>(metrics.diplomacy_relations);
     metrics.average_blockade_tendency =
         metrics.diplomacy_relations <= 0 ? 0.0F : blockade_sum / static_cast<float>(metrics.diplomacy_relations);
+
+    metrics.war_pressure_candidates = static_cast<int>(sim.WarPressures().size());
+    float war_roi_sum = 0.0F;
+    float trade_conflict_sum = 0.0F;
+    float friendly_penalty_sum = 0.0F;
+    float blockade_pressure_sum = 0.0F;
+    float dependency_pressure_sum = 0.0F;
+    for (const auto& pressure : sim.WarPressures()) {
+        metrics.high_war_pressure_candidates += pressure.high_pressure ? 1 : 0;
+        war_roi_sum += pressure.war_roi;
+        metrics.max_declaration_pressure = std::max(metrics.max_declaration_pressure, pressure.declaration_pressure);
+        trade_conflict_sum += pressure.trade_conflict_weight;
+        friendly_penalty_sum += pressure.friendly_penalty;
+        blockade_pressure_sum += pressure.blockade_pressure;
+        dependency_pressure_sum += pressure.dependency_pressure;
+    }
+    if (metrics.war_pressure_candidates > 0) {
+        const float count = static_cast<float>(metrics.war_pressure_candidates);
+        metrics.average_war_roi = war_roi_sum / count;
+        metrics.average_trade_conflict_weight = trade_conflict_sum / count;
+        metrics.average_friendly_penalty = friendly_penalty_sum / count;
+        metrics.average_blockade_pressure = blockade_pressure_sum / count;
+        metrics.average_dependency_pressure = dependency_pressure_sum / count;
+    }
     metrics.food_output_consumption_ratio = metrics.total_food_output / std::max(1.0F, metrics.total_food_consumption);
     metrics.farm_share_of_worked_tiles =
         metrics.worked_tiles <= 0 ? 0.0F : static_cast<float>(metrics.farms) / static_cast<float>(metrics.worked_tiles);
@@ -574,6 +606,8 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"competitive_relations", metrics.competitive_relations},
         {"dependent_relations", metrics.dependent_relations},
         {"blockade_risk_relations", metrics.blockade_risk_relations},
+        {"war_pressure_candidates", metrics.war_pressure_candidates},
+        {"high_war_pressure_candidates", metrics.high_war_pressure_candidates},
         {"average_trade_profit", metrics.average_trade_profit},
         {"average_trade_complementarity", metrics.average_trade_complementarity},
         {"average_trade_route_cost", metrics.average_trade_route_cost},
@@ -583,6 +617,12 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"average_friendship", metrics.average_friendship},
         {"average_competition", metrics.average_competition},
         {"average_blockade_tendency", metrics.average_blockade_tendency},
+        {"average_war_roi", metrics.average_war_roi},
+        {"max_declaration_pressure", metrics.max_declaration_pressure},
+        {"average_trade_conflict_weight", metrics.average_trade_conflict_weight},
+        {"average_friendly_penalty", metrics.average_friendly_penalty},
+        {"average_blockade_pressure", metrics.average_blockade_pressure},
+        {"average_dependency_pressure", metrics.average_dependency_pressure},
     };
 }
 
@@ -607,9 +647,12 @@ void WriteCsvHeader(std::ofstream& output) {
            "average_carrying_capacity,food_output_consumption_ratio,farm_share_of_worked_tiles,"
            "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events,route_built_events,"
            "trade_opened_events,active_trades,diplomacy_relations,friendly_relations,competitive_relations,"
-           "dependent_relations,blockade_risk_relations,average_trade_profit,average_trade_complementarity,"
+           "dependent_relations,blockade_risk_relations,war_pressure_candidates,high_war_pressure_candidates,"
+           "average_trade_profit,average_trade_complementarity,"
            "average_trade_route_cost,average_trade_route_efficiency,average_trade_weak_refresh_count,"
-           "average_trade_path_tiles,average_friendship,average_competition,average_blockade_tendency\n";
+           "average_trade_path_tiles,average_friendship,average_competition,average_blockade_tendency,"
+           "average_war_roi,max_declaration_pressure,average_trade_conflict_weight,average_friendly_penalty,"
+           "average_blockade_pressure,average_dependency_pressure\n";
 }
 
 void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
@@ -644,11 +687,15 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.lumber_events << ',' << metrics.pasture_events << ',' << metrics.route_events << ','
            << metrics.trade_events << ',' << metrics.active_trades << ',' << metrics.diplomacy_relations << ','
            << metrics.friendly_relations << ',' << metrics.competitive_relations << ',' << metrics.dependent_relations
-           << ',' << metrics.blockade_risk_relations << ',' << metrics.average_trade_profit << ','
+           << ',' << metrics.blockade_risk_relations << ',' << metrics.war_pressure_candidates << ','
+           << metrics.high_war_pressure_candidates << ',' << metrics.average_trade_profit << ','
            << metrics.average_trade_complementarity << ',' << metrics.average_trade_route_cost << ','
            << metrics.average_trade_route_efficiency << ',' << metrics.average_trade_weak_refresh_count << ','
            << metrics.average_trade_path_tiles << ',' << metrics.average_friendship << ','
-           << metrics.average_competition << ',' << metrics.average_blockade_tendency << '\n';
+           << metrics.average_competition << ',' << metrics.average_blockade_tendency << ',' << metrics.average_war_roi
+           << ',' << metrics.max_declaration_pressure << ',' << metrics.average_trade_conflict_weight << ','
+           << metrics.average_friendly_penalty << ',' << metrics.average_blockade_pressure << ','
+           << metrics.average_dependency_pressure << '\n';
 }
 
 nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
@@ -732,6 +779,9 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_competitive_relations", mean([](const Metrics& item) { return item.competitive_relations; })},
         {"mean_dependent_relations", mean([](const Metrics& item) { return item.dependent_relations; })},
         {"mean_blockade_risk_relations", mean([](const Metrics& item) { return item.blockade_risk_relations; })},
+        {"mean_war_pressure_candidates", mean([](const Metrics& item) { return item.war_pressure_candidates; })},
+        {"mean_high_war_pressure_candidates",
+         mean([](const Metrics& item) { return item.high_war_pressure_candidates; })},
         {"mean_route_tiles", mean([](const Metrics& item) { return item.route_tiles; })},
         {"mean_road_tiles", mean([](const Metrics& item) { return item.road_tiles; })},
         {"mean_trail_tiles", mean([](const Metrics& item) { return item.trail_tiles; })},
@@ -756,6 +806,12 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_friendship", mean([](const Metrics& item) { return item.average_friendship; })},
         {"mean_competition", mean([](const Metrics& item) { return item.average_competition; })},
         {"mean_blockade_tendency", mean([](const Metrics& item) { return item.average_blockade_tendency; })},
+        {"mean_war_roi", mean([](const Metrics& item) { return item.average_war_roi; })},
+        {"mean_max_declaration_pressure", mean([](const Metrics& item) { return item.max_declaration_pressure; })},
+        {"mean_trade_conflict_weight", mean([](const Metrics& item) { return item.average_trade_conflict_weight; })},
+        {"mean_friendly_penalty", mean([](const Metrics& item) { return item.average_friendly_penalty; })},
+        {"mean_blockade_pressure", mean([](const Metrics& item) { return item.average_blockade_pressure; })},
+        {"mean_dependency_pressure", mean([](const Metrics& item) { return item.average_dependency_pressure; })},
         {"mean_food_output", mean([](const Metrics& item) { return item.total_food_output; })},
         {"mean_food_consumption", mean([](const Metrics& item) { return item.total_food_consumption; })},
         {"mean_food_output_consumption_ratio",

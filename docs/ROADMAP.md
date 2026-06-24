@@ -75,7 +75,16 @@
 - Classify relations as Neutral, Friendly, Competitive, Dependent, or BlockadeRisk.
 - Export diplomacy metrics to headless JSON/CSV and show relation details in the debug UI.
 
-## Phase 5.5: War ROI
+## Phase 5.3: Diplomacy-Aware War Pressure
+
+- Build directed `WarPressure` candidates from pairwise diplomacy relations.
+- Friendly relations increase `friendly_penalty` and reduce declaration pressure.
+- Dependence, blockade tendency, route fragility, and competition increase `trade_conflict_weight`.
+- Classify early war objectives as BorderDispute, TradeCoercion, Blockade, or DependencyBreakout.
+- Export War ROI and declaration pressure metrics to headless JSON/CSV and show top candidates in the debug UI.
+- Keep this phase observational: no war declaration, battle resolution, occupation, or boundary mutation yet.
+
+## Phase 5.4: War Target Valuation and Campaign Costs
 
 - War target valuation.
 - Campaign and occupation costs.

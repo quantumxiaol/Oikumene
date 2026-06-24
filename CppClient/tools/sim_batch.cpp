@@ -347,6 +347,31 @@ nlohmann::json DiplomacyToJson(const oikumene::DiplomacyRelation& relation) {
     };
 }
 
+nlohmann::json WarPressureToJson(const oikumene::WarPressure& pressure) {
+    return nlohmann::json{
+        {"id", pressure.id},
+        {"relation_id", pressure.relation_id},
+        {"actor_polity_id", pressure.actor_polity_id},
+        {"target_polity_id", pressure.target_polity_id},
+        {"objective", oikumene::ToString(pressure.objective)},
+        {"military_ratio", pressure.military_ratio},
+        {"military_advantage", pressure.military_advantage},
+        {"border_pressure", pressure.border_pressure},
+        {"trade_conflict_weight", pressure.trade_conflict_weight},
+        {"dependency_pressure", pressure.dependency_pressure},
+        {"blockade_pressure", pressure.blockade_pressure},
+        {"friendly_penalty", pressure.friendly_penalty},
+        {"target_value", pressure.target_value},
+        {"campaign_cost", pressure.campaign_cost},
+        {"base_roi", pressure.base_roi},
+        {"diplomatic_modifier", pressure.diplomatic_modifier},
+        {"war_roi", pressure.war_roi},
+        {"declaration_pressure", pressure.declaration_pressure},
+        {"high_pressure", pressure.high_pressure},
+        {"reason", pressure.reason},
+    };
+}
+
 int CountActiveBands(const oikumene::Simulation& sim) {
     int count = 0;
     for (const auto& band : sim.Bands()) {
@@ -539,6 +564,77 @@ float AverageBlockadeTendency(const oikumene::Simulation& sim) {
     return total / static_cast<float>(sim.DiplomacyRelations().size());
 }
 
+int CountHighWarPressures(const oikumene::Simulation& sim) {
+    int count = 0;
+    for (const auto& pressure : sim.WarPressures()) {
+        count += pressure.high_pressure ? 1 : 0;
+    }
+    return count;
+}
+
+float AverageWarRoi(const oikumene::Simulation& sim) {
+    if (sim.WarPressures().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& pressure : sim.WarPressures()) {
+        total += pressure.war_roi;
+    }
+    return total / static_cast<float>(sim.WarPressures().size());
+}
+
+float MaxDeclarationPressure(const oikumene::Simulation& sim) {
+    float maximum = 0.0F;
+    for (const auto& pressure : sim.WarPressures()) {
+        maximum = std::max(maximum, pressure.declaration_pressure);
+    }
+    return maximum;
+}
+
+float AverageTradeConflictWeight(const oikumene::Simulation& sim) {
+    if (sim.WarPressures().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& pressure : sim.WarPressures()) {
+        total += pressure.trade_conflict_weight;
+    }
+    return total / static_cast<float>(sim.WarPressures().size());
+}
+
+float AverageFriendlyPenalty(const oikumene::Simulation& sim) {
+    if (sim.WarPressures().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& pressure : sim.WarPressures()) {
+        total += pressure.friendly_penalty;
+    }
+    return total / static_cast<float>(sim.WarPressures().size());
+}
+
+float AverageBlockadePressure(const oikumene::Simulation& sim) {
+    if (sim.WarPressures().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& pressure : sim.WarPressures()) {
+        total += pressure.blockade_pressure;
+    }
+    return total / static_cast<float>(sim.WarPressures().size());
+}
+
+float AverageDependencyPressure(const oikumene::Simulation& sim) {
+    if (sim.WarPressures().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& pressure : sim.WarPressures()) {
+        total += pressure.dependency_pressure;
+    }
+    return total / static_cast<float>(sim.WarPressures().size());
+}
+
 float AverageAdminLoad(const oikumene::Simulation& sim) {
     if (sim.Polities().empty()) {
         return 0.0F;
@@ -724,6 +820,10 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
     for (const auto& relation : sim.DiplomacyRelations()) {
         diplomacy.push_back(DiplomacyToJson(relation));
     }
+    nlohmann::json war_pressures = nlohmann::json::array();
+    for (const auto& pressure : sim.WarPressures()) {
+        war_pressures.push_back(WarPressureToJson(pressure));
+    }
 
     return nlohmann::json{
         {"turn", sim.CurrentTurn()},
@@ -734,6 +834,7 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
         {"routes", routes},
         {"trades", trades},
         {"diplomacy_relations", diplomacy},
+        {"war_pressures", war_pressures},
         {"bands", bands},
         {"improved_tiles", ImprovedTilesToJson(sim)},
         {"route_tiles", RouteTilesToJson(sim)},
@@ -784,6 +885,14 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"average_friendship", AverageFriendship(sim)},
         {"average_competition", AverageCompetition(sim)},
         {"average_blockade_tendency", AverageBlockadeTendency(sim)},
+        {"war_pressure_candidates", sim.WarPressures().size()},
+        {"high_war_pressure_candidates", CountHighWarPressures(sim)},
+        {"average_war_roi", AverageWarRoi(sim)},
+        {"max_declaration_pressure", MaxDeclarationPressure(sim)},
+        {"average_trade_conflict_weight", AverageTradeConflictWeight(sim)},
+        {"average_friendly_penalty", AverageFriendlyPenalty(sim)},
+        {"average_blockade_pressure", AverageBlockadePressure(sim)},
+        {"average_dependency_pressure", AverageDependencyPressure(sim)},
         {"route_tile_count", CountRouteTiles(sim)},
         {"road_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Road)},
         {"trail_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Trail)},
@@ -849,6 +958,14 @@ nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
         {"average_friendship", AverageFriendship(sim)},
         {"average_competition", AverageCompetition(sim)},
         {"average_blockade_tendency", AverageBlockadeTendency(sim)},
+        {"war_pressure_candidates", sim.WarPressures().size()},
+        {"high_war_pressure_candidates", CountHighWarPressures(sim)},
+        {"average_war_roi", AverageWarRoi(sim)},
+        {"max_declaration_pressure", MaxDeclarationPressure(sim)},
+        {"average_trade_conflict_weight", AverageTradeConflictWeight(sim)},
+        {"average_friendly_penalty", AverageFriendlyPenalty(sim)},
+        {"average_blockade_pressure", AverageBlockadePressure(sim)},
+        {"average_dependency_pressure", AverageDependencyPressure(sim)},
         {"route_tile_count", CountRouteTiles(sim)},
         {"road_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Road)},
         {"trail_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Trail)},

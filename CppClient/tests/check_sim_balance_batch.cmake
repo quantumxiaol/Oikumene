@@ -71,9 +71,17 @@ foreach(token
     "\"mean_friendly_relations\""
     "\"mean_competitive_relations\""
     "\"mean_blockade_risk_relations\""
+    "\"mean_war_pressure_candidates\""
+    "\"mean_high_war_pressure_candidates\""
     "\"mean_friendship\""
     "\"mean_competition\""
     "\"mean_blockade_tendency\""
+    "\"mean_war_roi\""
+    "\"mean_max_declaration_pressure\""
+    "\"mean_trade_conflict_weight\""
+    "\"mean_friendly_penalty\""
+    "\"mean_blockade_pressure\""
+    "\"mean_dependency_pressure\""
 )
     string(FIND "${summary}" "${token}" token_index)
     if(token_index EQUAL -1)
@@ -100,6 +108,7 @@ foreach(token
     "\"routes_enabled\": false"
     "\"mean_routes\""
     "\"mean_admin_distance_saving\""
+    "\"mean_war_pressure_candidates\""
 )
     string(FIND "${off_summary}" "${token}" token_index)
     if(token_index EQUAL -1)

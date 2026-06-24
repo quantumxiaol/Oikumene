@@ -308,6 +308,25 @@ std::vector<const DiplomacyRelation*> DiplomacyRelationsForPolity(const std::vec
     return matches;
 }
 
+std::string WarPressureLine(const WarPressure& pressure) {
+    return "P" + std::to_string(pressure.actor_polity_id) + "->P" + std::to_string(pressure.target_polity_id) + " " +
+           ToString(pressure.objective) + " ROI " + Fixed(pressure.war_roi, 2) + " Press " +
+           Fixed(pressure.declaration_pressure, 2) + " Fpen " + Fixed(pressure.friendly_penalty, 2) + " TradeW " +
+           Fixed(pressure.trade_conflict_weight, 2);
+}
+
+std::vector<const WarPressure*> WarPressuresForActor(const std::vector<WarPressure>& pressures, PolityId polity_id) {
+    std::vector<const WarPressure*> matches;
+    for (const auto& pressure : pressures) {
+        if (pressure.actor_polity_id == polity_id) {
+            matches.push_back(&pressure);
+        }
+    }
+    std::sort(matches.begin(), matches.end(),
+              [](const auto* lhs, const auto* rhs) { return lhs->declaration_pressure > rhs->declaration_pressure; });
+    return matches;
+}
+
 int ContestedTileCount(const World& world) {
     int count = 0;
     for (const auto& tile : world.Tiles()) {
@@ -973,6 +992,16 @@ void DrawInspectorDetails(const AppState& state, int& y) {
             for (std::size_t i = 0; i < diplomacy_count; ++i) {
                 DrawText(Truncate(DiplomacyRelationLine(*diplomacy[i]), 58).c_str(), 34, y, 16,
                          Color{178, 204, 232, 255});
+                y += 22;
+            }
+            const auto war_pressures = WarPressuresForActor(state.simulation.WarPressures(), polity->id);
+            DrawText(("War ROI candidates " + std::to_string(war_pressures.size())).c_str(), 34, y, 16,
+                     Color{232, 178, 142, 255});
+            y += 22;
+            const std::size_t war_count = std::min<std::size_t>(war_pressures.size(), 3);
+            for (std::size_t i = 0; i < war_count; ++i) {
+                DrawText(Truncate(WarPressureLine(*war_pressures[i]), 58).c_str(), 34, y, 16,
+                         Color{232, 178, 142, 255});
                 y += 22;
             }
         }

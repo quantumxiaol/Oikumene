@@ -59,6 +59,19 @@
 - BlockadeRisk：依赖、竞争、路线脆弱性和弱势贸易叠加后的封锁风险倾向。
 - `Dip F/C/D/B`：HUD 中的外交关系摘要，分别表示 Friendly、Competitive、Dependent、BlockadeRisk 数量。
 
+## 战争压力
+
+当前版本的战争系统还不执行宣战和占领，只生成用于调试 War ROI 的定向压力候选。
+
+- WarPressure：从一个 polity 指向另一个 polity 的战争倾向候选，来源于外交、贸易、边界和军力差异。
+- BorderDispute：边界摩擦和竞争主导的冲突倾向。
+- TradeCoercion：贸易互补、路线脆弱或经济竞争带来的强制贸易倾向。
+- Blockade：有杠杆的一方利用对方依赖和路线脆弱性制造封锁压力。
+- DependencyBreakout：依赖方因为受制于对方贸易杠杆而产生摆脱依赖的冲突压力。
+- Friendly Penalty：友好关系对宣战倾向的抑制；贸易越稳定，惩罚越明显。
+- Trade Conflict Weight：依赖、封锁风险、路线脆弱性和竞争叠加后的贸易冲突权重。
+- Declaration Pressure：归一化后的宣战压力，仅用于观察和后续战争目标选择。
+
 ## 实体
 
 - Band：流动狩猎采集群体。
