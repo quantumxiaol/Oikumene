@@ -68,6 +68,13 @@
 - Persist trade paths for JSON export and map overlays.
 - Add TradeNetwork map layer and tile-level trade agreement details.
 
+## Phase 5.2: Early Diplomacy Scores
+
+- Build pairwise `DiplomacyRelation` records for every polity pair.
+- Convert trade profit, complementarity, route efficiency, asymmetric imports, border tension, and economic overlap into friendship, competition, dependence, and blockade tendency scores.
+- Classify relations as Neutral, Friendly, Competitive, Dependent, or BlockadeRisk.
+- Export diplomacy metrics to headless JSON/CSV and show relation details in the debug UI.
+
 ## Phase 5.5: War ROI
 
 - War target valuation.

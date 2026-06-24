@@ -54,6 +54,11 @@ struct Metrics {
     int trade_events = 0;
     int routes = 0;
     int active_trades = 0;
+    int diplomacy_relations = 0;
+    int friendly_relations = 0;
+    int competitive_relations = 0;
+    int dependent_relations = 0;
+    int blockade_risk_relations = 0;
     int route_tiles = 0;
     int road_tiles = 0;
     int trail_tiles = 0;
@@ -107,6 +112,9 @@ struct Metrics {
     float average_trade_route_efficiency = 0.0F;
     float average_trade_weak_refresh_count = 0.0F;
     float average_trade_path_tiles = 0.0F;
+    float average_friendship = 0.0F;
+    float average_competition = 0.0F;
+    float average_blockade_tendency = 0.0F;
 };
 
 void PrintUsage() {
@@ -463,6 +471,25 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         metrics.active_trades <= 0 ? 0.0F : trade_weak_refresh_sum / static_cast<float>(metrics.active_trades);
     metrics.average_trade_path_tiles =
         metrics.active_trades <= 0 ? 0.0F : trade_path_tiles_sum / static_cast<float>(metrics.active_trades);
+    metrics.diplomacy_relations = static_cast<int>(sim.DiplomacyRelations().size());
+    float friendship_sum = 0.0F;
+    float competition_sum = 0.0F;
+    float blockade_sum = 0.0F;
+    for (const auto& relation : sim.DiplomacyRelations()) {
+        metrics.friendly_relations += relation.posture == oikumene::DiplomaticPosture::Friendly ? 1 : 0;
+        metrics.competitive_relations += relation.posture == oikumene::DiplomaticPosture::Competitive ? 1 : 0;
+        metrics.dependent_relations += relation.posture == oikumene::DiplomaticPosture::Dependent ? 1 : 0;
+        metrics.blockade_risk_relations += relation.posture == oikumene::DiplomaticPosture::BlockadeRisk ? 1 : 0;
+        friendship_sum += relation.friendship;
+        competition_sum += relation.competition;
+        blockade_sum += relation.blockade_tendency;
+    }
+    metrics.average_friendship =
+        metrics.diplomacy_relations <= 0 ? 0.0F : friendship_sum / static_cast<float>(metrics.diplomacy_relations);
+    metrics.average_competition =
+        metrics.diplomacy_relations <= 0 ? 0.0F : competition_sum / static_cast<float>(metrics.diplomacy_relations);
+    metrics.average_blockade_tendency =
+        metrics.diplomacy_relations <= 0 ? 0.0F : blockade_sum / static_cast<float>(metrics.diplomacy_relations);
     metrics.food_output_consumption_ratio = metrics.total_food_output / std::max(1.0F, metrics.total_food_consumption);
     metrics.farm_share_of_worked_tiles =
         metrics.worked_tiles <= 0 ? 0.0F : static_cast<float>(metrics.farms) / static_cast<float>(metrics.worked_tiles);
@@ -542,12 +569,20 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"route_built_events", metrics.route_events},
         {"trade_opened_events", metrics.trade_events},
         {"active_trades", metrics.active_trades},
+        {"diplomacy_relations", metrics.diplomacy_relations},
+        {"friendly_relations", metrics.friendly_relations},
+        {"competitive_relations", metrics.competitive_relations},
+        {"dependent_relations", metrics.dependent_relations},
+        {"blockade_risk_relations", metrics.blockade_risk_relations},
         {"average_trade_profit", metrics.average_trade_profit},
         {"average_trade_complementarity", metrics.average_trade_complementarity},
         {"average_trade_route_cost", metrics.average_trade_route_cost},
         {"average_trade_route_efficiency", metrics.average_trade_route_efficiency},
         {"average_trade_weak_refresh_count", metrics.average_trade_weak_refresh_count},
         {"average_trade_path_tiles", metrics.average_trade_path_tiles},
+        {"average_friendship", metrics.average_friendship},
+        {"average_competition", metrics.average_competition},
+        {"average_blockade_tendency", metrics.average_blockade_tendency},
     };
 }
 
@@ -571,9 +606,10 @@ void WriteCsvHeader(std::ofstream& output) {
            "total_food_output_last_turn,total_food_consumption_last_turn,total_wood_output_last_turn,"
            "average_carrying_capacity,food_output_consumption_ratio,farm_share_of_worked_tiles,"
            "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events,route_built_events,"
-           "trade_opened_events,active_trades,average_trade_profit,average_trade_complementarity,"
+           "trade_opened_events,active_trades,diplomacy_relations,friendly_relations,competitive_relations,"
+           "dependent_relations,blockade_risk_relations,average_trade_profit,average_trade_complementarity,"
            "average_trade_route_cost,average_trade_route_efficiency,average_trade_weak_refresh_count,"
-           "average_trade_path_tiles\n";
+           "average_trade_path_tiles,average_friendship,average_competition,average_blockade_tendency\n";
 }
 
 void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
@@ -606,10 +642,13 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.average_carrying_capacity << ',' << metrics.food_output_consumption_ratio << ','
            << metrics.farm_share_of_worked_tiles << ',' << metrics.famine_events << ',' << metrics.farm_events << ','
            << metrics.lumber_events << ',' << metrics.pasture_events << ',' << metrics.route_events << ','
-           << metrics.trade_events << ',' << metrics.active_trades << ',' << metrics.average_trade_profit << ','
+           << metrics.trade_events << ',' << metrics.active_trades << ',' << metrics.diplomacy_relations << ','
+           << metrics.friendly_relations << ',' << metrics.competitive_relations << ',' << metrics.dependent_relations
+           << ',' << metrics.blockade_risk_relations << ',' << metrics.average_trade_profit << ','
            << metrics.average_trade_complementarity << ',' << metrics.average_trade_route_cost << ','
            << metrics.average_trade_route_efficiency << ',' << metrics.average_trade_weak_refresh_count << ','
-           << metrics.average_trade_path_tiles << '\n';
+           << metrics.average_trade_path_tiles << ',' << metrics.average_friendship << ','
+           << metrics.average_competition << ',' << metrics.average_blockade_tendency << '\n';
 }
 
 nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
@@ -688,6 +727,11 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_military_potential", mean([](const Metrics& item) { return item.average_military_potential; })},
         {"mean_routes", mean([](const Metrics& item) { return item.routes; })},
         {"mean_active_trades", mean([](const Metrics& item) { return item.active_trades; })},
+        {"mean_diplomacy_relations", mean([](const Metrics& item) { return item.diplomacy_relations; })},
+        {"mean_friendly_relations", mean([](const Metrics& item) { return item.friendly_relations; })},
+        {"mean_competitive_relations", mean([](const Metrics& item) { return item.competitive_relations; })},
+        {"mean_dependent_relations", mean([](const Metrics& item) { return item.dependent_relations; })},
+        {"mean_blockade_risk_relations", mean([](const Metrics& item) { return item.blockade_risk_relations; })},
         {"mean_route_tiles", mean([](const Metrics& item) { return item.route_tiles; })},
         {"mean_road_tiles", mean([](const Metrics& item) { return item.road_tiles; })},
         {"mean_trail_tiles", mean([](const Metrics& item) { return item.trail_tiles; })},
@@ -709,6 +753,9 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_trade_weak_refresh_count",
          mean([](const Metrics& item) { return item.average_trade_weak_refresh_count; })},
         {"mean_trade_path_tiles", mean([](const Metrics& item) { return item.average_trade_path_tiles; })},
+        {"mean_friendship", mean([](const Metrics& item) { return item.average_friendship; })},
+        {"mean_competition", mean([](const Metrics& item) { return item.average_competition; })},
+        {"mean_blockade_tendency", mean([](const Metrics& item) { return item.average_blockade_tendency; })},
         {"mean_food_output", mean([](const Metrics& item) { return item.total_food_output; })},
         {"mean_food_consumption", mean([](const Metrics& item) { return item.total_food_consumption; })},
         {"mean_food_output_consumption_ratio",

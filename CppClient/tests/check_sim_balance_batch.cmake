@@ -67,6 +67,13 @@ foreach(token
     "\"mean_trade_complementarity\""
     "\"mean_trade_route_cost\""
     "\"mean_trade_route_efficiency\""
+    "\"mean_diplomacy_relations\""
+    "\"mean_friendly_relations\""
+    "\"mean_competitive_relations\""
+    "\"mean_blockade_risk_relations\""
+    "\"mean_friendship\""
+    "\"mean_competition\""
+    "\"mean_blockade_tendency\""
 )
     string(FIND "${summary}" "${token}" token_index)
     if(token_index EQUAL -1)

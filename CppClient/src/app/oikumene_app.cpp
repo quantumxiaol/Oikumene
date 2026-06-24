@@ -231,6 +231,18 @@ const Route* RouteById(const std::vector<Route>& routes, int id) {
     return nullptr;
 }
 
+const DiplomacyRelation* DiplomacyRelationForPair(const std::vector<DiplomacyRelation>& relations, PolityId a,
+                                                  PolityId b) {
+    for (const auto& relation : relations) {
+        const bool same_pair = (relation.polity_a_id == a && relation.polity_b_id == b) ||
+                               (relation.polity_a_id == b && relation.polity_b_id == a);
+        if (same_pair) {
+            return &relation;
+        }
+    }
+    return nullptr;
+}
+
 std::vector<const TradeAgreement*> ActiveTradesAtTile(const std::vector<TradeAgreement>& trades, int x, int y) {
     std::vector<const TradeAgreement*> matches;
     for (const auto& trade : trades) {
@@ -253,6 +265,13 @@ std::string TradeAgreementLine(const TradeAgreement& trade) {
            Fixed(trade.route_efficiency, 2) + " weak " + std::to_string(trade.weak_refresh_count);
 }
 
+std::string DiplomacyRelationLine(const DiplomacyRelation& relation) {
+    return "P" + std::to_string(relation.polity_a_id) + "-P" + std::to_string(relation.polity_b_id) + " " +
+           ToString(relation.posture) + " F " + Fixed(relation.friendship, 2) + " C " + Fixed(relation.competition, 2) +
+           " D " + Fixed(std::max(relation.dependence_a_on_b, relation.dependence_b_on_a), 2) + " B " +
+           Fixed(relation.blockade_tendency, 2);
+}
+
 std::string TradeIdsForPolity(const std::vector<TradeAgreement>& trades, PolityId polity_id) {
     std::string text;
     for (const auto& trade : trades) {
@@ -265,6 +284,28 @@ std::string TradeIdsForPolity(const std::vector<TradeAgreement>& trades, PolityI
         text += "#" + std::to_string(trade.id);
     }
     return text.empty() ? "None" : text;
+}
+
+int DiplomacyPostureCount(const std::vector<DiplomacyRelation>& relations, DiplomaticPosture posture) {
+    int count = 0;
+    for (const auto& relation : relations) {
+        count += relation.posture == posture ? 1 : 0;
+    }
+    return count;
+}
+
+std::vector<const DiplomacyRelation*> DiplomacyRelationsForPolity(const std::vector<DiplomacyRelation>& relations,
+                                                                  PolityId polity_id) {
+    std::vector<const DiplomacyRelation*> matches;
+    for (const auto& relation : relations) {
+        if (relation.polity_a_id == polity_id || relation.polity_b_id == polity_id) {
+            matches.push_back(&relation);
+        }
+    }
+    std::sort(matches.begin(), matches.end(), [](const auto* lhs, const auto* rhs) {
+        return lhs->blockade_tendency + lhs->competition > rhs->blockade_tendency + rhs->competition;
+    });
+    return matches;
 }
 
 int ContestedTileCount(const World& world) {
@@ -674,16 +715,24 @@ void DrawHud(const AppState& state) {
               std::to_string(LargestPolityPopulation(state.simulation.Polities())))
                  .c_str(),
              30, 130, 15, Color{184, 194, 202, 255});
-    DrawText((std::string(state.simulation_params.enable_routes ? "Routes " : "Routes off ") +
-              std::to_string(state.simulation.Routes().size()) + "/" +
-              std::to_string(RouteTileCount(state.simulation.GetWorld())) + "  Tech avg " +
-              Fixed(AverageUnlockedTechs(state.simulation.Polities()), 1) + "  Mining " +
-              Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Mining) * 100.0F, 0) + "%  Roads " +
-              Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Roads) * 100.0F, 0) + "%  Trade " +
-              std::to_string(ActiveTradeCount(state.simulation.Trades())) + " +" +
-              Fixed(TotalTradeProfit(state.simulation.Trades()), 1))
-                 .c_str(),
-             30, 154, 15, Color{184, 194, 202, 255});
+    DrawText(
+        (std::string(state.simulation_params.enable_routes ? "Routes " : "Routes off ") +
+         std::to_string(state.simulation.Routes().size()) + "/" +
+         std::to_string(RouteTileCount(state.simulation.GetWorld())) + "  Tech avg " +
+         Fixed(AverageUnlockedTechs(state.simulation.Polities()), 1) + "  Mining " +
+         Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Mining) * 100.0F, 0) + "%  Roads " +
+         Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Roads) * 100.0F, 0) + "%  Trade " +
+         std::to_string(ActiveTradeCount(state.simulation.Trades())) + " +" +
+         Fixed(TotalTradeProfit(state.simulation.Trades()), 1) + "  Dip F/C/D/B " +
+         std::to_string(DiplomacyPostureCount(state.simulation.DiplomacyRelations(), DiplomaticPosture::Friendly)) +
+         "/" +
+         std::to_string(DiplomacyPostureCount(state.simulation.DiplomacyRelations(), DiplomaticPosture::Competitive)) +
+         "/" +
+         std::to_string(DiplomacyPostureCount(state.simulation.DiplomacyRelations(), DiplomaticPosture::Dependent)) +
+         "/" +
+         std::to_string(DiplomacyPostureCount(state.simulation.DiplomacyRelations(), DiplomaticPosture::BlockadeRisk)))
+            .c_str(),
+        30, 154, 15, Color{184, 194, 202, 255});
 }
 
 void DrawPlaybackBar(AppState& state) {
@@ -788,6 +837,13 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                 DrawText(Truncate(TradeAgreementLine(*tile_trades[i]), 58).c_str(), 34, y, 16,
                          Color{160, 218, 188, 255});
                 y += 22;
+                if (const auto* relation =
+                        DiplomacyRelationForPair(state.simulation.DiplomacyRelations(), tile_trades[i]->polity_a_id,
+                                                 tile_trades[i]->polity_b_id)) {
+                    DrawText(Truncate("Diplomacy: " + DiplomacyRelationLine(*relation), 58).c_str(), 34, y, 16,
+                             Color{178, 204, 232, 255});
+                    y += 22;
+                }
             }
         }
     }
@@ -908,6 +964,17 @@ void DrawInspectorDetails(const AppState& state, int& y) {
             y += 22;
             DrawText(Truncate("Agreements: " + TradeIdsForPolity(state.simulation.Trades(), polity->id), 58).c_str(),
                      34, y, 16, Color{160, 218, 188, 255});
+            y += 22;
+            const auto diplomacy = DiplomacyRelationsForPolity(state.simulation.DiplomacyRelations(), polity->id);
+            DrawText(("Diplomacy relations " + std::to_string(diplomacy.size())).c_str(), 34, y, 16,
+                     Color{178, 204, 232, 255});
+            y += 22;
+            const std::size_t diplomacy_count = std::min<std::size_t>(diplomacy.size(), 3);
+            for (std::size_t i = 0; i < diplomacy_count; ++i) {
+                DrawText(Truncate(DiplomacyRelationLine(*diplomacy[i]), 58).c_str(), 34, y, 16,
+                         Color{178, 204, 232, 255});
+                y += 22;
+            }
         }
     }
 }

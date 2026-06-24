@@ -11,7 +11,7 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 
 ## 当前状态
 
-当前已经进入 Phase 5.1：
+当前已经进入 Phase 5.2：
 
 - C++ 主程序能打开 Raylib 窗口，生成 80x56 世界地图。
 - 支持 Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl、RouteNetwork、TradeNetwork 图层。
@@ -30,12 +30,14 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 - 已有早期贸易系统：C++ heuristic 会根据 polity 之间的粮食、木材、矿石、财富互补性和首都间路线成本建立 `TradeAgreement`，贸易收益会写入 polity 的 `trade_profit` 和 wealth surplus。
 - 已有贸易稳定性校准：贸易开约门槛高于续约门槛，协议会记录 `weak_refresh_count`，连续多轮疲弱才关闭，避免贸易关系因短期预算波动反复开关。
 - `TradeNetwork` 图层可以直接查看活跃贸易协议的首都间路径；选中或悬停贸易路径 tile 时，详情面板会显示经过此处的协议 id、双方、货物、利润、路线效率和疲弱次数。
+- 已有早期外交关系评分：每对 polity 会生成 `DiplomacyRelation`，根据贸易收益、互补性、依赖方向、边界摩擦、经济重叠和路线脆弱性计算 Friendly、Competitive、Dependent、BlockadeRisk 等姿态。
+- 选中 polity 时详情面板会显示相关外交关系；HUD 中的 `Dip F/C/D/B` 分别代表友好、竞争、依赖和封锁风险关系数量。
 - 已有图例系统：`F2` 打开 Legend 面板，`docs/LEGEND.md` 维护图标和覆盖层说明。
 - UI 底部有轻量播放控制条：Play/Pause、Step、+10、+100、TPS 调整、Reset Bands。
 - 已有 headless 工具：
   - `oikumene_worldgen_batch`：批量生成世界并输出世界生成报告。
   - `oikumene_sim_batch`：无窗口跑部落/定居仿真并输出 summary、final_state、events。
-  - `oikumene_sim_balance_batch`：批量跑多个 seed，输出人口、农田、牧场、伐木、粮食供需、承载力、polity 行政、稳定性、科技、路线网络和贸易指标。
+  - `oikumene_sim_balance_batch`：批量跑多个 seed，输出人口、农田、牧场、伐木、粮食供需、承载力、polity 行政、稳定性、科技、路线网络、贸易和外交指标。
 
 ## C++ 依赖
 
@@ -199,9 +201,9 @@ cd CppClient
 - `world_report.json`
 - `states.jsonl`：仅在传入 `--sample-every N` 时生成。
 
-`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension、stability、平均解锁科技数、knowledge income、关键科技解锁率、路线网络规模和贸易规模。传入 `--disable-routes` 时会完全关闭路线建设、路线 tile 缓存、路线路径加成和矿点转运加成，用来做 routes-on/off 对照。`final_state.json` 会保留 Band / Settlement / Polity / Route / Trade 的调试字段，并导出 `improved_tiles` 与 `route_tiles` 摘要；每个 Trade 会导出 `path`、`tile_count` 和 `weak_refresh_count`，方便检查贸易路线与协议稳定性；每个 polity 会包含 `research`、`unlocked_techs`、`active_effects`、`military_potential`、`tool_efficiency`、`route_ids`、`route_maintenance`、`connected_settlements`、`connected_mines`、`connected_mine_potential`、`active_connected_mines`、`connected_ore_income`、`unconnected_ore_income`、`trade_ids`、`active_trade_count` 和 `trade_profit`。
+`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension、stability、平均解锁科技数、knowledge income、关键科技解锁率、路线网络规模、贸易规模和外交关系分布。传入 `--disable-routes` 时会完全关闭路线建设、路线 tile 缓存、路线路径加成和矿点转运加成，用来做 routes-on/off 对照。`final_state.json` 会保留 Band / Settlement / Polity / Route / Trade / DiplomacyRelation 的调试字段，并导出 `improved_tiles` 与 `route_tiles` 摘要；每个 Trade 会导出 `path`、`tile_count` 和 `weak_refresh_count`，方便检查贸易路线与协议稳定性；每个 DiplomacyRelation 会导出 posture、friendship、competition、dependence、blockade_tendency、border_tension 和 economic_overlap；每个 polity 会包含 `research`、`unlocked_techs`、`active_effects`、`military_potential`、`tool_efficiency`、`route_ids`、`route_maintenance`、`connected_settlements`、`connected_mines`、`connected_mine_potential`、`active_connected_mines`、`connected_ore_income`、`unconnected_ore_income`、`trade_ids`、`active_trade_count` 和 `trade_profit`。
 
-批量检查村庄经济、polity、路线和贸易效果：
+批量检查村庄经济、polity、路线、贸易和外交效果：
 
 ```bash
 cd CppClient
@@ -256,6 +258,9 @@ cd CppClient
 - `mean_trade_opened_events`：平均贸易开启事件数，过高通常说明贸易关系过度震荡。
 - `mean_trade_weak_refresh_count`：活跃贸易协议平均连续疲弱刷新次数，用来判断续约门槛是否过松或过紧。
 - `mean_trade_path_tiles`：活跃贸易协议平均路径长度，用来检查贸易路线是否符合地图尺度。
+- `mean_diplomacy_relations`：平均 polity 关系数量。
+- `mean_friendly_relations` / `mean_competitive_relations` / `mean_dependent_relations` / `mean_blockade_risk_relations`：不同外交姿态数量。
+- `mean_friendship` / `mean_competition` / `mean_blockade_tendency`：外交评分均值，用来校准贸易是否过度导致友好、竞争或封锁风险。
 
 一次 20 seed、1000 turn 的参考结果：
 
@@ -285,6 +290,19 @@ cd CppClient
 | `mean_trade_weak_refresh_count` | 0.03 |
 | `mean_trade_path_tiles` | 37.50 |
 
+一次 6 seed、300 turn 的 Phase 5.2 外交评分 smoke 结果：
+
+| 指标 | 数值 |
+| --- | ---: |
+| `mean_diplomacy_relations` | 4.50 |
+| `mean_friendly_relations` | 0.67 |
+| `mean_competitive_relations` | 0.83 |
+| `mean_dependent_relations` | 2.50 |
+| `mean_blockade_risk_relations` | 0.00 |
+| `mean_friendship` | 0.60 |
+| `mean_competition` | 0.30 |
+| `mean_blockade_tendency` | 0.29 |
+
 ## 开发格式化
 
 仓库包含：
@@ -303,8 +321,8 @@ python3 scripts/format_cpp.py
 
 ## 下一阶段
 
-Phase 5.2 后续重点：
+Phase 5.3 后续重点：
 
-- 把贸易关系纳入外交关系评分，形成友好、竞争和封锁的早期状态。
-- 继续保持贸易系统使用 C++ heuristic，暂时不接 LLM。
-- 贸易和路线稳定后进入 Military Potential / War ROI。
+- 将外交关系接入后续 War ROI：友好关系降低宣战倾向，依赖和封锁风险提高贸易冲突权重。
+- 继续保持贸易和外交系统使用 C++ heuristic，暂时不接 LLM。
+- 贸易、外交和路线稳定后进入 Military Potential / War ROI。

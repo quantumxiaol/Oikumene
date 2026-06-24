@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "oikumene/sim/band_system.hpp"
+#include "oikumene/sim/diplomacy_system.hpp"
 #include "oikumene/sim/polity_system.hpp"
 #include "oikumene/sim/route_system.hpp"
 #include "oikumene/sim/settlement_system.hpp"
@@ -69,6 +70,14 @@ std::vector<TradeAgreement>& Simulation::Trades() {
     return trades_;
 }
 
+const std::vector<DiplomacyRelation>& Simulation::DiplomacyRelations() const {
+    return diplomacy_relations_;
+}
+
+std::vector<DiplomacyRelation>& Simulation::DiplomacyRelations() {
+    return diplomacy_relations_;
+}
+
 const EventLog& Simulation::Events() const {
     return event_log_;
 }
@@ -96,9 +105,11 @@ void Simulation::InitializeBands(int count) {
     settlements_.clear();
     routes_.clear();
     trades_.clear();
+    diplomacy_relations_.clear();
     PolitySystem::Reset(world_, settlements_, polities_);
     RouteSystem::Reset(world_, routes_, polities_);
     TradeSystem::Reset(trades_, polities_);
+    DiplomacySystem::Reset(diplomacy_relations_);
     event_log_.Events().clear();
     current_turn_ = 0;
     BandSystem::InitializeBands(world_, params_, count, bands_);
@@ -112,6 +123,7 @@ void Simulation::AdvanceOneTurn() {
     RouteSystem::UpdateRoutes(world_, current_turn_, settlements_, polities_, routes_, event_log_,
                               params_.enable_routes);
     TradeSystem::UpdateTrades(world_, current_turn_, settlements_, polities_, trades_, event_log_);
+    DiplomacySystem::UpdateDiplomacy(world_, current_turn_, polities_, trades_, diplomacy_relations_);
     ++current_turn_;
 }
 

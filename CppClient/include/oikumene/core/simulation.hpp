@@ -5,6 +5,7 @@
 
 #include "oikumene/core/types.hpp"
 #include "oikumene/sim/band.hpp"
+#include "oikumene/sim/diplomacy.hpp"
 #include "oikumene/sim/event_log.hpp"
 #include "oikumene/sim/polity.hpp"
 #include "oikumene/sim/route.hpp"
@@ -33,6 +34,8 @@ class Simulation {
     [[nodiscard]] std::vector<Route>& Routes();
     [[nodiscard]] const std::vector<TradeAgreement>& Trades() const;
     [[nodiscard]] std::vector<TradeAgreement>& Trades();
+    [[nodiscard]] const std::vector<DiplomacyRelation>& DiplomacyRelations() const;
+    [[nodiscard]] std::vector<DiplomacyRelation>& DiplomacyRelations();
     [[nodiscard]] const EventLog& Events() const;
     [[nodiscard]] EventLog& Events();
     [[nodiscard]] std::string StatusSummary() const;
@@ -49,6 +52,7 @@ class Simulation {
     std::vector<Polity> polities_;
     std::vector<Route> routes_;
     std::vector<TradeAgreement> trades_;
+    std::vector<DiplomacyRelation> diplomacy_relations_;
     EventLog event_log_;
 };
 

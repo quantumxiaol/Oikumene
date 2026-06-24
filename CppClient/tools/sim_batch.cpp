@@ -322,6 +322,31 @@ nlohmann::json TradeToJson(const oikumene::TradeAgreement& trade) {
     };
 }
 
+nlohmann::json DiplomacyToJson(const oikumene::DiplomacyRelation& relation) {
+    return nlohmann::json{
+        {"id", relation.id},
+        {"polity_a_id", relation.polity_a_id},
+        {"polity_b_id", relation.polity_b_id},
+        {"has_active_trade", relation.has_active_trade},
+        {"trade_id", relation.trade_id},
+        {"trade_profit", relation.trade_profit},
+        {"trade_complementarity", relation.trade_complementarity},
+        {"trade_route_efficiency", relation.trade_route_efficiency},
+        {"trade_route_cost", relation.trade_route_cost},
+        {"border_tension", relation.border_tension},
+        {"economic_overlap", relation.economic_overlap},
+        {"dependence_a_on_b", relation.dependence_a_on_b},
+        {"dependence_b_on_a", relation.dependence_b_on_a},
+        {"dependent_polity_id", relation.dependent_polity_id},
+        {"leverage_polity_id", relation.leverage_polity_id},
+        {"friendship", relation.friendship},
+        {"competition", relation.competition},
+        {"blockade_tendency", relation.blockade_tendency},
+        {"posture", oikumene::ToString(relation.posture)},
+        {"reason", relation.reason},
+    };
+}
+
 int CountActiveBands(const oikumene::Simulation& sim) {
     int count = 0;
     for (const auto& band : sim.Bands()) {
@@ -471,6 +496,47 @@ float AverageTradeRouteEfficiency(const oikumene::Simulation& sim) {
         ++count;
     }
     return count <= 0 ? 0.0F : total / static_cast<float>(count);
+}
+
+int CountDiplomacyPosture(const oikumene::Simulation& sim, oikumene::DiplomaticPosture posture) {
+    int count = 0;
+    for (const auto& relation : sim.DiplomacyRelations()) {
+        count += relation.posture == posture ? 1 : 0;
+    }
+    return count;
+}
+
+float AverageFriendship(const oikumene::Simulation& sim) {
+    if (sim.DiplomacyRelations().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& relation : sim.DiplomacyRelations()) {
+        total += relation.friendship;
+    }
+    return total / static_cast<float>(sim.DiplomacyRelations().size());
+}
+
+float AverageCompetition(const oikumene::Simulation& sim) {
+    if (sim.DiplomacyRelations().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& relation : sim.DiplomacyRelations()) {
+        total += relation.competition;
+    }
+    return total / static_cast<float>(sim.DiplomacyRelations().size());
+}
+
+float AverageBlockadeTendency(const oikumene::Simulation& sim) {
+    if (sim.DiplomacyRelations().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& relation : sim.DiplomacyRelations()) {
+        total += relation.blockade_tendency;
+    }
+    return total / static_cast<float>(sim.DiplomacyRelations().size());
 }
 
 float AverageAdminLoad(const oikumene::Simulation& sim) {
@@ -654,6 +720,10 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
     for (const auto& trade : sim.Trades()) {
         trades.push_back(TradeToJson(trade));
     }
+    nlohmann::json diplomacy = nlohmann::json::array();
+    for (const auto& relation : sim.DiplomacyRelations()) {
+        diplomacy.push_back(DiplomacyToJson(relation));
+    }
 
     return nlohmann::json{
         {"turn", sim.CurrentTurn()},
@@ -663,6 +733,7 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
         {"polities", polities},
         {"routes", routes},
         {"trades", trades},
+        {"diplomacy_relations", diplomacy},
         {"bands", bands},
         {"improved_tiles", ImprovedTilesToJson(sim)},
         {"route_tiles", RouteTilesToJson(sim)},
@@ -705,6 +776,14 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"active_trades", CountActiveTrades(sim)},
         {"total_trade_profit", TotalTradeProfit(sim)},
         {"average_trade_route_efficiency", AverageTradeRouteEfficiency(sim)},
+        {"diplomacy_relations", sim.DiplomacyRelations().size()},
+        {"friendly_relations", CountDiplomacyPosture(sim, oikumene::DiplomaticPosture::Friendly)},
+        {"competitive_relations", CountDiplomacyPosture(sim, oikumene::DiplomaticPosture::Competitive)},
+        {"dependent_relations", CountDiplomacyPosture(sim, oikumene::DiplomaticPosture::Dependent)},
+        {"blockade_risk_relations", CountDiplomacyPosture(sim, oikumene::DiplomaticPosture::BlockadeRisk)},
+        {"average_friendship", AverageFriendship(sim)},
+        {"average_competition", AverageCompetition(sim)},
+        {"average_blockade_tendency", AverageBlockadeTendency(sim)},
         {"route_tile_count", CountRouteTiles(sim)},
         {"road_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Road)},
         {"trail_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Trail)},
@@ -762,6 +841,14 @@ nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
         {"active_trades", CountActiveTrades(sim)},
         {"total_trade_profit", TotalTradeProfit(sim)},
         {"average_trade_route_efficiency", AverageTradeRouteEfficiency(sim)},
+        {"diplomacy_relations", sim.DiplomacyRelations().size()},
+        {"friendly_relations", CountDiplomacyPosture(sim, oikumene::DiplomaticPosture::Friendly)},
+        {"competitive_relations", CountDiplomacyPosture(sim, oikumene::DiplomaticPosture::Competitive)},
+        {"dependent_relations", CountDiplomacyPosture(sim, oikumene::DiplomaticPosture::Dependent)},
+        {"blockade_risk_relations", CountDiplomacyPosture(sim, oikumene::DiplomaticPosture::BlockadeRisk)},
+        {"average_friendship", AverageFriendship(sim)},
+        {"average_competition", AverageCompetition(sim)},
+        {"average_blockade_tendency", AverageBlockadeTendency(sim)},
         {"route_tile_count", CountRouteTiles(sim)},
         {"road_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Road)},
         {"trail_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Trail)},

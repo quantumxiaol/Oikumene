@@ -51,6 +51,14 @@
 - Trade Agreement：两个 polity 之间的贸易协议，记录双方输出货物、互补评分、路径成本、净收益、路径 tile 和连续疲弱刷新次数。
 - Weak Refresh：协议低于开约门槛但仍满足续约条件的连续刷新次数；连续多轮疲弱后协议才会关闭。
 
+## 外交
+
+- Friendly：贸易收益、路线效率和长期协议带来的友好关系。
+- Competitive：共享边界、争议区、经济结构重叠和军力接近带来的竞争关系。
+- Dependent：一方从另一方进口价值明显更高，形成依赖和潜在外交杠杆。
+- BlockadeRisk：依赖、竞争、路线脆弱性和弱势贸易叠加后的封锁风险倾向。
+- `Dip F/C/D/B`：HUD 中的外交关系摘要，分别表示 Friendly、Competitive、Dependent、BlockadeRisk 数量。
+
 ## 实体
 
 - Band：流动狩猎采集群体。
