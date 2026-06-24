@@ -11,6 +11,9 @@ namespace {
 constexpr int kTradeRefreshInterval = 10;
 constexpr int kTradeOpenInterval = 15;
 constexpr int kMaxTradesPerPolity = 3;
+constexpr int kWeakTradeGraceRefreshes = 3;
+constexpr float kKeepAliveProfit = -0.18F;
+constexpr float kKeepAliveComplementarity = 0.08F;
 
 const Polity* PolityById(const std::vector<Polity>& polities, PolityId id) {
     for (const auto& polity : polities) {
@@ -65,6 +68,7 @@ TradeAgreement AgreementFromCandidate(int id, Turn turn, const TradeCandidate& c
         .opened_turn = turn,
         .last_evaluated_turn = turn,
         .active = true,
+        .weak_refresh_count = 0,
         .export_from_a = candidate.export_from_a,
         .export_from_b = candidate.export_from_b,
         .value_a_to_b = candidate.value_a_to_b,
@@ -77,13 +81,16 @@ TradeAgreement AgreementFromCandidate(int id, Turn turn, const TradeCandidate& c
         .gross_value = candidate.gross_value,
         .transport_cost = candidate.transport_cost,
         .expected_profit = candidate.expected_profit,
+        .path = candidate.path,
         .reason = candidate.reason,
     };
 }
 
-void UpdateAgreementFromCandidate(TradeAgreement& agreement, Turn turn, const TradeCandidate& candidate) {
+void UpdateAgreementFromCandidate(TradeAgreement& agreement, Turn turn, const TradeCandidate& candidate,
+                                  bool profitable) {
     agreement.last_evaluated_turn = turn;
     agreement.active = true;
+    agreement.weak_refresh_count = profitable ? 0 : agreement.weak_refresh_count + 1;
     agreement.export_from_a = candidate.export_from_a;
     agreement.export_from_b = candidate.export_from_b;
     agreement.value_a_to_b = candidate.value_a_to_b;
@@ -96,7 +103,18 @@ void UpdateAgreementFromCandidate(TradeAgreement& agreement, Turn turn, const Tr
     agreement.gross_value = candidate.gross_value;
     agreement.transport_cost = candidate.transport_cost;
     agreement.expected_profit = candidate.expected_profit;
+    agreement.path = candidate.path;
     agreement.reason = candidate.reason;
+}
+
+bool CanKeepWeakTrade(const TradeCandidate& candidate) {
+    if (!candidate.viable && candidate.path.empty()) {
+        return false;
+    }
+    if (candidate.route_cost <= 0.0F || candidate.route_efficiency <= 0.0F) {
+        return false;
+    }
+    return candidate.complementarity >= kKeepAliveComplementarity || candidate.expected_profit >= kKeepAliveProfit;
 }
 
 void ClearPolityTradeStats(std::vector<Polity>& polities) {
@@ -190,11 +208,15 @@ void TradeSystem::UpdateTrades(const World& world, Turn turn, const std::vector<
                 continue;
             }
             const auto candidate = BuildTradeCandidate(world, settlements, *polity_a, *polity_b);
-            if (!IsTradeCandidateProfitable(candidate)) {
+            const bool profitable = IsTradeCandidateProfitable(candidate);
+            if (!profitable && !CanKeepWeakTrade(candidate)) {
                 trade.active = false;
                 continue;
             }
-            UpdateAgreementFromCandidate(trade, turn, candidate);
+            UpdateAgreementFromCandidate(trade, turn, candidate, profitable);
+            if (trade.weak_refresh_count > kWeakTradeGraceRefreshes) {
+                trade.active = false;
+            }
         }
 
         trades.erase(

@@ -26,6 +26,7 @@ struct TradeCandidate {
     float gross_value = 0.0F;
     float transport_cost = 0.0F;
     float expected_profit = 0.0F;
+    std::vector<TileCoord> path;
     bool viable = false;
     std::string reason;
 };

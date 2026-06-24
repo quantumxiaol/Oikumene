@@ -231,6 +231,42 @@ const Route* RouteById(const std::vector<Route>& routes, int id) {
     return nullptr;
 }
 
+std::vector<const TradeAgreement*> ActiveTradesAtTile(const std::vector<TradeAgreement>& trades, int x, int y) {
+    std::vector<const TradeAgreement*> matches;
+    for (const auto& trade : trades) {
+        if (!trade.active) {
+            continue;
+        }
+        const bool contains = std::any_of(trade.path.begin(), trade.path.end(),
+                                          [&](const TileCoord& coord) { return coord.x == x && coord.y == y; });
+        if (contains) {
+            matches.push_back(&trade);
+        }
+    }
+    return matches;
+}
+
+std::string TradeAgreementLine(const TradeAgreement& trade) {
+    return "Trade " + std::to_string(trade.id) + " P" + std::to_string(trade.polity_a_id) + "-P" +
+           std::to_string(trade.polity_b_id) + " " + ToString(trade.export_from_a) + "/" +
+           ToString(trade.export_from_b) + " profit " + Fixed(trade.expected_profit, 2) + " eff " +
+           Fixed(trade.route_efficiency, 2) + " weak " + std::to_string(trade.weak_refresh_count);
+}
+
+std::string TradeIdsForPolity(const std::vector<TradeAgreement>& trades, PolityId polity_id) {
+    std::string text;
+    for (const auto& trade : trades) {
+        if (!trade.active || (trade.polity_a_id != polity_id && trade.polity_b_id != polity_id)) {
+            continue;
+        }
+        if (!text.empty()) {
+            text += ", ";
+        }
+        text += "#" + std::to_string(trade.id);
+    }
+    return text.empty() ? "None" : text;
+}
+
 int ContestedTileCount(const World& world) {
     int count = 0;
     for (const auto& tile : world.Tiles()) {
@@ -479,6 +515,9 @@ void HandleLayerHotkeys(AppState& state) {
     }
     if (IsKeyPressed(KEY_NINE)) {
         state.current_layer = MapLayer::RouteNetwork;
+    }
+    if (IsKeyPressed(KEY_ZERO)) {
+        state.current_layer = MapLayer::TradeNetwork;
     }
 }
 
@@ -739,6 +778,18 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                 y += 24;
             }
         }
+        const auto tile_trades = ActiveTradesAtTile(state.simulation.Trades(), tile.x, tile.y);
+        if (!tile_trades.empty()) {
+            DrawText(("Trade paths " + std::to_string(tile_trades.size())).c_str(), 34, y, 17,
+                     Color{160, 218, 188, 255});
+            y += 22;
+            const std::size_t count = std::min<std::size_t>(tile_trades.size(), 3);
+            for (std::size_t i = 0; i < count; ++i) {
+                DrawText(Truncate(TradeAgreementLine(*tile_trades[i]), 58).c_str(), 34, y, 16,
+                         Color{160, 218, 188, 255});
+                y += 22;
+            }
+        }
     }
 
     const int selected_band_id = state.selection.kind == SelectionKind::Band ? state.selection.id : -1;
@@ -854,6 +905,9 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                       Fixed(polity->trade_profit, 2) + "  Avg route " + Fixed(polity->trade_route_cost, 1))
                          .c_str(),
                      34, y, 17, Color{160, 218, 188, 255});
+            y += 22;
+            DrawText(Truncate("Agreements: " + TradeIdsForPolity(state.simulation.Trades(), polity->id), 58).c_str(),
+                     34, y, 16, Color{160, 218, 188, 255});
         }
     }
 }
@@ -912,7 +966,7 @@ void DrawDebugPanel(const AppState& state) {
 void DrawHelpPanel() {
     DrawPanelBackground(GetScreenWidth() - 390, 18, 364, 342);
     DrawText("Help", GetScreenWidth() - 370, 36, 22, RAYWHITE);
-    DrawText("1-9      switch map layers", GetScreenWidth() - 370, 72, 16, Color{202, 211, 218, 255});
+    DrawText("1-9,0    switch map layers", GetScreenWidth() - 370, 72, 16, Color{202, 211, 218, 255});
     DrawText("R        generate next seed", GetScreenWidth() - 370, 96, 16, Color{202, 211, 218, 255});
     DrawText("B        reset bands on current world", GetScreenWidth() - 370, 120, 16, Color{202, 211, 218, 255});
     DrawText("Space    step one turn", GetScreenWidth() - 370, 144, 16, Color{202, 211, 218, 255});
@@ -960,8 +1014,8 @@ int OikumeneApp::Run() {
 
         BeginDrawing();
         ClearBackground(Color{18, 22, 26, 255});
-        state.renderer.Draw(state.simulation.GetWorld(), state.camera, state.current_layer, state.hover_tile,
-                            state.selection);
+        state.renderer.Draw(state.simulation.GetWorld(), state.simulation.Trades(), state.camera, state.current_layer,
+                            state.hover_tile, state.selection);
         state.renderer.DrawEntities(state.simulation.Bands(), state.simulation.Settlements(), state.camera,
                                     state.selection);
         DrawHud(state);

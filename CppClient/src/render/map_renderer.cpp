@@ -116,6 +116,13 @@ Color RouteColorFor(const Tile& tile) {
     return color;
 }
 
+Color TradeColorFor(const TradeAgreement& trade) {
+    const float mix = std::clamp(trade.route_efficiency, 0.0F, 1.0F);
+    const auto green = static_cast<unsigned char>(180 + static_cast<int>(mix * 58.0F));
+    const auto alpha = static_cast<unsigned char>(trade.weak_refresh_count > 0 ? 165 : 230);
+    return Color{86, green, 154, alpha};
+}
+
 void DrawRouteOverlay(const Tile& tile, Vector2 position, float tile_size) {
     if (!tile.has_route) {
         return;
@@ -132,10 +139,38 @@ void DrawRouteOverlay(const Tile& tile, Vector2 position, float tile_size) {
     }
 }
 
+void DrawTradePath(const TradeAgreement& trade, const CameraController& camera) {
+    if (!trade.active || trade.path.size() < 2) {
+        return;
+    }
+
+    const float tile_size = camera.TileSize();
+    const float width = std::max(1.5F, tile_size * (0.10F + std::clamp(trade.expected_profit, 0.0F, 2.0F) * 0.025F));
+    const Color color = TradeColorFor(trade);
+    for (std::size_t i = 1; i < trade.path.size(); ++i) {
+        const auto& from = trade.path[i - 1];
+        const auto& to = trade.path[i];
+        const Vector2 start = camera.TileToScreen(from.x, from.y);
+        const Vector2 end = camera.TileToScreen(to.x, to.y);
+        DrawLineEx(Vector2{start.x + tile_size * 0.50F, start.y + tile_size * 0.50F},
+                   Vector2{end.x + tile_size * 0.50F, end.y + tile_size * 0.50F}, width, color);
+    }
+
+    const auto& first = trade.path.front();
+    const auto& last = trade.path.back();
+    const Vector2 start = camera.TileToScreen(first.x, first.y);
+    const Vector2 end = camera.TileToScreen(last.x, last.y);
+    DrawCircleV(Vector2{start.x + tile_size * 0.50F, start.y + tile_size * 0.50F}, std::max(2.5F, tile_size * 0.22F),
+                Color{238, 228, 142, 230});
+    DrawCircleV(Vector2{end.x + tile_size * 0.50F, end.y + tile_size * 0.50F}, std::max(2.5F, tile_size * 0.22F),
+                Color{238, 228, 142, 230});
+}
+
 } // namespace
 
-void MapRenderer::Draw(const World& world, const CameraController& camera, MapLayer layer,
-                       const std::optional<std::pair<int, int>>& hover_tile, const Selection& selection) const {
+void MapRenderer::Draw(const World& world, const std::vector<TradeAgreement>& trades, const CameraController& camera,
+                       MapLayer layer, const std::optional<std::pair<int, int>>& hover_tile,
+                       const Selection& selection) const {
     const float tile_size = camera.TileSize();
     const int screen_width = GetScreenWidth();
     const int screen_height = GetScreenHeight();
@@ -167,6 +202,12 @@ void MapRenderer::Draw(const World& world, const CameraController& camera, MapLa
 
         if (layer == MapLayer::Resources) {
             DrawResourceMarker(tile, position, tile_size);
+        }
+    }
+
+    if (layer == MapLayer::TradeNetwork) {
+        for (const auto& trade : trades) {
+            DrawTradePath(trade, camera);
         }
     }
 

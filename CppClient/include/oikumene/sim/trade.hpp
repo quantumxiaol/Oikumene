@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "oikumene/core/types.hpp"
+#include "oikumene/sim/pathfinding.hpp"
 
 namespace oikumene {
 
@@ -23,6 +25,7 @@ struct TradeAgreement {
     Turn opened_turn = 0;
     Turn last_evaluated_turn = 0;
     bool active = true;
+    int weak_refresh_count = 0;
 
     TradeGood export_from_a = TradeGood::None;
     TradeGood export_from_b = TradeGood::None;
@@ -37,6 +40,7 @@ struct TradeAgreement {
     float gross_value = 0.0F;
     float transport_cost = 0.0F;
     float expected_profit = 0.0F;
+    std::vector<TileCoord> path;
     std::string reason;
 };
 

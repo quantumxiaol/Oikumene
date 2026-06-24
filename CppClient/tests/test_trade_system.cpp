@@ -66,6 +66,22 @@ oikumene::Polity MakeWoodPolity() {
     return polity;
 }
 
+void DegradeToWeakTrade(oikumene::Polity& food, oikumene::Polity& wood) {
+    food.budget.food_income = 1.25F;
+    food.budget.food_surplus = 0.0F;
+    food.budget.wood_income = 0.2F;
+    food.budget.wood_surplus = -2.0F;
+    food.budget.ore_income = 0.0F;
+    food.budget.wealth_surplus = 0.0F;
+
+    wood.budget.food_income = 1.0F;
+    wood.budget.food_surplus = -0.2F;
+    wood.budget.wood_income = 0.2F;
+    wood.budget.wood_surplus = 0.06F;
+    wood.budget.ore_income = 0.0F;
+    wood.budget.wealth_surplus = 0.0F;
+}
+
 void AddRoadBetweenCapitals(oikumene::World& world) {
     for (int x = 1; x <= 8; ++x) {
         auto& tile = world.At(x, 2);
@@ -99,6 +115,7 @@ void TestTradeCandidateUsesResourceComplementarity() {
     assert(candidate.expected_profit > 0.0F);
     assert(candidate.export_from_a == oikumene::TradeGood::Food);
     assert(candidate.export_from_b == oikumene::TradeGood::Wood);
+    assert(candidate.path.size() > 1);
 }
 
 void TestRouteNetworkImprovesTradeRouteCost() {
@@ -116,6 +133,7 @@ void TestRouteNetworkImprovesTradeRouteCost() {
     assert(candidate.viable);
     assert(candidate.route_saving > 0.0F);
     assert(candidate.route_cost < candidate.route_cost_without_network);
+    assert(candidate.path.size() > 1);
 }
 
 void TestTradeSystemOpensAgreementAndAppliesProfit() {
@@ -136,6 +154,8 @@ void TestTradeSystemOpensAgreementAndAppliesProfit() {
 
     assert(trades.size() == 1);
     assert(trades.front().active);
+    assert(trades.front().path.size() > 1);
+    assert(trades.front().weak_refresh_count == 0);
     assert(polities[0].active_trade_count == 1);
     assert(polities[1].active_trade_count == 1);
     assert(polities[0].trade_profit > 0.0F);
@@ -145,12 +165,48 @@ void TestTradeSystemOpensAgreementAndAppliesProfit() {
     assert(events.Events().front().type == oikumene::EventType::TradeOpened);
 }
 
+void TestWeakTradeGracePreventsImmediateChurn() {
+    auto world = MakeTradeWorld();
+    AddRoadBetweenCapitals(world);
+    std::vector<oikumene::Settlement> settlements{
+        MakeCapital(0, 1, 2, 0),
+        MakeCapital(1, 8, 2, 1),
+    };
+    std::vector<oikumene::Polity> polities{
+        MakeFoodPolity(),
+        MakeWoodPolity(),
+    };
+    std::vector<oikumene::TradeAgreement> trades;
+    oikumene::EventLog events;
+
+    oikumene::TradeSystem::UpdateTrades(world, 15, settlements, polities, trades, events);
+    assert(trades.size() == 1);
+
+    DegradeToWeakTrade(polities[0], polities[1]);
+    oikumene::TradeSystem::UpdateTrades(world, 20, settlements, polities, trades, events);
+    assert(trades.size() == 1);
+    assert(trades.front().active);
+    assert(trades.front().weak_refresh_count == 1);
+
+    oikumene::TradeSystem::UpdateTrades(world, 30, settlements, polities, trades, events);
+    assert(trades.size() == 1);
+    assert(trades.front().weak_refresh_count == 2);
+
+    oikumene::TradeSystem::UpdateTrades(world, 40, settlements, polities, trades, events);
+    assert(trades.size() == 1);
+    assert(trades.front().weak_refresh_count == 3);
+
+    oikumene::TradeSystem::UpdateTrades(world, 50, settlements, polities, trades, events);
+    assert(trades.empty());
+}
+
 } // namespace
 
 int main() {
     TestTradeCandidateUsesResourceComplementarity();
     TestRouteNetworkImprovesTradeRouteCost();
     TestTradeSystemOpensAgreementAndAppliesProfit();
+    TestWeakTradeGracePreventsImmediateChurn();
     std::cout << "trade system tests passed\n";
     return 0;
 }

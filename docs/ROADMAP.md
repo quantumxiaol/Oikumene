@@ -61,6 +61,13 @@
 - Route-network-aware capital-to-capital trade cost.
 - Trade profit applied to polity wealth surplus.
 
+## Phase 5.1: Trade Stability and Visualization
+
+- Separate higher opening threshold from softer continuation threshold.
+- Keep weak agreements alive for a short grace window before closing them.
+- Persist trade paths for JSON export and map overlays.
+- Add TradeNetwork map layer and tile-level trade agreement details.
+
 ## Phase 5.5: War ROI
 
 - War target valuation.

@@ -24,6 +24,8 @@ std::string ToString(MapLayer layer) {
         return "PolityControl";
     case MapLayer::RouteNetwork:
         return "RouteNetwork";
+    case MapLayer::TradeNetwork:
+        return "TradeNetwork";
     }
     return "Unknown";
 }
@@ -48,6 +50,8 @@ MapLayer MapLayerFromHotkey(int key) {
         return MapLayer::PolityControl;
     case KEY_NINE:
         return MapLayer::RouteNetwork;
+    case KEY_ZERO:
+        return MapLayer::TradeNetwork;
     default:
         return MapLayer::Biome;
     }

@@ -11,10 +11,10 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 
 ## 当前状态
 
-当前已经进入 Phase 5.0：
+当前已经进入 Phase 5.1：
 
 - C++ 主程序能打开 Raylib 窗口，生成 80x56 世界地图。
-- 支持 Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl、RouteNetwork 图层。
+- 支持 Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl、RouteNetwork、TradeNetwork 图层。
 - 已有河流 overlay、资源 marker、band / settlement marker、hover tile inspector。
 - `Simulation` 拥有唯一权威 `World`，渲染读取 `simulation.GetWorld()`。
 - 已有 band 迁徙、采集、定居、camp 升级 village、事件日志。
@@ -28,6 +28,8 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 - `RouteNetwork` 图层可以直接查看路线；选中路线 tile 时详情面板会显示 route id、类型、目的、维护成本、ROI 和建造原因。
 - 已有路线效果审计：可以用 `--disable-routes` 关闭路线系统，对照控制范围、行政距离、矿产连接、矿产收入、维护成本和人口规模。
 - 已有早期贸易系统：C++ heuristic 会根据 polity 之间的粮食、木材、矿石、财富互补性和首都间路线成本建立 `TradeAgreement`，贸易收益会写入 polity 的 `trade_profit` 和 wealth surplus。
+- 已有贸易稳定性校准：贸易开约门槛高于续约门槛，协议会记录 `weak_refresh_count`，连续多轮疲弱才关闭，避免贸易关系因短期预算波动反复开关。
+- `TradeNetwork` 图层可以直接查看活跃贸易协议的首都间路径；选中或悬停贸易路径 tile 时，详情面板会显示经过此处的协议 id、双方、货物、利润、路线效率和疲弱次数。
 - 已有图例系统：`F2` 打开 Legend 面板，`docs/LEGEND.md` 维护图标和覆盖层说明。
 - UI 底部有轻量播放控制条：Play/Pause、Step、+10、+100、TPS 调整、Reset Bands。
 - 已有 headless 工具：
@@ -120,7 +122,7 @@ cp CppClient/config/settings.example.json CppClient/config/settings.json
 
 ## 窗口快捷键
 
-- `1`-`9`：切换地图图层：Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl、RouteNetwork。
+- `1`-`9`、`0`：切换地图图层：Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl、RouteNetwork、TradeNetwork。
 - `F2`：显示/隐藏图例面板。
 - `R`：使用新 seed 重新生成世界，并重置仿真。
 - `B`：在当前世界上重置 band。
@@ -165,6 +167,7 @@ ctest --test-dir build --output-on-failure
 - Polity 资源收入、行政负担、行政容量、overextension、stability，以及图例符号注册完整性。
 - Polity 科技研究、前置条件、heuristic 选题、科技效果、确定性，以及 batch 科技字段导出。
 - 路径搜索、路线网络建设、道路/小径科技差异、路线确定性、路线对行政距离/控制力/矿点产出的效果。
+- 贸易候选评分、贸易协议建立、贸易路径保存、贸易收益写入、贸易弱势续约和连续疲弱关闭。
 
 ## 批处理工具
 
@@ -196,7 +199,7 @@ cd CppClient
 - `world_report.json`
 - `states.jsonl`：仅在传入 `--sample-every N` 时生成。
 
-`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension、stability、平均解锁科技数、knowledge income、关键科技解锁率、路线网络规模和贸易规模。传入 `--disable-routes` 时会完全关闭路线建设、路线 tile 缓存、路线路径加成和矿点转运加成，用来做 routes-on/off 对照。`final_state.json` 会保留 Band / Settlement / Polity / Route / Trade 的调试字段，并导出 `improved_tiles` 与 `route_tiles` 摘要；每个 polity 会包含 `research`、`unlocked_techs`、`active_effects`、`military_potential`、`tool_efficiency`、`route_ids`、`route_maintenance`、`connected_settlements`、`connected_mines`、`connected_mine_potential`、`active_connected_mines`、`connected_ore_income`、`unconnected_ore_income`、`trade_ids`、`active_trade_count` 和 `trade_profit`。
+`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension、stability、平均解锁科技数、knowledge income、关键科技解锁率、路线网络规模和贸易规模。传入 `--disable-routes` 时会完全关闭路线建设、路线 tile 缓存、路线路径加成和矿点转运加成，用来做 routes-on/off 对照。`final_state.json` 会保留 Band / Settlement / Polity / Route / Trade 的调试字段，并导出 `improved_tiles` 与 `route_tiles` 摘要；每个 Trade 会导出 `path`、`tile_count` 和 `weak_refresh_count`，方便检查贸易路线与协议稳定性；每个 polity 会包含 `research`、`unlocked_techs`、`active_effects`、`military_potential`、`tool_efficiency`、`route_ids`、`route_maintenance`、`connected_settlements`、`connected_mines`、`connected_mine_potential`、`active_connected_mines`、`connected_ore_income`、`unconnected_ore_income`、`trade_ids`、`active_trade_count` 和 `trade_profit`。
 
 批量检查村庄经济、polity、路线和贸易效果：
 
@@ -251,6 +254,8 @@ cd CppClient
 - `mean_trade_complementarity`：贸易双方的资源互补评分。
 - `mean_trade_route_cost` / `mean_trade_route_efficiency`：首都间贸易路径成本和效率，用来判断贸易是否真的受地理/路线网络约束。
 - `mean_trade_opened_events`：平均贸易开启事件数，过高通常说明贸易关系过度震荡。
+- `mean_trade_weak_refresh_count`：活跃贸易协议平均连续疲弱刷新次数，用来判断续约门槛是否过松或过紧。
+- `mean_trade_path_tiles`：活跃贸易协议平均路径长度，用来检查贸易路线是否符合地图尺度。
 
 一次 20 seed、1000 turn 的参考结果：
 
@@ -267,16 +272,18 @@ cd CppClient
 | `mean_unconnected_ore_income` | 0.018 | 0.240 |
 | `mean_route_maintenance` | 0.653 | 0.000 |
 
-一次 6 seed、300 turn 的 Phase 5.0 贸易 smoke 结果：
+一次 6 seed、300 turn 的 Phase 5.1 贸易稳定性 smoke 结果：
 
 | 指标 | 数值 |
 | --- | ---: |
 | `mean_total_population` | 1822.50 |
 | `mean_polities` | 3.50 |
 | `mean_routes` | 4.33 |
-| `mean_active_trades` | 3.83 |
-| `mean_trade_profit` | 2.87 |
-| `mean_trade_opened_events` | 9.83 |
+| `mean_active_trades` | 4.00 |
+| `mean_trade_profit` | 2.80 |
+| `mean_trade_opened_events` | 6.50 |
+| `mean_trade_weak_refresh_count` | 0.03 |
+| `mean_trade_path_tiles` | 37.50 |
 
 ## 开发格式化
 
@@ -296,9 +303,8 @@ python3 scripts/format_cpp.py
 
 ## 下一阶段
 
-Phase 5.1 后续重点：
+Phase 5.2 后续重点：
 
-- 校准贸易关系的稳定性，避免贸易开启/失效过度震荡。
-- 增加贸易协议详情 UI 和未来贸易路线可视化。
-- 暂时不要接 LLM；贸易系统继续使用 C++ heuristic。
-- 贸易稳定后再进入 Military Potential / War ROI。
+- 把贸易关系纳入外交关系评分，形成友好、竞争和封锁的早期状态。
+- 继续保持贸易系统使用 C++ heuristic，暂时不接 LLM。
+- 贸易和路线稳定后进入 Military Potential / War ROI。

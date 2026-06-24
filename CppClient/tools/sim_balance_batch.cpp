@@ -105,6 +105,8 @@ struct Metrics {
     float average_trade_complementarity = 0.0F;
     float average_trade_route_cost = 0.0F;
     float average_trade_route_efficiency = 0.0F;
+    float average_trade_weak_refresh_count = 0.0F;
+    float average_trade_path_tiles = 0.0F;
 };
 
 void PrintUsage() {
@@ -435,6 +437,8 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     float trade_complementarity_sum = 0.0F;
     float trade_route_cost_sum = 0.0F;
     float trade_route_efficiency_sum = 0.0F;
+    float trade_weak_refresh_sum = 0.0F;
+    float trade_path_tiles_sum = 0.0F;
     for (const auto& trade : sim.Trades()) {
         if (!trade.active) {
             continue;
@@ -444,6 +448,8 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         trade_complementarity_sum += trade.complementarity;
         trade_route_cost_sum += trade.route_cost;
         trade_route_efficiency_sum += trade.route_efficiency;
+        trade_weak_refresh_sum += static_cast<float>(trade.weak_refresh_count);
+        trade_path_tiles_sum += static_cast<float>(trade.path.size());
     }
     metrics.average_trade_profit =
         metrics.active_trades <= 0 ? 0.0F : trade_profit_sum / static_cast<float>(metrics.active_trades);
@@ -453,6 +459,10 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         metrics.active_trades <= 0 ? 0.0F : trade_route_cost_sum / static_cast<float>(metrics.active_trades);
     metrics.average_trade_route_efficiency =
         metrics.active_trades <= 0 ? 0.0F : trade_route_efficiency_sum / static_cast<float>(metrics.active_trades);
+    metrics.average_trade_weak_refresh_count =
+        metrics.active_trades <= 0 ? 0.0F : trade_weak_refresh_sum / static_cast<float>(metrics.active_trades);
+    metrics.average_trade_path_tiles =
+        metrics.active_trades <= 0 ? 0.0F : trade_path_tiles_sum / static_cast<float>(metrics.active_trades);
     metrics.food_output_consumption_ratio = metrics.total_food_output / std::max(1.0F, metrics.total_food_consumption);
     metrics.farm_share_of_worked_tiles =
         metrics.worked_tiles <= 0 ? 0.0F : static_cast<float>(metrics.farms) / static_cast<float>(metrics.worked_tiles);
@@ -536,6 +546,8 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"average_trade_complementarity", metrics.average_trade_complementarity},
         {"average_trade_route_cost", metrics.average_trade_route_cost},
         {"average_trade_route_efficiency", metrics.average_trade_route_efficiency},
+        {"average_trade_weak_refresh_count", metrics.average_trade_weak_refresh_count},
+        {"average_trade_path_tiles", metrics.average_trade_path_tiles},
     };
 }
 
@@ -560,7 +572,8 @@ void WriteCsvHeader(std::ofstream& output) {
            "average_carrying_capacity,food_output_consumption_ratio,farm_share_of_worked_tiles,"
            "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events,route_built_events,"
            "trade_opened_events,active_trades,average_trade_profit,average_trade_complementarity,"
-           "average_trade_route_cost,average_trade_route_efficiency\n";
+           "average_trade_route_cost,average_trade_route_efficiency,average_trade_weak_refresh_count,"
+           "average_trade_path_tiles\n";
 }
 
 void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
@@ -595,7 +608,8 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.lumber_events << ',' << metrics.pasture_events << ',' << metrics.route_events << ','
            << metrics.trade_events << ',' << metrics.active_trades << ',' << metrics.average_trade_profit << ','
            << metrics.average_trade_complementarity << ',' << metrics.average_trade_route_cost << ','
-           << metrics.average_trade_route_efficiency << '\n';
+           << metrics.average_trade_route_efficiency << ',' << metrics.average_trade_weak_refresh_count << ','
+           << metrics.average_trade_path_tiles << '\n';
 }
 
 nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
@@ -692,6 +706,9 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_trade_complementarity", mean([](const Metrics& item) { return item.average_trade_complementarity; })},
         {"mean_trade_route_cost", mean([](const Metrics& item) { return item.average_trade_route_cost; })},
         {"mean_trade_route_efficiency", mean([](const Metrics& item) { return item.average_trade_route_efficiency; })},
+        {"mean_trade_weak_refresh_count",
+         mean([](const Metrics& item) { return item.average_trade_weak_refresh_count; })},
+        {"mean_trade_path_tiles", mean([](const Metrics& item) { return item.average_trade_path_tiles; })},
         {"mean_food_output", mean([](const Metrics& item) { return item.total_food_output; })},
         {"mean_food_consumption", mean([](const Metrics& item) { return item.total_food_consumption; })},
         {"mean_food_output_consumption_ratio",

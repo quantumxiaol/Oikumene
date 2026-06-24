@@ -292,6 +292,10 @@ nlohmann::json RouteToJson(const oikumene::Route& route) {
 }
 
 nlohmann::json TradeToJson(const oikumene::TradeAgreement& trade) {
+    nlohmann::json path = nlohmann::json::array();
+    for (const auto& coord : trade.path) {
+        path.push_back(nlohmann::json{{"x", coord.x}, {"y", coord.y}});
+    }
     return nlohmann::json{
         {"id", trade.id},
         {"polity_a_id", trade.polity_a_id},
@@ -299,6 +303,7 @@ nlohmann::json TradeToJson(const oikumene::TradeAgreement& trade) {
         {"opened_turn", trade.opened_turn},
         {"last_evaluated_turn", trade.last_evaluated_turn},
         {"active", trade.active},
+        {"weak_refresh_count", trade.weak_refresh_count},
         {"export_from_a", oikumene::ToString(trade.export_from_a)},
         {"export_from_b", oikumene::ToString(trade.export_from_b)},
         {"value_a_to_b", trade.value_a_to_b},
@@ -311,6 +316,8 @@ nlohmann::json TradeToJson(const oikumene::TradeAgreement& trade) {
         {"gross_value", trade.gross_value},
         {"transport_cost", trade.transport_cost},
         {"expected_profit", trade.expected_profit},
+        {"path", path},
+        {"tile_count", trade.path.size()},
         {"reason", trade.reason},
     };
 }

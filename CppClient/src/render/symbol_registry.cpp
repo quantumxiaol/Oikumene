@@ -104,6 +104,10 @@ std::vector<SymbolInfo> BuildSymbols() {
                "River corridor route for internal movement and resource access.", Color{84, 170, 232, 255}, "line"),
         Symbol(SymbolCategory::Route, "route.coastal", "Coastal Route", "Sailing-enabled coastal movement route.",
                Color{112, 206, 216, 255}, "line"),
+        Symbol(SymbolCategory::Route, "trade.path", "Trade Path",
+               "Active inter-polity agreement path shown on TradeNetwork.", Color{86, 218, 154, 255}, "line"),
+        Symbol(SymbolCategory::Route, "trade.weak", "Weak Trade",
+               "Agreement below opening threshold but still inside grace window.", Color{86, 180, 154, 170}, "line"),
 
         Symbol(SymbolCategory::Entity, "entity.band", "Band", "Mobile hunting and gathering group before settlement.",
                Color{245, 245, 236, 255}, "triangle"),

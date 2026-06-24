@@ -21,6 +21,7 @@ void TestRequiredCategoriesHaveSymbols() {
     assert(Count(SymbolCategory::Water) >= 3);
     assert(Count(SymbolCategory::Resource) >= 10);
     assert(Count(SymbolCategory::Improvement) >= 5);
+    assert(Count(SymbolCategory::Route) >= 6);
     assert(Count(SymbolCategory::Entity) >= 4);
     assert(Count(SymbolCategory::Polity) >= 3);
     assert(Count(SymbolCategory::Overlay) >= 2);
@@ -42,6 +43,8 @@ void TestRequiredSymbolsExist() {
         "improvement.lumbercamp",
         "improvement.pasture",
         "improvement.shallowmine",
+        "trade.path",
+        "trade.weak",
         "entity.band",
         "entity.village",
         "entity.capital",

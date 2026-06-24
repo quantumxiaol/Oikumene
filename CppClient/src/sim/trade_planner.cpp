@@ -156,6 +156,7 @@ TradeCandidate BuildTradeCandidate(const World& world, const std::vector<Settlem
         return candidate;
     }
     const PathResult without_routes = CapitalPath(world, *capital_a, *capital_b, polity_a, polity_b, false);
+    candidate.path = with_routes.path;
     candidate.route_cost = with_routes.total_cost;
     candidate.route_cost_without_network =
         without_routes.reachable ? without_routes.total_cost : with_routes.total_cost;

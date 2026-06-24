@@ -133,6 +133,8 @@ Color ColorForTile(const Tile& tile, MapLayer layer) {
         return LerpColor(ColorForBiome(tile.biome), Color{18, 22, 26, 255}, 0.48F);
     case MapLayer::RouteNetwork:
         return LerpColor(ColorForBiome(tile.biome), Color{18, 22, 26, 255}, 0.62F);
+    case MapLayer::TradeNetwork:
+        return LerpColor(ColorForBiome(tile.biome), Color{14, 18, 22, 255}, 0.70F);
     }
     return MAGENTA;
 }
