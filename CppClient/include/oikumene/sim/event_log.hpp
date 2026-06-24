@@ -7,14 +7,14 @@
 namespace oikumene {
 
 class EventLog {
-public:
+  public:
     void Add(SimEvent event);
     [[nodiscard]] const std::vector<SimEvent>& Events() const;
     [[nodiscard]] std::vector<SimEvent>& Events();
     [[nodiscard]] std::size_t Size() const;
 
-private:
+  private:
     std::vector<SimEvent> events_;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

@@ -40,4 +40,4 @@ struct ResearchState {
 [[nodiscard]] bool HasTech(const ResearchState& research, TechId tech);
 [[nodiscard]] bool PrerequisitesMet(const ResearchState& research, const TechDef& def);
 
-}  // namespace oikumene
+} // namespace oikumene

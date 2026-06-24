@@ -98,8 +98,9 @@ void Simulation::AdvanceOneTurn() {
     SettlementSystem::UpdateSettlements(world_, params_, current_turn_, settlements_, polities_, event_log_);
     PolitySystem::UpdatePolities(world_, params_, current_turn_, settlements_, polities_, event_log_);
     TechnologySystem::UpdateTechnologies(world_, current_turn_, settlements_, polities_, event_log_);
-    RouteSystem::UpdateRoutes(world_, current_turn_, settlements_, polities_, routes_, event_log_, params_.enable_routes);
+    RouteSystem::UpdateRoutes(world_, current_turn_, settlements_, polities_, routes_, event_log_,
+                              params_.enable_routes);
     ++current_turn_;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

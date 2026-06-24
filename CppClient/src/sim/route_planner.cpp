@@ -17,10 +17,9 @@ const Settlement* SettlementById(const std::vector<Settlement>& settlements, int
 }
 
 bool IsMineral(ResourceKind resource) {
-    return resource == ResourceKind::Copper || resource == ResourceKind::Tin ||
-           resource == ResourceKind::ShallowIron || resource == ResourceKind::ShallowCoal ||
-           resource == ResourceKind::Gold || resource == ResourceKind::Silver ||
-           resource == ResourceKind::MeteoricIron;
+    return resource == ResourceKind::Copper || resource == ResourceKind::Tin || resource == ResourceKind::ShallowIron ||
+           resource == ResourceKind::ShallowCoal || resource == ResourceKind::Gold ||
+           resource == ResourceKind::Silver || resource == ResourceKind::MeteoricIron;
 }
 
 bool RouteAlreadyTargets(const std::vector<Route>& routes, PolityId polity_id, int x, int y, RoutePurpose purpose) {
@@ -55,14 +54,14 @@ RouteKind ChooseRouteKind(const Polity& polity, const Tile& target) {
 
 float RouteBuildCostMultiplier(RouteKind kind) {
     switch (kind) {
-        case RouteKind::Trail:
-            return 0.10F;
-        case RouteKind::Road:
-            return 0.34F;
-        case RouteKind::RiverRoute:
-            return 0.18F;
-        case RouteKind::CoastalRoute:
-            return 0.22F;
+    case RouteKind::Trail:
+        return 0.10F;
+    case RouteKind::Road:
+        return 0.34F;
+    case RouteKind::RiverRoute:
+        return 0.18F;
+    case RouteKind::CoastalRoute:
+        return 0.22F;
     }
     return 0.20F;
 }
@@ -85,14 +84,8 @@ float AdminValueFor(const PathResult& path, const Polity& polity, RoutePurpose p
     return base + distance_value + overextension_value;
 }
 
-RouteCandidate MakeCandidate(const World& world,
-                             const Polity& polity,
-                             const Settlement& from,
-                             int target_x,
-                             int target_y,
-                             int to_settlement_id,
-                             RoutePurpose purpose,
-                             std::string reason) {
+RouteCandidate MakeCandidate(const World& world, const Polity& polity, const Settlement& from, int target_x,
+                             int target_y, int to_settlement_id, RoutePurpose purpose, std::string reason) {
     const auto& target = world.At(target_x, target_y);
     const RouteKind kind = ChooseRouteKind(polity, target);
     PathOptions options;
@@ -101,7 +94,8 @@ RouteCandidate MakeCandidate(const World& world,
     options.route_polity_id = polity.id;
     options.max_cost = 90.0F;
 
-    PathResult path = FindPath(world, TileCoord{.x = from.x, .y = from.y}, TileCoord{.x = target_x, .y = target_y}, options);
+    PathResult path =
+        FindPath(world, TileCoord{.x = from.x, .y = from.y}, TileCoord{.x = target_x, .y = target_y}, options);
     if (!path.reachable || path.path.size() < 2) {
         return {};
     }
@@ -123,15 +117,13 @@ RouteCandidate MakeCandidate(const World& world,
     const float future_trade_value = target.is_coast ? 4.0F : 0.0F;
     candidate.route_value = admin_value + resource_value + control_value + future_trade_value;
     candidate.roi = candidate.route_value / std::max(1.0F, candidate.build_cost_wood + candidate.build_cost_wealth +
-                                                              candidate.maintenance * 20.0F);
+                                                               candidate.maintenance * 20.0F);
     candidate.reason = std::move(reason);
     return candidate;
 }
 
-void AddSettlementLinkCandidates(const World& world,
-                                 const std::vector<Settlement>& settlements,
-                                 const std::vector<Route>& routes,
-                                 const Polity& polity,
+void AddSettlementLinkCandidates(const World& world, const std::vector<Settlement>& settlements,
+                                 const std::vector<Route>& routes, const Polity& polity,
                                  std::vector<RouteCandidate>& candidates) {
     const auto* capital = SettlementById(settlements, polity.capital_settlement_id);
     if (capital == nullptr) {
@@ -151,10 +143,8 @@ void AddSettlementLinkCandidates(const World& world,
     }
 }
 
-void AddResourceCandidates(const World& world,
-                           const std::vector<Settlement>& settlements,
-                           const std::vector<Route>& routes,
-                           const Polity& polity,
+void AddResourceCandidates(const World& world, const std::vector<Settlement>& settlements,
+                           const std::vector<Route>& routes, const Polity& polity,
                            std::vector<RouteCandidate>& candidates) {
     for (const int settlement_id : polity.member_settlement_ids) {
         const auto* settlement = SettlementById(settlements, settlement_id);
@@ -175,16 +165,14 @@ void AddResourceCandidates(const World& world,
     }
 }
 
-}  // namespace
+} // namespace
 
 float RouteRoiThreshold(RouteKind kind) {
     return kind == RouteKind::Trail ? 0.55F : 0.72F;
 }
 
-std::vector<RouteCandidate> PlanRouteCandidates(const World& world,
-                                                const std::vector<Settlement>& settlements,
-                                                const std::vector<Route>& routes,
-                                                const Polity& polity) {
+std::vector<RouteCandidate> PlanRouteCandidates(const World& world, const std::vector<Settlement>& settlements,
+                                                const std::vector<Route>& routes, const Polity& polity) {
     std::vector<RouteCandidate> candidates;
     AddSettlementLinkCandidates(world, settlements, routes, polity, candidates);
     AddResourceCandidates(world, settlements, routes, polity, candidates);
@@ -211,4 +199,4 @@ Route BuildRouteFromCandidate(int id, PolityId polity_id, const RouteCandidate& 
     };
 }
 
-}  // namespace oikumene
+} // namespace oikumene

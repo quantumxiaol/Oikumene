@@ -6,51 +6,51 @@ namespace oikumene {
 
 std::string ToString(MapLayer layer) {
     switch (layer) {
-        case MapLayer::Biome:
-            return "Biome";
-        case MapLayer::Elevation:
-            return "Elevation";
-        case MapLayer::Rainfall:
-            return "Rainfall";
-        case MapLayer::Temperature:
-            return "Temperature";
-        case MapLayer::Fertility:
-            return "Fertility";
-        case MapLayer::Resources:
-            return "Resources";
-        case MapLayer::SettlementScore:
-            return "SettlementScore";
-        case MapLayer::PolityControl:
-            return "PolityControl";
-        case MapLayer::RouteNetwork:
-            return "RouteNetwork";
+    case MapLayer::Biome:
+        return "Biome";
+    case MapLayer::Elevation:
+        return "Elevation";
+    case MapLayer::Rainfall:
+        return "Rainfall";
+    case MapLayer::Temperature:
+        return "Temperature";
+    case MapLayer::Fertility:
+        return "Fertility";
+    case MapLayer::Resources:
+        return "Resources";
+    case MapLayer::SettlementScore:
+        return "SettlementScore";
+    case MapLayer::PolityControl:
+        return "PolityControl";
+    case MapLayer::RouteNetwork:
+        return "RouteNetwork";
     }
     return "Unknown";
 }
 
 MapLayer MapLayerFromHotkey(int key) {
     switch (key) {
-        case KEY_ONE:
-            return MapLayer::Biome;
-        case KEY_TWO:
-            return MapLayer::Elevation;
-        case KEY_THREE:
-            return MapLayer::Rainfall;
-        case KEY_FOUR:
-            return MapLayer::Temperature;
-        case KEY_FIVE:
-            return MapLayer::Fertility;
-        case KEY_SIX:
-            return MapLayer::Resources;
-        case KEY_SEVEN:
-            return MapLayer::SettlementScore;
-        case KEY_EIGHT:
-            return MapLayer::PolityControl;
-        case KEY_NINE:
-            return MapLayer::RouteNetwork;
-        default:
-            return MapLayer::Biome;
+    case KEY_ONE:
+        return MapLayer::Biome;
+    case KEY_TWO:
+        return MapLayer::Elevation;
+    case KEY_THREE:
+        return MapLayer::Rainfall;
+    case KEY_FOUR:
+        return MapLayer::Temperature;
+    case KEY_FIVE:
+        return MapLayer::Fertility;
+    case KEY_SIX:
+        return MapLayer::Resources;
+    case KEY_SEVEN:
+        return MapLayer::SettlementScore;
+    case KEY_EIGHT:
+        return MapLayer::PolityControl;
+    case KEY_NINE:
+        return MapLayer::RouteNetwork;
+    default:
+        return MapLayer::Biome;
     }
 }
 
-}  // namespace oikumene
+} // namespace oikumene

@@ -42,4 +42,4 @@ struct AppConfig {
 [[nodiscard]] AppConfig LoadAppConfig(const std::filesystem::path& path, const AppConfig& fallback = {});
 bool SaveAppConfig(const std::filesystem::path& path, const AppConfig& config);
 
-}  // namespace oikumene
+} // namespace oikumene

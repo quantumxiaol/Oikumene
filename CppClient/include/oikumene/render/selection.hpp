@@ -29,12 +29,9 @@ struct Selection {
 
 [[nodiscard]] std::string ToString(SelectionKind kind);
 [[nodiscard]] Selection ClearSelection();
-[[nodiscard]] Selection SelectAtTile(const World& world,
-                                     const std::vector<Band>& bands,
-                                     const std::vector<Settlement>& settlements,
-                                     int x,
-                                     int y);
+[[nodiscard]] Selection SelectAtTile(const World& world, const std::vector<Band>& bands,
+                                     const std::vector<Settlement>& settlements, int x, int y);
 [[nodiscard]] bool IsSelectedTile(const Selection& selection, int x, int y);
 [[nodiscard]] bool PointInAnyRectangle(Vector2 point, const std::vector<Rectangle>& rectangles);
 
-}  // namespace oikumene
+} // namespace oikumene

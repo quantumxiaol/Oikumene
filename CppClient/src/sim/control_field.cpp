@@ -65,12 +65,8 @@ struct QueueNodeGreater {
     }
 };
 
-void UpdateBestControl(std::vector<float>& best,
-                       std::vector<float>& second_best,
-                       std::vector<PolityId>& best_polity,
-                       int index,
-                       PolityId polity_id,
-                       float strength) {
+void UpdateBestControl(std::vector<float>& best, std::vector<float>& second_best, std::vector<PolityId>& best_polity,
+                       int index, PolityId polity_id, float strength) {
     if (strength > best[static_cast<std::size_t>(index)]) {
         if (best_polity[static_cast<std::size_t>(index)] != polity_id) {
             second_best[static_cast<std::size_t>(index)] = best[static_cast<std::size_t>(index)];
@@ -83,17 +79,9 @@ void UpdateBestControl(std::vector<float>& best,
     }
 }
 
-void DiffuseFromSource(const World& world,
-                       const Settlement& source,
-                       PolityId polity_id,
-                       float source_power,
-                       float max_cost,
-                       float path_cost_multiplier,
-                       float coastal_path_cost_multiplier,
-                       bool use_routes,
-                       std::vector<float>& best,
-                       std::vector<float>& second_best,
-                       std::vector<PolityId>& best_polity) {
+void DiffuseFromSource(const World& world, const Settlement& source, PolityId polity_id, float source_power,
+                       float max_cost, float path_cost_multiplier, float coastal_path_cost_multiplier, bool use_routes,
+                       std::vector<float>& best, std::vector<float>& second_best, std::vector<PolityId>& best_polity) {
     if (source_power <= 0.0F) {
         return;
     }
@@ -154,7 +142,7 @@ void DiffuseFromSource(const World& world,
     }
 }
 
-}  // namespace
+} // namespace
 
 float ControlFieldStats::ControlledLandRatio() const {
     return land_tiles <= 0 ? 0.0F : static_cast<float>(controlled_land_tiles) / static_cast<float>(land_tiles);
@@ -167,36 +155,36 @@ float TerrainControlCost(const Tile& tile) {
 
     float cost = std::max(0.65F, tile.movement_cost);
     switch (tile.biome) {
-        case Biome::Grassland:
-        case Biome::Coast:
-        case Biome::River:
-            cost -= 0.18F;
-            break;
-        case Biome::Forest:
-            cost += 0.35F;
-            break;
-        case Biome::Rainforest:
-            cost += 0.65F;
-            break;
-        case Biome::Wetland:
-            cost += 0.90F;
-            break;
-        case Biome::Desert:
-        case Biome::Tundra:
-            cost += 0.80F;
-            break;
-        case Biome::Snow:
-            cost += 1.60F;
-            break;
-        case Biome::Hill:
-            cost += 0.55F;
-            break;
-        case Biome::Mountain:
-            cost += 3.50F;
-            break;
-        case Biome::Ocean:
-        case Biome::Lake:
-            return kBlockedCost;
+    case Biome::Grassland:
+    case Biome::Coast:
+    case Biome::River:
+        cost -= 0.18F;
+        break;
+    case Biome::Forest:
+        cost += 0.35F;
+        break;
+    case Biome::Rainforest:
+        cost += 0.65F;
+        break;
+    case Biome::Wetland:
+        cost += 0.90F;
+        break;
+    case Biome::Desert:
+    case Biome::Tundra:
+        cost += 0.80F;
+        break;
+    case Biome::Snow:
+        cost += 1.60F;
+        break;
+    case Biome::Hill:
+        cost += 0.55F;
+        break;
+    case Biome::Mountain:
+        cost += 3.50F;
+        break;
+    case Biome::Ocean:
+    case Biome::Lake:
+        return kBlockedCost;
     }
 
     if (tile.has_river || tile.is_coast) {
@@ -205,15 +193,8 @@ float TerrainControlCost(const Tile& tile) {
     return std::max(0.35F, cost);
 }
 
-float TerrainPathCost(const World& world,
-                      int start_x,
-                      int start_y,
-                      int end_x,
-                      int end_y,
-                      float max_cost,
-                      float path_cost_multiplier,
-                      float coastal_path_cost_multiplier,
-                      PolityId route_polity_id,
+float TerrainPathCost(const World& world, int start_x, int start_y, int end_x, int end_y, float max_cost,
+                      float path_cost_multiplier, float coastal_path_cost_multiplier, PolityId route_polity_id,
                       bool use_routes) {
     if (!world.InBounds(start_x, start_y) || !world.InBounds(end_x, end_y)) {
         return std::numeric_limits<float>::infinity();
@@ -274,10 +255,8 @@ float TerrainPathCost(const World& world,
     return std::numeric_limits<float>::infinity();
 }
 
-ControlFieldStats RecomputeControlField(World& world,
-                                        const std::vector<Settlement>& settlements,
-                                        std::vector<Polity>& polities,
-                                        const ControlFieldParams& params) {
+ControlFieldStats RecomputeControlField(World& world, const std::vector<Settlement>& settlements,
+                                        std::vector<Polity>& polities, const ControlFieldParams& params) {
     const int tile_count = static_cast<int>(world.Tiles().size());
     std::vector<float> best(static_cast<std::size_t>(tile_count), 0.0F);
     std::vector<float> second_best(static_cast<std::size_t>(tile_count), 0.0F);
@@ -351,4 +330,4 @@ ControlFieldStats RecomputeControlField(World& world,
     return stats;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

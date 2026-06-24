@@ -24,4 +24,4 @@ inline DecisionBatchResponse ParseDecisionBatchResponse(const Json& value) {
     return value.get<DecisionBatchResponse>();
 }
 
-}  // namespace oikumene
+} // namespace oikumene

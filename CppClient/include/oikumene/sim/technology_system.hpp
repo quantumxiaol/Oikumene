@@ -10,24 +10,17 @@
 
 namespace oikumene {
 
-[[nodiscard]] float KnowledgeIncomeFor(const World& world,
-                                       const std::vector<Settlement>& settlements,
+[[nodiscard]] float KnowledgeIncomeFor(const World& world, const std::vector<Settlement>& settlements,
                                        const Polity& polity);
-[[nodiscard]] bool CanResearchTech(const World& world,
-                                   const std::vector<Settlement>& settlements,
-                                   const Polity& polity,
+[[nodiscard]] bool CanResearchTech(const World& world, const std::vector<Settlement>& settlements, const Polity& polity,
                                    TechId tech);
-[[nodiscard]] TechId ChooseResearchFor(const World& world,
-                                       const std::vector<Settlement>& settlements,
+[[nodiscard]] TechId ChooseResearchFor(const World& world, const std::vector<Settlement>& settlements,
                                        const Polity& polity);
 
 class TechnologySystem {
-public:
-    static void UpdateTechnologies(const World& world,
-                                   Turn turn,
-                                   const std::vector<Settlement>& settlements,
-                                   std::vector<Polity>& polities,
-                                   EventLog& event_log);
+  public:
+    static void UpdateTechnologies(const World& world, Turn turn, const std::vector<Settlement>& settlements,
+                                   std::vector<Polity>& polities, EventLog& event_log);
 };
 
-}  // namespace oikumene
+} // namespace oikumene

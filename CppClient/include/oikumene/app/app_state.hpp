@@ -13,8 +13,8 @@
 #include "oikumene/render/map_layer.hpp"
 #include "oikumene/render/map_renderer.hpp"
 #include "oikumene/render/selection.hpp"
-#include "oikumene/world/world_generation_report.hpp"
 #include "oikumene/world/world_generation_params.hpp"
+#include "oikumene/world/world_generation_report.hpp"
 
 namespace oikumene {
 
@@ -46,4 +46,4 @@ struct AppState {
     int selected_settlement_id = -1;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

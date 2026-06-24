@@ -117,8 +117,9 @@ void TestLumberCampRequiresForestOrWood() {
 
     for (const auto& tile : sim.GetWorld().Tiles()) {
         if (tile.improvement == ImprovementKind::LumberCamp) {
-            assert(tile.forest_cover > 0.0F || tile.resource == ResourceKind::Wood || tile.resource == ResourceKind::Bamboo ||
-                   tile.biome == Biome::Forest || tile.biome == Biome::Rainforest);
+            assert(tile.forest_cover > 0.0F || tile.resource == ResourceKind::Wood ||
+                   tile.resource == ResourceKind::Bamboo || tile.biome == Biome::Forest ||
+                   tile.biome == Biome::Rainforest);
         }
     }
 }
@@ -201,7 +202,7 @@ void TestPastureBuildsOnOpenGrassland() {
     assert(CountImprovement(sim.GetWorld(), ImprovementKind::Pasture) > 0);
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestVillageBuildsFarmOnFertileTile();

@@ -108,7 +108,7 @@ void TestOverextensionReducesStability() {
     using namespace oikumene;
     World world = MakeWorld();
     std::vector<Settlement> settlements{
-        MakeVillage(0, 3, 5, 130),  MakeVillage(1, 10, 5, 80), MakeVillage(2, 16, 5, 80),
+        MakeVillage(0, 3, 5, 130), MakeVillage(1, 10, 5, 80), MakeVillage(2, 16, 5, 80),
         MakeVillage(3, 22, 5, 80), MakeVillage(4, 28, 5, 80),
     };
     for (auto& settlement : settlements) {
@@ -123,7 +123,7 @@ void TestOverextensionReducesStability() {
     assert(polities.front().stability < 1.0F);
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestPolityBudgetAggregatesMemberResources();

@@ -4,18 +4,18 @@ namespace oikumene {
 
 std::string ToString(SelectionKind kind) {
     switch (kind) {
-        case SelectionKind::None:
-            return "None";
-        case SelectionKind::Tile:
-            return "Tile";
-        case SelectionKind::ImprovementTile:
-            return "ImprovementTile";
-        case SelectionKind::RouteTile:
-            return "RouteTile";
-        case SelectionKind::Band:
-            return "Band";
-        case SelectionKind::Settlement:
-            return "Settlement";
+    case SelectionKind::None:
+        return "None";
+    case SelectionKind::Tile:
+        return "Tile";
+    case SelectionKind::ImprovementTile:
+        return "ImprovementTile";
+    case SelectionKind::RouteTile:
+        return "RouteTile";
+    case SelectionKind::Band:
+        return "Band";
+    case SelectionKind::Settlement:
+        return "Settlement";
     }
     return "Unknown";
 }
@@ -24,11 +24,8 @@ Selection ClearSelection() {
     return {};
 }
 
-Selection SelectAtTile(const World& world,
-                       const std::vector<Band>& bands,
-                       const std::vector<Settlement>& settlements,
-                       int x,
-                       int y) {
+Selection SelectAtTile(const World& world, const std::vector<Band>& bands, const std::vector<Settlement>& settlements,
+                       int x, int y) {
     if (!world.InBounds(x, y)) {
         return ClearSelection();
     }
@@ -71,4 +68,4 @@ bool PointInAnyRectangle(Vector2 point, const std::vector<Rectangle>& rectangles
     return false;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

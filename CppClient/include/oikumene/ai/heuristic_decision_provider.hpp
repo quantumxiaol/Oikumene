@@ -5,10 +5,10 @@
 namespace oikumene {
 
 class HeuristicDecisionProvider final : public DecisionProvider {
-public:
+  public:
     [[nodiscard]] std::string Name() const override;
     [[nodiscard]] HealthStatus CheckHealth() override;
     [[nodiscard]] DecisionBatchResponse DecideBatch(const DecisionBatchRequest& request) override;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

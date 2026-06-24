@@ -19,7 +19,8 @@ void TestPotteryEffects() {
 }
 
 void TestIrrigationEffects() {
-    const auto effects = oikumene::ComputeTechEffects(ResearchWith({oikumene::TechId::Pottery, oikumene::TechId::Irrigation}));
+    const auto effects =
+        oikumene::ComputeTechEffects(ResearchWith({oikumene::TechId::Pottery, oikumene::TechId::Irrigation}));
     assert(effects.farm_output_multiplier > 1.0F);
     assert(effects.river_farm_output_multiplier > 1.0F);
 }
@@ -31,7 +32,8 @@ void TestAnimalHusbandryEffects() {
 }
 
 void TestMiningAndRoadsEffects() {
-    const auto effects = oikumene::ComputeTechEffects(ResearchWith({oikumene::TechId::Mining, oikumene::TechId::Roads}));
+    const auto effects =
+        oikumene::ComputeTechEffects(ResearchWith({oikumene::TechId::Mining, oikumene::TechId::Roads}));
     assert(effects.mining_enabled);
     assert(effects.roads_enabled);
     assert(effects.control_path_cost_multiplier < 1.0F);
@@ -55,7 +57,7 @@ void TestSailingEffects() {
     assert(effects.coastal_control_cost_multiplier < 1.0F);
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestPotteryEffects();

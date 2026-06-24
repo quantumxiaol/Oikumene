@@ -115,4 +115,4 @@ Rectangle CameraController::Viewport() const {
     return viewport_;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

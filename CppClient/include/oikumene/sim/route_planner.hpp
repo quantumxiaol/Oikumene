@@ -31,8 +31,7 @@ struct RouteCandidate {
 [[nodiscard]] float RouteRoiThreshold(RouteKind kind);
 [[nodiscard]] std::vector<RouteCandidate> PlanRouteCandidates(const World& world,
                                                               const std::vector<Settlement>& settlements,
-                                                              const std::vector<Route>& routes,
-                                                              const Polity& polity);
+                                                              const std::vector<Route>& routes, const Polity& polity);
 [[nodiscard]] Route BuildRouteFromCandidate(int id, PolityId polity_id, const RouteCandidate& candidate);
 
-}  // namespace oikumene
+} // namespace oikumene

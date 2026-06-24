@@ -47,4 +47,4 @@ struct Route {
 [[nodiscard]] std::string ToString(RoutePurpose purpose);
 [[nodiscard]] float RouteMaintenancePerTile(RouteKind kind);
 
-}  // namespace oikumene
+} // namespace oikumene

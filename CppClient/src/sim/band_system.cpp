@@ -13,7 +13,8 @@ int DistanceSquared(int ax, int ay, int bx, int by) {
     return dx * dx + dy * dy;
 }
 
-float CandidateScore(const World& world, const Tile& tile, const std::vector<Settlement>& settlements, int from_x, int from_y) {
+float CandidateScore(const World& world, const Tile& tile, const std::vector<Settlement>& settlements, int from_x,
+                     int from_y) {
     if (!IsValidSettlementTile(tile)) {
         return -1000.0F;
     }
@@ -47,7 +48,8 @@ std::pair<int, int> StepToward(const World& world, const Band& band, int target_
                 continue;
             }
             const auto& tile = world.At(nx, ny);
-            const float score = static_cast<float>(DistanceSquared(nx, ny, target_x, target_y)) + tile.movement_cost * 0.25F;
+            const float score =
+                static_cast<float>(DistanceSquared(nx, ny, target_x, target_y)) + tile.movement_cost * 0.25F;
             if (score < best_score) {
                 best_score = score;
                 best_x = nx;
@@ -67,7 +69,8 @@ std::string TileReason(const Tile& tile) {
     return stream.str();
 }
 
-bool CanSettle(const World& world, const SimulationParams& params, const Band& band, const std::vector<Settlement>& settlements) {
+bool CanSettle(const World& world, const SimulationParams& params, const Band& band,
+               const std::vector<Settlement>& settlements) {
     if (!band.active || band.population < 20 || band.food < 10.0F || !world.InBounds(band.x, band.y)) {
         return false;
     }
@@ -76,10 +79,7 @@ bool CanSettle(const World& world, const SimulationParams& params, const Band& b
            !IsSettlementNearby(settlements, band.x, band.y, params.settlement_exclusion_radius);
 }
 
-void FoundSettlement(const World& world,
-                     Turn turn,
-                     Band& band,
-                     std::vector<Settlement>& settlements,
+void FoundSettlement(const World& world, Turn turn, Band& band, std::vector<Settlement>& settlements,
                      EventLog& event_log) {
     const auto& tile = world.At(band.x, band.y);
     const int settlement_id = static_cast<int>(settlements.size());
@@ -90,7 +90,8 @@ void FoundSettlement(const World& world,
     settlement.founder_band_id = band.id;
     settlement.population = band.population;
     settlement.stockpile.food = std::max(15.0F, band.food);
-    settlement.stockpile.wood = tile.resource == ResourceKind::Wood || tile.resource == ResourceKind::Bamboo ? 12.0F : 6.0F;
+    settlement.stockpile.wood =
+        tile.resource == ResourceKind::Wood || tile.resource == ResourceKind::Bamboo ? 12.0F : 6.0F;
     settlements.push_back(settlement);
 
     band.active = false;
@@ -112,7 +113,7 @@ void FoundSettlement(const World& world,
     });
 }
 
-}  // namespace
+} // namespace
 
 bool IsValidBandTile(const Tile& tile) {
     return !tile.is_ocean && !tile.is_lake && tile.biome != Biome::Mountain && tile.biome != Biome::Snow;
@@ -154,10 +155,7 @@ bool IsSettlementNearby(const std::vector<Settlement>& settlements, int x, int y
     });
 }
 
-void BandSystem::InitializeBands(const World& world,
-                                 const SimulationParams&,
-                                 int count,
-                                 std::vector<Band>& bands) {
+void BandSystem::InitializeBands(const World& world, const SimulationParams&, int count, std::vector<Band>& bands) {
     std::vector<const Tile*> candidates;
     candidates.reserve(world.Tiles().size());
     for (const auto& tile : world.Tiles()) {
@@ -166,9 +164,8 @@ void BandSystem::InitializeBands(const World& world,
         }
     }
 
-    std::sort(candidates.begin(), candidates.end(), [](const Tile* lhs, const Tile* rhs) {
-        return lhs->settlement_score > rhs->settlement_score;
-    });
+    std::sort(candidates.begin(), candidates.end(),
+              [](const Tile* lhs, const Tile* rhs) { return lhs->settlement_score > rhs->settlement_score; });
 
     bands.clear();
     const int stride = std::max(1, static_cast<int>(candidates.size()) / std::max(1, count * 3));
@@ -190,12 +187,8 @@ void BandSystem::InitializeBands(const World& world,
     }
 }
 
-void BandSystem::UpdateBands(const World& world,
-                             const SimulationParams& params,
-                             Turn turn,
-                             std::vector<Band>& bands,
-                             std::vector<Settlement>& settlements,
-                             EventLog& event_log) {
+void BandSystem::UpdateBands(const World& world, const SimulationParams& params, Turn turn, std::vector<Band>& bands,
+                             std::vector<Settlement>& settlements, EventLog& event_log) {
     for (auto& band : bands) {
         if (!band.active) {
             continue;
@@ -266,7 +259,8 @@ void BandSystem::UpdateBands(const World& world,
             }
         }
 
-        band.state = band.food < static_cast<float>(band.population) * 0.35F ? BandState::Foraging : BandState::Exploring;
+        band.state =
+            band.food < static_cast<float>(band.population) * 0.35F ? BandState::Foraging : BandState::Exploring;
         std::ostringstream reason;
         reason << "Band " << band.id << " " << (band.state == BandState::Foraging ? "foraged" : "explored")
                << ": current score " << current_tile.settlement_score << ", best nearby " << band.best_seen_score
@@ -275,4 +269,4 @@ void BandSystem::UpdateBands(const World& world,
     }
 }
 
-}  // namespace oikumene
+} // namespace oikumene

@@ -27,7 +27,7 @@ TileCoord CoordForIndex(const World& world, int index) {
     return TileCoord{.x = index % world.Width(), .y = index / world.Width()};
 }
 
-}  // namespace
+} // namespace
 
 float RouteTerrainCost(const Tile& tile, const PathOptions& options) {
     if ((tile.is_ocean || tile.is_lake) && !options.allow_ocean) {
@@ -36,37 +36,37 @@ float RouteTerrainCost(const Tile& tile, const PathOptions& options) {
 
     float cost = std::max(0.55F, tile.movement_cost);
     switch (tile.biome) {
-        case Biome::Ocean:
-        case Biome::Lake:
-            cost += options.allow_ocean ? 3.0F : 1.0e6F;
-            break;
-        case Biome::River:
-        case Biome::Coast:
-        case Biome::Grassland:
-            cost -= 0.18F;
-            break;
-        case Biome::Forest:
-            cost += 0.35F;
-            break;
-        case Biome::Rainforest:
-            cost += 0.70F;
-            break;
-        case Biome::Wetland:
-            cost += 0.85F;
-            break;
-        case Biome::Hill:
-            cost += 0.55F;
-            break;
-        case Biome::Desert:
-        case Biome::Tundra:
-            cost += 0.95F;
-            break;
-        case Biome::Snow:
-            cost += 1.65F;
-            break;
-        case Biome::Mountain:
-            cost += 3.80F;
-            break;
+    case Biome::Ocean:
+    case Biome::Lake:
+        cost += options.allow_ocean ? 3.0F : 1.0e6F;
+        break;
+    case Biome::River:
+    case Biome::Coast:
+    case Biome::Grassland:
+        cost -= 0.18F;
+        break;
+    case Biome::Forest:
+        cost += 0.35F;
+        break;
+    case Biome::Rainforest:
+        cost += 0.70F;
+        break;
+    case Biome::Wetland:
+        cost += 0.85F;
+        break;
+    case Biome::Hill:
+        cost += 0.55F;
+        break;
+    case Biome::Desert:
+    case Biome::Tundra:
+        cost += 0.95F;
+        break;
+    case Biome::Snow:
+        cost += 1.65F;
+        break;
+    case Biome::Mountain:
+        cost += 3.80F;
+        break;
     }
 
     if (tile.has_river || tile.is_coast) {
@@ -146,4 +146,4 @@ int PathTileCount(const PathResult& path) {
     return static_cast<int>(path.path.size());
 }
 
-}  // namespace oikumene
+} // namespace oikumene

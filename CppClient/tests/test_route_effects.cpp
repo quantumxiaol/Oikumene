@@ -136,7 +136,7 @@ void TestDisableRoutesRemovesRouteTravelBonus() {
     assert(with_routes < without_routes);
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestRouteReducesAdminDistanceLoad();

@@ -18,4 +18,4 @@ std::size_t EventLog::Size() const {
     return events_.size();
 }
 
-}  // namespace oikumene
+} // namespace oikumene

@@ -65,9 +65,8 @@ void TestBandMigratesTowardBetterSettlementScore() {
             sorted.push_back(&tile);
         }
     }
-    std::sort(sorted.begin(), sorted.end(), [](const Tile* lhs, const Tile* rhs) {
-        return lhs->settlement_score < rhs->settlement_score;
-    });
+    std::sort(sorted.begin(), sorted.end(),
+              [](const Tile* lhs, const Tile* rhs) { return lhs->settlement_score < rhs->settlement_score; });
     assert(sorted.size() > 2);
 
     const auto* low = sorted.front();
@@ -187,7 +186,8 @@ void TestBandDecisionReasonIsRecordedAfterUpdate() {
 
     bool found_reason = false;
     for (const auto& band : sim.Bands()) {
-        if (!band.last_decision_reason.empty() && band.forage_yield_last_turn > 0.0F && band.current_tile_score >= 0.0F) {
+        if (!band.last_decision_reason.empty() && band.forage_yield_last_turn > 0.0F &&
+            band.current_tile_score >= 0.0F) {
             found_reason = true;
         }
     }
@@ -357,7 +357,7 @@ void TestCampCanUpgradeToVillage() {
     assert(found_upgrade_event);
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestBandsSpawnOnValidLand();

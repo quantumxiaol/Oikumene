@@ -29,4 +29,4 @@ struct PathResult {
 [[nodiscard]] PathResult FindPath(const World& world, TileCoord start, TileCoord goal, const PathOptions& options = {});
 [[nodiscard]] int PathTileCount(const PathResult& path);
 
-}  // namespace oikumene
+} // namespace oikumene

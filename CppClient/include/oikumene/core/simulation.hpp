@@ -15,7 +15,7 @@
 namespace oikumene {
 
 class Simulation {
-public:
+  public:
     Simulation();
     explicit Simulation(World world, SimulationParams params = {});
 
@@ -37,7 +37,7 @@ public:
     void InitializeBands(int count);
     void AdvanceOneTurn();
 
-private:
+  private:
     World world_;
     SimulationParams params_;
     Turn current_turn_ = 0;
@@ -48,4 +48,4 @@ private:
     EventLog event_log_;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

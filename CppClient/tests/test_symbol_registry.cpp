@@ -29,12 +29,24 @@ void TestRequiredCategoriesHaveSymbols() {
 void TestRequiredSymbolsExist() {
     using namespace oikumene;
     const char* ids[] = {
-        "biome.ocean",           "biome.grassland",       "biome.forest",
-        "biome.mountain",        "water.river",           "resource.horse",
-        "resource.copper",       "resource.iron",         "resource.gold",
-        "improvement.farm",      "improvement.lumbercamp", "improvement.pasture",
-        "improvement.shallowmine", "entity.band",          "entity.village",
-        "entity.capital",        "polity.controlled",     "polity.contested",
+        "biome.ocean",
+        "biome.grassland",
+        "biome.forest",
+        "biome.mountain",
+        "water.river",
+        "resource.horse",
+        "resource.copper",
+        "resource.iron",
+        "resource.gold",
+        "improvement.farm",
+        "improvement.lumbercamp",
+        "improvement.pasture",
+        "improvement.shallowmine",
+        "entity.band",
+        "entity.village",
+        "entity.capital",
+        "polity.controlled",
+        "polity.contested",
         "overlay.selection",
     };
     for (const char* id : ids) {
@@ -53,7 +65,7 @@ void TestNoDuplicateIdsAndNoEmptyText() {
     }
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestRequiredCategoriesHaveSymbols();

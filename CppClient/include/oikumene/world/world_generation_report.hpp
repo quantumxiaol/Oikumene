@@ -56,4 +56,4 @@ struct WorldGenerationReport {
 [[nodiscard]] WorldGenerationReport BuildWorldGenerationReport(const World& world);
 [[nodiscard]] nlohmann::json ToJson(const WorldGenerationReport& report);
 
-}  // namespace oikumene
+} // namespace oikumene

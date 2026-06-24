@@ -5,15 +5,14 @@
 namespace oikumene {
 namespace {
 
-template <typename T>
-T JsonValue(const nlohmann::json& json, const char* key, T fallback) {
+template <typename T> T JsonValue(const nlohmann::json& json, const char* key, T fallback) {
     if (!json.is_object() || !json.contains(key)) {
         return fallback;
     }
     return json.at(key).get<T>();
 }
 
-}  // namespace
+} // namespace
 
 nlohmann::json ToJson(const AppConfig& config) {
     return nlohmann::json{
@@ -96,4 +95,4 @@ bool SaveAppConfig(const std::filesystem::path& path, const AppConfig& config) {
     return true;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

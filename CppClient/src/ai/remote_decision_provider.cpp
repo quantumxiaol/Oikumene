@@ -7,9 +7,7 @@
 
 namespace oikumene {
 
-RemoteDecisionProvider::RemoteDecisionProvider(std::string host,
-                                               int port,
-                                               std::chrono::milliseconds timeout)
+RemoteDecisionProvider::RemoteDecisionProvider(std::string host, int port, std::chrono::milliseconds timeout)
     : host_(std::move(host)), port_(port), timeout_(timeout) {}
 
 std::string RemoteDecisionProvider::Name() const {
@@ -61,4 +59,4 @@ DecisionBatchResponse RemoteDecisionProvider::DecideBatch(const DecisionBatchReq
     }
 }
 
-}  // namespace oikumene
+} // namespace oikumene

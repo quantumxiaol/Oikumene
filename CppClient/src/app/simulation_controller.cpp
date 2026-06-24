@@ -51,4 +51,4 @@ float SimulationController::Accumulator() const {
     return accumulator_;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

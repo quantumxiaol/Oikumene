@@ -15,4 +15,4 @@ enum class RouteKind {
 [[nodiscard]] float RouteTravelMultiplier(RouteKind kind);
 [[nodiscard]] float RouteQuality(RouteKind kind);
 
-}  // namespace oikumene
+} // namespace oikumene

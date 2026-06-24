@@ -5,13 +5,13 @@
 namespace oikumene {
 
 class OikumeneApp {
-public:
+  public:
     explicit OikumeneApp(AppConfig config);
 
     int Run();
 
-private:
+  private:
     AppConfig config_;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

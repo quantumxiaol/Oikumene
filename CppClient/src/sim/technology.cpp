@@ -55,30 +55,30 @@ std::vector<TechDef> BuildTechDefs() {
     };
 }
 
-}  // namespace
+} // namespace
 
 std::string ToString(TechId tech) {
     switch (tech) {
-        case TechId::None:
-            return "None";
-        case TechId::Pottery:
-            return "Pottery";
-        case TechId::Irrigation:
-            return "Irrigation";
-        case TechId::AnimalHusbandry:
-            return "AnimalHusbandry";
-        case TechId::Mining:
-            return "Mining";
-        case TechId::Roads:
-            return "Roads";
-        case TechId::Administration:
-            return "Administration";
-        case TechId::BronzeWorking:
-            return "BronzeWorking";
-        case TechId::Fortification:
-            return "Fortification";
-        case TechId::Sailing:
-            return "Sailing";
+    case TechId::None:
+        return "None";
+    case TechId::Pottery:
+        return "Pottery";
+    case TechId::Irrigation:
+        return "Irrigation";
+    case TechId::AnimalHusbandry:
+        return "AnimalHusbandry";
+    case TechId::Mining:
+        return "Mining";
+    case TechId::Roads:
+        return "Roads";
+    case TechId::Administration:
+        return "Administration";
+    case TechId::BronzeWorking:
+        return "BronzeWorking";
+    case TechId::Fortification:
+        return "Fortification";
+    case TechId::Sailing:
+        return "Sailing";
     }
     return "Unknown";
 }
@@ -111,4 +111,4 @@ bool PrerequisitesMet(const ResearchState& research, const TechDef& def) {
                        [&](TechId prerequisite) { return HasTech(research, prerequisite); });
 }
 
-}  // namespace oikumene
+} // namespace oikumene

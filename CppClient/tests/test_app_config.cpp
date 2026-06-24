@@ -67,8 +67,20 @@ void TestCommandLineOverridesConfig() {
     AppConfig base;
     base.simulation.default_seed = 1;
     const std::vector<std::string> args = {
-        "--seed", "42", "--width", "90", "--height", "60", "--bands", "9",
-        "--window", "1024x768", "--turns-per-second", "12.5", "--auto-run", "--disable-routes",
+        "--seed",
+        "42",
+        "--width",
+        "90",
+        "--height",
+        "60",
+        "--bands",
+        "9",
+        "--window",
+        "1024x768",
+        "--turns-per-second",
+        "12.5",
+        "--auto-run",
+        "--disable-routes",
     };
     const auto parsed = ParseCommandLine(args, base);
     assert(parsed.error.empty());
@@ -123,7 +135,7 @@ void TestCommandLineRejectsInvalidValues() {
     assert(!parsed_unknown.error.empty());
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestAppConfigJsonRoundTrip();

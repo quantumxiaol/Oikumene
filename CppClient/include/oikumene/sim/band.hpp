@@ -31,4 +31,4 @@ struct Band {
     float forage_yield_last_turn = 0.0F;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

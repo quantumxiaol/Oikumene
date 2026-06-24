@@ -19,10 +19,9 @@ const Settlement* SettlementById(const std::vector<Settlement>& settlements, int
 }
 
 bool IsMineral(ResourceKind resource) {
-    return resource == ResourceKind::Copper || resource == ResourceKind::Tin ||
-           resource == ResourceKind::ShallowIron || resource == ResourceKind::ShallowCoal ||
-           resource == ResourceKind::Gold || resource == ResourceKind::Silver ||
-           resource == ResourceKind::MeteoricIron;
+    return resource == ResourceKind::Copper || resource == ResourceKind::Tin || resource == ResourceKind::ShallowIron ||
+           resource == ResourceKind::ShallowCoal || resource == ResourceKind::Gold ||
+           resource == ResourceKind::Silver || resource == ResourceKind::MeteoricIron;
 }
 
 std::vector<const Settlement*> MemberSettlements(const std::vector<Settlement>& settlements, const Polity& polity) {
@@ -142,32 +141,30 @@ bool HasBronzeMaterialAccess(const World& world, const std::vector<Settlement>& 
     return (copper && tin) || iron;
 }
 
-bool IsLegalSpecialRequirement(const World& world,
-                               const std::vector<Settlement>& settlements,
-                               const Polity& polity,
+bool IsLegalSpecialRequirement(const World& world, const std::vector<Settlement>& settlements, const Polity& polity,
                                TechId tech) {
     switch (tech) {
-        case TechId::BronzeWorking:
-            return HasBronzeMaterialAccess(world, settlements, polity);
-        case TechId::Sailing:
-            return HasCoastalAccess(world, settlements, polity);
-        case TechId::None:
-        case TechId::Pottery:
-        case TechId::Irrigation:
-        case TechId::AnimalHusbandry:
-        case TechId::Mining:
-        case TechId::Roads:
-        case TechId::Administration:
-        case TechId::Fortification:
-            return true;
+    case TechId::BronzeWorking:
+        return HasBronzeMaterialAccess(world, settlements, polity);
+    case TechId::Sailing:
+        return HasCoastalAccess(world, settlements, polity);
+    case TechId::None:
+    case TechId::Pottery:
+    case TechId::Irrigation:
+    case TechId::AnimalHusbandry:
+    case TechId::Mining:
+    case TechId::Roads:
+    case TechId::Administration:
+    case TechId::Fortification:
+        return true;
     }
     return false;
 }
 
 TechId FirstLegalFallback(const World& world, const std::vector<Settlement>& settlements, const Polity& polity) {
-    const TechId order[] = {TechId::Pottery, TechId::Mining, TechId::Roads,       TechId::Administration,
-                            TechId::Irrigation, TechId::AnimalHusbandry, TechId::BronzeWorking,
-                            TechId::Fortification, TechId::Sailing};
+    const TechId order[] = {TechId::Pottery,        TechId::Mining,        TechId::Roads,
+                            TechId::Administration, TechId::Irrigation,    TechId::AnimalHusbandry,
+                            TechId::BronzeWorking,  TechId::Fortification, TechId::Sailing};
     for (const auto tech : order) {
         if (CanResearchTech(world, settlements, polity, tech)) {
             return tech;
@@ -178,7 +175,8 @@ TechId FirstLegalFallback(const World& world, const std::vector<Settlement>& set
 
 void StartResearchIfNeeded(const World& world, Turn turn, const std::vector<Settlement>& settlements, Polity& polity,
                            EventLog& event_log) {
-    if (polity.research.current != TechId::None && CanResearchTech(world, settlements, polity, polity.research.current)) {
+    if (polity.research.current != TechId::None &&
+        CanResearchTech(world, settlements, polity, polity.research.current)) {
         return;
     }
     polity.research.current = ChooseResearchFor(world, settlements, polity);
@@ -209,7 +207,7 @@ void RefreshDerivedPolityTechStats(Polity& polity) {
     }
 }
 
-}  // namespace
+} // namespace
 
 float KnowledgeIncomeFor(const World& world, const std::vector<Settlement>& settlements, const Polity& polity) {
     const auto* capital = SettlementById(settlements, polity.capital_settlement_id);
@@ -219,8 +217,8 @@ float KnowledgeIncomeFor(const World& world, const std::vector<Settlement>& sett
         village_count += settlement->level == SettlementLevel::Village ? 1.0F : 0.0F;
     }
 
-    float income = capital_population * 0.006F + village_count * 0.35F +
-                   std::max(0.0F, polity.budget.wealth_surplus) * 0.03F;
+    float income =
+        capital_population * 0.006F + village_count * 0.35F + std::max(0.0F, polity.budget.wealth_surplus) * 0.03F;
     income *= std::clamp(polity.stability, 0.25F, 1.25F);
     income *= 1.0F / (1.0F + polity.overextension * 0.50F);
     if (HasCoastalAccess(world, settlements, polity)) {
@@ -229,7 +227,8 @@ float KnowledgeIncomeFor(const World& world, const std::vector<Settlement>& sett
     return std::max(0.05F, income);
 }
 
-bool CanResearchTech(const World& world, const std::vector<Settlement>& settlements, const Polity& polity, TechId tech) {
+bool CanResearchTech(const World& world, const std::vector<Settlement>& settlements, const Polity& polity,
+                     TechId tech) {
     if (tech == TechId::None || HasTech(polity.research, tech)) {
         return false;
     }
@@ -280,11 +279,8 @@ TechId ChooseResearchFor(const World& world, const std::vector<Settlement>& sett
     return FirstLegalFallback(world, settlements, polity);
 }
 
-void TechnologySystem::UpdateTechnologies(const World& world,
-                                          Turn turn,
-                                          const std::vector<Settlement>& settlements,
-                                          std::vector<Polity>& polities,
-                                          EventLog& event_log) {
+void TechnologySystem::UpdateTechnologies(const World& world, Turn turn, const std::vector<Settlement>& settlements,
+                                          std::vector<Polity>& polities, EventLog& event_log) {
     for (auto& polity : polities) {
         polity.knowledge_income = KnowledgeIncomeFor(world, settlements, polity);
         RefreshDerivedPolityTechStats(polity);
@@ -321,4 +317,4 @@ void TechnologySystem::UpdateTechnologies(const World& world,
     }
 }
 
-}  // namespace oikumene
+} // namespace oikumene

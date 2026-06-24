@@ -24,4 +24,4 @@ enum class ResourceKind : std::uint8_t {
 
 [[nodiscard]] std::string ToString(ResourceKind resource);
 
-}  // namespace oikumene
+} // namespace oikumene

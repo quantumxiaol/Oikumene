@@ -93,8 +93,7 @@ Rectangle PlaybackButton(int index, float width) {
 bool DrawButton(Rectangle rect, const std::string& label, bool active = false) {
     const Vector2 mouse = GetMousePosition();
     const bool hovered = CheckCollisionPointRec(mouse, rect);
-    const Color fill = active ? Color{52, 112, 86, 230}
-                              : hovered ? Color{54, 62, 70, 230} : Color{32, 38, 44, 220};
+    const Color fill = active ? Color{52, 112, 86, 230} : hovered ? Color{54, 62, 70, 230} : Color{32, 38, 44, 220};
     DrawRectangleRec(rect, fill);
     DrawRectangleLinesEx(rect, 1.0F, Color{96, 106, 116, 230});
     DrawText(label.c_str(), static_cast<int>(rect.x + 10.0F), static_cast<int>(rect.y + 6.0F), 14, RAYWHITE);
@@ -390,7 +389,7 @@ void SelectAtMouse(AppState& state, Vector2 mouse) {
         return;
     }
     ApplySelection(state, SelectAtTile(state.simulation.GetWorld(), state.simulation.Bands(),
-                                      state.simulation.Settlements(), x, y));
+                                       state.simulation.Settlements(), x, y));
 }
 
 bool CenterOnSelection(AppState& state) {
@@ -431,8 +430,8 @@ void SelectAtHover(AppState& state) {
         ApplySelection(state, Selection{.kind = SelectionKind::Band, .id = band->id, .x = x, .y = y});
         return;
     }
-    ApplySelection(state, SelectAtTile(state.simulation.GetWorld(), state.simulation.Bands(), state.simulation.Settlements(),
-                                      x, y));
+    ApplySelection(state, SelectAtTile(state.simulation.GetWorld(), state.simulation.Bands(),
+                                       state.simulation.Settlements(), x, y));
 }
 
 void HandleLayerHotkeys(AppState& state) {
@@ -466,8 +465,8 @@ void HandleLayerHotkeys(AppState& state) {
 }
 
 void HandleInput(AppState& state) {
-    state.camera.SetViewport(Rectangle{0.0F, 0.0F, static_cast<float>(GetScreenWidth()),
-                                       static_cast<float>(GetScreenHeight())});
+    state.camera.SetViewport(
+        Rectangle{0.0F, 0.0F, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight())});
     const Vector2 mouse = GetMousePosition();
     const bool mouse_captured = UiCapturesMouse(state, mouse);
     state.camera.Update(!mouse_captured, true);
@@ -583,7 +582,8 @@ void DrawEventLogPanel(const AppState& state) {
     const int first = std::max(0, static_cast<int>(events.size()) - 12);
     for (int i = first; i < static_cast<int>(events.size()); ++i) {
         const auto& event = events[static_cast<std::size_t>(i)];
-        std::string line = Truncate("T" + std::to_string(event.turn) + " " + ToString(event.type) + ": " + event.summary, 60);
+        std::string line =
+            Truncate("T" + std::to_string(event.turn) + " " + ToString(event.type) + ": " + event.summary, 60);
         DrawText(line.c_str(), x + 16, line_y, 15, Color{202, 211, 218, 255});
         line_y += 21;
     }
@@ -595,8 +595,9 @@ void DrawHud(const AppState& state) {
                         static_cast<int>(bounds.height));
 
     DrawText("Oikumene", 30, 28, 22, RAYWHITE);
-    DrawText(("Layer " + ToString(state.current_layer) + "  Seed " + std::to_string(state.generation_params.seed)).c_str(),
-             30, 58, 16, Color{220, 225, 230, 255});
+    DrawText(
+        ("Layer " + ToString(state.current_layer) + "  Seed " + std::to_string(state.generation_params.seed)).c_str(),
+        30, 58, 16, Color{220, 225, 230, 255});
     DrawText(("Turn " + std::to_string(state.simulation.CurrentTurn()) + "  Bands " +
               std::to_string(ActiveBandCount(state.simulation.Bands())) + "/" +
               std::to_string(state.simulation.Bands().size()) + "  Camps " +
@@ -689,10 +690,10 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                      .c_str(),
                  34, y, 17, Color{202, 211, 218, 255});
         y += 22;
-        DrawText(("Improve " + ToString(tile.improvement) + "  WorkedBy " +
-                  std::to_string(tile.worked_by_settlement_id))
-                     .c_str(),
-                 34, y, 17, Color{202, 211, 218, 255});
+        DrawText(
+            ("Improve " + ToString(tile.improvement) + "  WorkedBy " + std::to_string(tile.worked_by_settlement_id))
+                .c_str(),
+            34, y, 17, Color{202, 211, 218, 255});
         y += 22;
         DrawText(("Soil " + Fixed(tile.soil_quality) + "  Forest " + Fixed(tile.forest_cover)).c_str(), 34, y, 17,
                  Color{202, 211, 218, 255});
@@ -709,8 +710,8 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                      34, y, 17, Color{224, 202, 136, 255});
             y += 22;
             if (const auto* route = RouteById(state.simulation.Routes(), tile.route_id)) {
-                DrawText(("Purpose " + ToString(route->purpose) + "  Maint " + Fixed(route->maintenance, 2) +
-                          "  ROI " + Fixed(route->roi, 2))
+                DrawText(("Purpose " + ToString(route->purpose) + "  Maint " + Fixed(route->maintenance, 2) + "  ROI " +
+                          Fixed(route->roi, 2))
                              .c_str(),
                          34, y, 17, Color{224, 202, 136, 255});
                 y += 22;
@@ -740,8 +741,7 @@ void DrawInspectorDetails(const AppState& state, int& y) {
         DrawText(("Forage last turn " + Fixed(band->forage_yield_last_turn)).c_str(), 34, y, 17,
                  Color{245, 245, 236, 255});
         y += 22;
-        DrawText(Truncate("Reason: " + band->last_decision_reason, 58).c_str(), 34, y, 16,
-                 Color{220, 226, 210, 255});
+        DrawText(Truncate("Reason: " + band->last_decision_reason, 58).c_str(), 34, y, 16, Color{220, 226, 210, 255});
         y += 26;
     }
 
@@ -778,10 +778,9 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                      .c_str(),
                  34, y, 17, Color{238, 218, 144, 255});
         y += 22;
-        DrawText(("Polity " + std::to_string(settlement->polity_id) +
-                  (settlement->is_capital ? "  Capital" : ""))
-                     .c_str(),
-                 34, y, 17, Color{238, 218, 144, 255});
+        DrawText(
+            ("Polity " + std::to_string(settlement->polity_id) + (settlement->is_capital ? "  Capital" : "")).c_str(),
+            34, y, 17, Color{238, 218, 144, 255});
         y += 22;
         if (const auto* polity = PolityById(state.simulation.Polities(), settlement->polity_id)) {
             DrawText((polity->name + " " + ToString(polity->level)).c_str(), 34, y, 17, Color{238, 218, 144, 255});
@@ -791,40 +790,38 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                          .c_str(),
                      34, y, 17, Color{238, 218, 144, 255});
             y += 22;
-            DrawText(("Admin range " + Fixed(polity->admin_range, 1) + "  Food " + Fixed(polity->food, 0) +
-                      "  Wood " + Fixed(polity->wood, 0))
+            DrawText(("Admin range " + Fixed(polity->admin_range, 1) + "  Food " + Fixed(polity->food, 0) + "  Wood " +
+                      Fixed(polity->wood, 0))
                          .c_str(),
                      34, y, 17, Color{238, 218, 144, 255});
             y += 22;
-            DrawText(("Admin " + Fixed(polity->admin_load, 1) + "/" + Fixed(polity->admin_capacity, 1) +
-                      "  Over " + Fixed(polity->overextension * 100.0F, 0) + "%  Stability " +
+            DrawText(("Admin " + Fixed(polity->admin_load, 1) + "/" + Fixed(polity->admin_capacity, 1) + "  Over " +
+                      Fixed(polity->overextension * 100.0F, 0) + "%  Stability " +
                       Fixed(polity->stability * 100.0F, 0) + "%")
                          .c_str(),
                      34, y, 17, Color{238, 218, 144, 255});
             y += 22;
             DrawText(("Budget food " + Fixed(polity->budget.food_income, 1) + "  wood " +
-                      Fixed(polity->budget.wood_income, 1) + "  wealth " +
-                      Fixed(polity->budget.wealth_surplus, 1))
+                      Fixed(polity->budget.wood_income, 1) + "  wealth " + Fixed(polity->budget.wealth_surplus, 1))
                          .c_str(),
                      34, y, 17, Color{238, 218, 144, 255});
             y += 22;
             const float current_cost = TechCost(polity->research.current);
-            DrawText(("Research " + ToString(polity->research.current) + "  " +
-                      Fixed(polity->research.progress, 1) + "/" + Fixed(current_cost, 0) + "  K+" +
-                      Fixed(polity->knowledge_income, 1))
+            DrawText(("Research " + ToString(polity->research.current) + "  " + Fixed(polity->research.progress, 1) +
+                      "/" + Fixed(current_cost, 0) + "  K+" + Fixed(polity->knowledge_income, 1))
                          .c_str(),
                      34, y, 17, Color{198, 228, 245, 255});
             y += 22;
             DrawText(Truncate("Techs: " + TechList(polity->research), 58).c_str(), 34, y, 17,
                      Color{198, 228, 245, 255});
             y += 22;
-            DrawText(Truncate("Effects: " + EffectsSummary(ComputeTechEffects(polity->research)), 58).c_str(), 34, y, 17,
-                     Color{198, 228, 245, 255});
+            DrawText(Truncate("Effects: " + EffectsSummary(ComputeTechEffects(polity->research)), 58).c_str(), 34, y,
+                     17, Color{198, 228, 245, 255});
             y += 22;
-            DrawText(("Tools " + Fixed(polity->tool_efficiency, 2) + "  Military " +
-                      Fixed(polity->military_potential, 1))
-                         .c_str(),
-                     34, y, 17, Color{198, 228, 245, 255});
+            DrawText(
+                ("Tools " + Fixed(polity->tool_efficiency, 2) + "  Military " + Fixed(polity->military_potential, 1))
+                    .c_str(),
+                34, y, 17, Color{198, 228, 245, 255});
             y += 22;
             DrawText(("Routes " + std::to_string(polity->route_ids.size()) + "  Maint " +
                       Fixed(polity->route_maintenance, 2) + "  Conn villages " +
@@ -852,8 +849,8 @@ void DrawDebugPanel(const AppState& state) {
     DrawText(("Python Agent: " + StatusText(state.health)).c_str(), 34, 282, 18, StatusColor(state.health.online));
     DrawText(("Sim: " + state.simulation.StatusSummary()).c_str(), 34, 308, 18, Color{184, 194, 202, 255});
     DrawText(("Auto-run: " + std::string(state.controller.IsRunning() ? "on" : "off") + "  TPS " +
-              Fixed(state.controller.TurnsPerSecond(), 1) + "  Events: " +
-              std::to_string(state.simulation.Events().Size()))
+              Fixed(state.controller.TurnsPerSecond(), 1) +
+              "  Events: " + std::to_string(state.simulation.Events().Size()))
                  .c_str(),
              34, 332, 18, Color{184, 194, 202, 255});
 
@@ -863,7 +860,8 @@ void DrawDebugPanel(const AppState& state) {
                  .c_str(),
              34, 368, 16, Color{202, 211, 218, 255});
     DrawText(("Forest " + Fixed(state.report.forest_ratio * 100.0F, 1) + "%  Desert " +
-              Fixed(state.report.desert_ratio * 100.0F, 1) + "%  Top settle " + Fixed(state.report.top_settlement_score))
+              Fixed(state.report.desert_ratio * 100.0F, 1) + "%  Top settle " +
+              Fixed(state.report.top_settlement_score))
                  .c_str(),
              34, 392, 16, Color{202, 211, 218, 255});
     DrawText(("Bands " + std::to_string(ActiveBandCount(state.simulation.Bands())) + "/" +
@@ -902,7 +900,7 @@ void DrawHelpPanel() {
     DrawText("C center selected, Home/F fit world", GetScreenWidth() - 370, 312, 16, Color{202, 211, 218, 255});
 }
 
-}  // namespace
+} // namespace
 
 OikumeneApp::OikumeneApp(AppConfig config) : config_(config) {}
 
@@ -937,8 +935,10 @@ int OikumeneApp::Run() {
 
         BeginDrawing();
         ClearBackground(Color{18, 22, 26, 255});
-        state.renderer.Draw(state.simulation.GetWorld(), state.camera, state.current_layer, state.hover_tile, state.selection);
-        state.renderer.DrawEntities(state.simulation.Bands(), state.simulation.Settlements(), state.camera, state.selection);
+        state.renderer.Draw(state.simulation.GetWorld(), state.camera, state.current_layer, state.hover_tile,
+                            state.selection);
+        state.renderer.DrawEntities(state.simulation.Bands(), state.simulation.Settlements(), state.camera,
+                                    state.selection);
         DrawHud(state);
         DrawPlaybackBar(state);
         DrawDebugPanel(state);
@@ -962,4 +962,4 @@ int OikumeneApp::Run() {
     return 0;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

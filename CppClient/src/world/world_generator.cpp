@@ -47,13 +47,12 @@ namespace {
 }
 
 [[nodiscard]] bool IsMineral(ResourceKind resource) {
-    return resource == ResourceKind::Copper || resource == ResourceKind::Tin ||
-           resource == ResourceKind::ShallowIron || resource == ResourceKind::ShallowCoal ||
-           resource == ResourceKind::Gold || resource == ResourceKind::Silver ||
-           resource == ResourceKind::MeteoricIron;
+    return resource == ResourceKind::Copper || resource == ResourceKind::Tin || resource == ResourceKind::ShallowIron ||
+           resource == ResourceKind::ShallowCoal || resource == ResourceKind::Gold ||
+           resource == ResourceKind::Silver || resource == ResourceKind::MeteoricIron;
 }
 
-}  // namespace
+} // namespace
 
 World WorldGenerator::Generate(const WorldGenerationParams& params) {
     return WorldGenerator(params).Run();
@@ -90,8 +89,8 @@ void WorldGenerator::GenerateElevation() {
         const float ridge_source = Noise2D(nx, ny, 43, 5.1F);
         const float ridges = std::pow(std::abs(ridge_source - 0.5F) * 2.0F, 1.7F);
 
-        const float edge_distance = static_cast<float>(
-            std::min({tile.x, tile.y, world_.Width() - 1 - tile.x, world_.Height() - 1 - tile.y}));
+        const float edge_distance =
+            static_cast<float>(std::min({tile.x, tile.y, world_.Width() - 1 - tile.x, world_.Height() - 1 - tile.y}));
         const float edge_mask = Smooth(std::min(1.0F, edge_distance / (min_side * 0.20F)));
 
         float elevation = 0.42F * continental + 0.27F * medium + 0.13F * detail + 0.26F * ridges;
@@ -190,7 +189,8 @@ void WorldGenerator::GenerateRiversAndLakes() {
         tile.has_river = false;
         tile.river_flow = 0.0F;
         if (!tile.is_ocean) {
-            tile.river_flow = 0.35F + tile.rainfall * 1.25F + std::max(0.0F, tile.elevation - params_.sea_level) * 0.25F;
+            tile.river_flow =
+                0.35F + tile.rainfall * 1.25F + std::max(0.0F, tile.elevation - params_.sea_level) * 0.25F;
         }
     }
 
@@ -238,8 +238,7 @@ void WorldGenerator::GenerateRiversAndLakes() {
         if (target >= 0) {
             world_.Tiles()[static_cast<std::size_t>(target)].river_flow += tile.river_flow;
         } else if (lake_tiles < params_.max_lake_tiles && tile.elevation < params_.hill_level &&
-                   tile.rainfall > 0.42F && !tile.is_coast &&
-                   Random01(tile.x, tile.y, 157) > 0.52F) {
+                   tile.rainfall > 0.42F && !tile.is_coast && Random01(tile.x, tile.y, 157) > 0.52F) {
             tile.is_lake = true;
             tile.has_river = false;
             tile.river_flow = 0.0F;
@@ -253,7 +252,8 @@ void WorldGenerator::GenerateRiversAndLakes() {
             continue;
         }
 
-        const float threshold = params_.river_flow_threshold + (tile.elevation < params_.sea_level + 0.08F ? 1.4F : 0.0F);
+        const float threshold =
+            params_.river_flow_threshold + (tile.elevation < params_.sea_level + 0.08F ? 1.4F : 0.0F);
         tile.has_river = tile.river_flow >= threshold;
     }
 }
@@ -354,7 +354,7 @@ void WorldGenerator::GenerateResources() {
             tile.resource = ResourceKind::Wood;
         } else if (tile.biome == Biome::Rainforest && roll > 0.34F) {
             tile.resource = tile.temperature > 0.68F && tile.rainfall > 0.72F && geology > 0.44F ? ResourceKind::Bamboo
-                                                                                                : ResourceKind::Wood;
+                                                                                                 : ResourceKind::Wood;
         } else if (tile.biome == Biome::Grassland && roll > 0.90F) {
             tile.resource = ResourceKind::Horse;
         } else if (highland && geology > 0.82F && roll > 0.55F) {
@@ -407,46 +407,46 @@ void WorldGenerator::ComputeMovementCost() {
         tile.defense_bonus = 0.0F;
 
         switch (tile.biome) {
-            case Biome::Ocean:
-            case Biome::Lake:
-                tile.movement_cost = 999.0F;
-                break;
-            case Biome::Coast:
-                tile.movement_cost = 1.25F;
-                break;
-            case Biome::River:
-                tile.movement_cost = 1.10F;
-                break;
-            case Biome::Grassland:
-                tile.movement_cost = 1.0F;
-                break;
-            case Biome::Forest:
-            case Biome::Rainforest:
-                tile.movement_cost = 2.0F;
-                tile.defense_bonus = 0.18F;
-                break;
-            case Biome::Wetland:
-                tile.movement_cost = 2.7F;
-                tile.defense_bonus = 0.12F;
-                break;
-            case Biome::Desert:
-                tile.movement_cost = 2.35F;
-                break;
-            case Biome::Tundra:
-                tile.movement_cost = 2.2F;
-                break;
-            case Biome::Snow:
-                tile.movement_cost = 3.2F;
-                tile.defense_bonus = 0.24F;
-                break;
-            case Biome::Hill:
-                tile.movement_cost = 2.05F;
-                tile.defense_bonus = 0.28F;
-                break;
-            case Biome::Mountain:
-                tile.movement_cost = 5.2F;
-                tile.defense_bonus = 0.45F;
-                break;
+        case Biome::Ocean:
+        case Biome::Lake:
+            tile.movement_cost = 999.0F;
+            break;
+        case Biome::Coast:
+            tile.movement_cost = 1.25F;
+            break;
+        case Biome::River:
+            tile.movement_cost = 1.10F;
+            break;
+        case Biome::Grassland:
+            tile.movement_cost = 1.0F;
+            break;
+        case Biome::Forest:
+        case Biome::Rainforest:
+            tile.movement_cost = 2.0F;
+            tile.defense_bonus = 0.18F;
+            break;
+        case Biome::Wetland:
+            tile.movement_cost = 2.7F;
+            tile.defense_bonus = 0.12F;
+            break;
+        case Biome::Desert:
+            tile.movement_cost = 2.35F;
+            break;
+        case Biome::Tundra:
+            tile.movement_cost = 2.2F;
+            break;
+        case Biome::Snow:
+            tile.movement_cost = 3.2F;
+            tile.defense_bonus = 0.24F;
+            break;
+        case Biome::Hill:
+            tile.movement_cost = 2.05F;
+            tile.defense_bonus = 0.28F;
+            break;
+        case Biome::Mountain:
+            tile.movement_cost = 5.2F;
+            tile.defense_bonus = 0.45F;
+            break;
         }
     }
 }
@@ -540,4 +540,4 @@ bool WorldGenerator::HasNeighborBiome(int x, int y, Biome biome) const {
     return false;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

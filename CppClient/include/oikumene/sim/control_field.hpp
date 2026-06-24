@@ -26,20 +26,12 @@ struct ControlFieldStats {
 };
 
 [[nodiscard]] float TerrainControlCost(const Tile& tile);
-[[nodiscard]] float TerrainPathCost(const World& world,
-                                    int start_x,
-                                    int start_y,
-                                    int end_x,
-                                    int end_y,
-                                    float max_cost,
-                                    float path_cost_multiplier = 1.0F,
-                                    float coastal_path_cost_multiplier = 1.0F,
-                                    PolityId route_polity_id = kInvalidPolityId,
-                                    bool use_routes = true);
+[[nodiscard]] float TerrainPathCost(const World& world, int start_x, int start_y, int end_x, int end_y, float max_cost,
+                                    float path_cost_multiplier = 1.0F, float coastal_path_cost_multiplier = 1.0F,
+                                    PolityId route_polity_id = kInvalidPolityId, bool use_routes = true);
 
-[[nodiscard]] ControlFieldStats RecomputeControlField(World& world,
-                                                      const std::vector<Settlement>& settlements,
+[[nodiscard]] ControlFieldStats RecomputeControlField(World& world, const std::vector<Settlement>& settlements,
                                                       std::vector<Polity>& polities,
                                                       const ControlFieldParams& params = {});
 
-}  // namespace oikumene
+} // namespace oikumene

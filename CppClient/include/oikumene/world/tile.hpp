@@ -47,4 +47,4 @@ struct Tile {
     int route_id = -1;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

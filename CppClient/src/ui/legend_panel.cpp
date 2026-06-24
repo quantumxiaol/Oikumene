@@ -101,14 +101,14 @@ int DrawCategory(SymbolCategory category, int x, int y, int max_width) {
         DrawSymbolShape(symbol, Vector2{static_cast<float>(x + 12), static_cast<float>(y + 9)}, 15.0F);
         DrawText(symbol.label.c_str(), x + 30, y, 15, Color{220, 225, 230, 255});
         const int desc_x = x + 148;
-        DrawText(TruncateText(symbol.description, static_cast<std::size_t>(std::max(28, max_width / 8))).c_str(), desc_x,
-                 y + 1, 13, Color{156, 168, 178, 255});
+        DrawText(TruncateText(symbol.description, static_cast<std::size_t>(std::max(28, max_width / 8))).c_str(),
+                 desc_x, y + 1, 13, Color{156, 168, 178, 255});
         y += 22;
     }
     return y + 10;
 }
 
-}  // namespace
+} // namespace
 
 void DrawLegendPanel(Rectangle bounds) {
     DrawLegendBackground(bounds);
@@ -135,4 +135,4 @@ void DrawLegendPanel(Rectangle bounds) {
     (void)right_y;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

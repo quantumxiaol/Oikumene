@@ -38,4 +38,4 @@ struct Settlement {
     int worked_tile_count = 0;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

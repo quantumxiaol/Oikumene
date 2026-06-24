@@ -15,17 +15,12 @@
 namespace oikumene {
 
 class MapRenderer {
-public:
-    void Draw(const World& world,
-              const CameraController& camera,
-              MapLayer layer,
-              const std::optional<std::pair<int, int>>& hover_tile,
-              const Selection& selection) const;
+  public:
+    void Draw(const World& world, const CameraController& camera, MapLayer layer,
+              const std::optional<std::pair<int, int>>& hover_tile, const Selection& selection) const;
 
-    void DrawEntities(const std::vector<Band>& bands,
-                      const std::vector<Settlement>& settlements,
-                      const CameraController& camera,
-                      const Selection& selection) const;
+    void DrawEntities(const std::vector<Band>& bands, const std::vector<Settlement>& settlements,
+                      const CameraController& camera, const Selection& selection) const;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

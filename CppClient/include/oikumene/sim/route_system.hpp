@@ -16,15 +16,11 @@ namespace oikumene {
 [[nodiscard]] bool HasSailingTech(const Polity& polity);
 
 class RouteSystem {
-public:
+  public:
     static void Reset(World& world, std::vector<Route>& routes, std::vector<Polity>& polities);
-    static void UpdateRoutes(World& world,
-                             Turn turn,
-                             std::vector<Settlement>& settlements,
-                             std::vector<Polity>& polities,
-                             std::vector<Route>& routes,
-                             EventLog& event_log,
+    static void UpdateRoutes(World& world, Turn turn, std::vector<Settlement>& settlements,
+                             std::vector<Polity>& polities, std::vector<Route>& routes, EventLog& event_log,
                              bool enable_routes = true);
 };
 
-}  // namespace oikumene
+} // namespace oikumene

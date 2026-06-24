@@ -56,7 +56,8 @@ bool CanCacheRouteTile(const World& world, const TileCoord& coord, RouteKind kin
 }
 
 bool CanAffordRoute(const Polity& polity, const Settlement& capital, const RouteCandidate& candidate) {
-    const bool enough_wood = capital.stockpile.wood >= candidate.build_cost_wood * 0.35F || polity.budget.wood_surplus > 0.15F;
+    const bool enough_wood =
+        capital.stockpile.wood >= candidate.build_cost_wood * 0.35F || polity.budget.wood_surplus > 0.15F;
     const bool enough_wealth = polity.budget.wealth_surplus >= -0.5F || candidate.build_cost_wealth <= 0.01F;
     return enough_wood && enough_wealth;
 }
@@ -101,8 +102,8 @@ void ChargeRouteBuildCost(std::vector<Settlement>& settlements, const Polity& po
 void AddRouteBuiltEvent(Turn turn, const Polity& polity, const Route& route, EventLog& event_log) {
     std::ostringstream summary;
     summary << polity.name << " built " << ToString(route.kind) << " route " << route.id << " to " << route.target_x
-            << "," << route.target_y << " purpose " << ToString(route.purpose) << " roi " << route.roi
-            << " reason " << route.reason;
+            << "," << route.target_y << " purpose " << ToString(route.purpose) << " roi " << route.roi << " reason "
+            << route.reason;
     event_log.Add(SimEvent{
         .turn = turn,
         .type = EventType::RouteBuilt,
@@ -113,10 +114,8 @@ void AddRouteBuiltEvent(Turn turn, const Polity& polity, const Route& route, Eve
     });
 }
 
-void RefreshPolityRouteStats(const World& world,
-                             const std::vector<Settlement>& settlements,
-                             const std::vector<Route>& routes,
-                             std::vector<Polity>& polities) {
+void RefreshPolityRouteStats(const World& world, const std::vector<Settlement>& settlements,
+                             const std::vector<Route>& routes, std::vector<Polity>& polities) {
     for (auto& polity : polities) {
         const auto stats = BuildRouteNetworkStats(world, settlements, routes, polity);
         polity.route_ids.clear();
@@ -136,7 +135,7 @@ void RefreshPolityRouteStats(const World& world,
     }
 }
 
-}  // namespace
+} // namespace
 
 bool HasRouteTech(const Polity& polity) {
     return HasTech(polity.research, TechId::Roads);
@@ -168,12 +167,8 @@ void RouteSystem::Reset(World& world, std::vector<Route>& routes, std::vector<Po
     }
 }
 
-void RouteSystem::UpdateRoutes(World& world,
-                               Turn turn,
-                               std::vector<Settlement>& settlements,
-                               std::vector<Polity>& polities,
-                               std::vector<Route>& routes,
-                               EventLog& event_log,
+void RouteSystem::UpdateRoutes(World& world, Turn turn, std::vector<Settlement>& settlements,
+                               std::vector<Polity>& polities, std::vector<Route>& routes, EventLog& event_log,
                                bool enable_routes) {
     if (!enable_routes) {
         Reset(world, routes, polities);
@@ -206,9 +201,8 @@ void RouteSystem::UpdateRoutes(World& world,
             continue;
         }
 
-        const auto best = std::max_element(candidates.begin(), candidates.end(), [](const auto& lhs, const auto& rhs) {
-            return lhs.roi < rhs.roi;
-        });
+        const auto best = std::max_element(candidates.begin(), candidates.end(),
+                                           [](const auto& lhs, const auto& rhs) { return lhs.roi < rhs.roi; });
         const int route_id = NextRouteId(routes);
         routes.push_back(BuildRouteFromCandidate(route_id, polity.id, *best));
         auto& route = routes.back();
@@ -220,4 +214,4 @@ void RouteSystem::UpdateRoutes(World& world,
     RefreshPolityRouteStats(world, settlements, routes, polities);
 }
 
-}  // namespace oikumene
+} // namespace oikumene

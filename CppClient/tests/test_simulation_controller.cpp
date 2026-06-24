@@ -70,7 +70,7 @@ void TestChangingTPSChangesAdvanceRate() {
     assert(sim.CurrentTurn() == 10);
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestPausedDoesNotAdvance();

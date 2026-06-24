@@ -179,4 +179,4 @@ inline void from_json(const nlohmann::json& json, DecisionBatchResponse& respons
     response.responses = json.value("responses", std::vector<DecisionResponse>{});
 }
 
-}  // namespace oikumene
+} // namespace oikumene

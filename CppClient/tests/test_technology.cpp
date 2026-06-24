@@ -167,7 +167,7 @@ void TestTechnologyIsDeterministicForSameSeed() {
     }
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestPolityAccumulatesKnowledgeAndUnlocksTech();

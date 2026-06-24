@@ -20,68 +20,68 @@ void DrawResourceMarker(const Tile& tile, Vector2 position, float tile_size) {
     const Color color = ColorForResource(tile.resource);
 
     switch (tile.resource) {
-        case ResourceKind::Horse:
-            DrawTriangle(Vector2{center.x, center.y - radius}, Vector2{center.x - radius, center.y + radius},
-                         Vector2{center.x + radius, center.y + radius}, color);
-            break;
-        case ResourceKind::Stone:
-            DrawRectangleV(Vector2{center.x - radius, center.y - radius}, Vector2{radius * 2.0F, radius * 2.0F}, color);
-            break;
-        case ResourceKind::MeteoricIron: {
-            std::array<Vector2, 5> points{};
-            for (int i = 0; i < 5; ++i) {
-                const float angle = -1.5708F + static_cast<float>(i) * 6.28318F / 5.0F;
-                points[static_cast<std::size_t>(i)] =
-                    Vector2{center.x + std::cos(angle) * radius, center.y + std::sin(angle) * radius};
-            }
-            for (int i = 0; i < 5; ++i) {
-                DrawLineEx(points[static_cast<std::size_t>(i)], points[static_cast<std::size_t>((i + 2) % 5)],
-                           std::max(1.0F, tile_size * 0.10F), color);
-            }
-            break;
+    case ResourceKind::Horse:
+        DrawTriangle(Vector2{center.x, center.y - radius}, Vector2{center.x - radius, center.y + radius},
+                     Vector2{center.x + radius, center.y + radius}, color);
+        break;
+    case ResourceKind::Stone:
+        DrawRectangleV(Vector2{center.x - radius, center.y - radius}, Vector2{radius * 2.0F, radius * 2.0F}, color);
+        break;
+    case ResourceKind::MeteoricIron: {
+        std::array<Vector2, 5> points{};
+        for (int i = 0; i < 5; ++i) {
+            const float angle = -1.5708F + static_cast<float>(i) * 6.28318F / 5.0F;
+            points[static_cast<std::size_t>(i)] =
+                Vector2{center.x + std::cos(angle) * radius, center.y + std::sin(angle) * radius};
         }
-        case ResourceKind::None:
-            break;
-        default:
-            DrawCircleV(center, radius, color);
-            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius, Color{18, 22, 26, 220});
-            break;
+        for (int i = 0; i < 5; ++i) {
+            DrawLineEx(points[static_cast<std::size_t>(i)], points[static_cast<std::size_t>((i + 2) % 5)],
+                       std::max(1.0F, tile_size * 0.10F), color);
+        }
+        break;
+    }
+    case ResourceKind::None:
+        break;
+    default:
+        DrawCircleV(center, radius, color);
+        DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius, Color{18, 22, 26, 220});
+        break;
     }
 }
 
 void DrawImprovementOverlay(const Tile& tile, Vector2 position, float tile_size) {
     const Vector2 center{position.x + tile_size * 0.50F, position.y + tile_size * 0.50F};
     switch (tile.improvement) {
-        case ImprovementKind::Farm: {
-            const Color color{226, 202, 104, 210};
-            DrawRectangleV(Vector2{position.x + tile_size * 0.22F, position.y + tile_size * 0.22F},
-                           Vector2{tile_size * 0.56F, tile_size * 0.56F}, color);
-            DrawLineEx(Vector2{position.x + tile_size * 0.28F, center.y},
-                       Vector2{position.x + tile_size * 0.72F, center.y}, 1.0F, Color{112, 93, 44, 210});
-            DrawLineEx(Vector2{center.x, position.y + tile_size * 0.28F},
-                       Vector2{center.x, position.y + tile_size * 0.72F}, 1.0F, Color{112, 93, 44, 210});
-            break;
-        }
-        case ImprovementKind::LumberCamp:
-            DrawRectangleV(Vector2{center.x - tile_size * 0.16F, center.y - tile_size * 0.16F},
-                           Vector2{tile_size * 0.32F, tile_size * 0.32F}, Color{128, 78, 42, 230});
-            break;
-        case ImprovementKind::Pasture:
-            DrawCircleV(center, std::max(2.0F, tile_size * 0.20F), Color{166, 218, 124, 220});
-            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), tile_size * 0.24F,
-                            Color{76, 108, 54, 220});
-            break;
-        case ImprovementKind::ShallowMine:
-            DrawCircleV(center, std::max(2.0F, tile_size * 0.18F), Color{54, 56, 58, 235});
-            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), tile_size * 0.22F,
-                            Color{206, 210, 214, 220});
-            break;
-        case ImprovementKind::ForagingGround:
-            DrawCircleV(center, std::max(1.5F, tile_size * 0.12F), Color{80, 190, 108, 210});
-            break;
-        case ImprovementKind::Road:
-        case ImprovementKind::None:
-            break;
+    case ImprovementKind::Farm: {
+        const Color color{226, 202, 104, 210};
+        DrawRectangleV(Vector2{position.x + tile_size * 0.22F, position.y + tile_size * 0.22F},
+                       Vector2{tile_size * 0.56F, tile_size * 0.56F}, color);
+        DrawLineEx(Vector2{position.x + tile_size * 0.28F, center.y}, Vector2{position.x + tile_size * 0.72F, center.y},
+                   1.0F, Color{112, 93, 44, 210});
+        DrawLineEx(Vector2{center.x, position.y + tile_size * 0.28F}, Vector2{center.x, position.y + tile_size * 0.72F},
+                   1.0F, Color{112, 93, 44, 210});
+        break;
+    }
+    case ImprovementKind::LumberCamp:
+        DrawRectangleV(Vector2{center.x - tile_size * 0.16F, center.y - tile_size * 0.16F},
+                       Vector2{tile_size * 0.32F, tile_size * 0.32F}, Color{128, 78, 42, 230});
+        break;
+    case ImprovementKind::Pasture:
+        DrawCircleV(center, std::max(2.0F, tile_size * 0.20F), Color{166, 218, 124, 220});
+        DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), tile_size * 0.24F,
+                        Color{76, 108, 54, 220});
+        break;
+    case ImprovementKind::ShallowMine:
+        DrawCircleV(center, std::max(2.0F, tile_size * 0.18F), Color{54, 56, 58, 235});
+        DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), tile_size * 0.22F,
+                        Color{206, 210, 214, 220});
+        break;
+    case ImprovementKind::ForagingGround:
+        DrawCircleV(center, std::max(1.5F, tile_size * 0.12F), Color{80, 190, 108, 210});
+        break;
+    case ImprovementKind::Road:
+    case ImprovementKind::None:
+        break;
     }
 }
 
@@ -103,7 +103,8 @@ void DrawControlOverlay(const Tile& tile, Vector2 position, float tile_size) {
 }
 
 Color RouteColorFor(const Tile& tile) {
-    Color color = tile.route_polity_id == kInvalidPolityId ? Color{224, 202, 136, 245} : ColorForPolity(tile.route_polity_id);
+    Color color =
+        tile.route_polity_id == kInvalidPolityId ? Color{224, 202, 136, 245} : ColorForPolity(tile.route_polity_id);
     color.a = 245;
     if (tile.route_kind == RouteKind::Trail) {
         color = Color{196, 172, 122, 235};
@@ -131,13 +132,10 @@ void DrawRouteOverlay(const Tile& tile, Vector2 position, float tile_size) {
     }
 }
 
-}  // namespace
+} // namespace
 
-void MapRenderer::Draw(const World& world,
-                       const CameraController& camera,
-                       MapLayer layer,
-                       const std::optional<std::pair<int, int>>& hover_tile,
-                       const Selection& selection) const {
+void MapRenderer::Draw(const World& world, const CameraController& camera, MapLayer layer,
+                       const std::optional<std::pair<int, int>>& hover_tile, const Selection& selection) const {
     const float tile_size = camera.TileSize();
     const int screen_width = GetScreenWidth();
     const int screen_height = GetScreenHeight();
@@ -186,18 +184,16 @@ void MapRenderer::Draw(const World& world,
     }
 }
 
-void MapRenderer::DrawEntities(const std::vector<Band>& bands,
-                               const std::vector<Settlement>& settlements,
-                               const CameraController& camera,
-                               const Selection& selection) const {
+void MapRenderer::DrawEntities(const std::vector<Band>& bands, const std::vector<Settlement>& settlements,
+                               const CameraController& camera, const Selection& selection) const {
     const float tile_size = camera.TileSize();
 
     for (const auto& settlement : settlements) {
         const Vector2 position = camera.TileToScreen(settlement.x, settlement.y);
         const Vector2 center{position.x + tile_size * 0.50F, position.y + tile_size * 0.50F};
         const float radius = std::max(3.0F, tile_size * (settlement.level == SettlementLevel::Village ? 0.42F : 0.34F));
-        const Color fill = settlement.level == SettlementLevel::Village ? Color{246, 235, 185, 255}
-                                                                        : Color{238, 218, 144, 255};
+        const Color fill =
+            settlement.level == SettlementLevel::Village ? Color{246, 235, 185, 255} : Color{238, 218, 144, 255};
         DrawRectangleV(Vector2{center.x - radius, center.y - radius}, Vector2{radius * 2.0F, radius * 2.0F}, fill);
         DrawRectangleLinesEx(Rectangle{center.x - radius, center.y - radius, radius * 2.0F, radius * 2.0F}, 2.0F,
                              Color{65, 42, 25, 255});
@@ -236,4 +232,4 @@ void MapRenderer::DrawEntities(const std::vector<Band>& bands,
     }
 }
 
-}  // namespace oikumene
+} // namespace oikumene

@@ -81,7 +81,8 @@ Options ParseArgs(int argc, char** argv) {
         throw std::runtime_error("Unknown or incomplete argument: " + arg);
     }
 
-    if (options.width <= 0 || options.height <= 0 || options.bands <= 0 || options.turns < 0 || options.sample_every < 0) {
+    if (options.width <= 0 || options.height <= 0 || options.bands <= 0 || options.turns < 0 ||
+        options.sample_every < 0) {
         throw std::runtime_error(
             "--width/--height/--bands must be positive and --turns/--sample-every must be non-negative");
     }
@@ -90,11 +91,8 @@ Options ParseArgs(int argc, char** argv) {
 
 nlohmann::json StockpileToJson(const oikumene::Stockpile& stockpile) {
     return nlohmann::json{
-        {"food", stockpile.food},
-        {"wood", stockpile.wood},
-        {"ore", stockpile.ore},
-        {"metal", stockpile.metal},
-        {"wealth", stockpile.wealth},
+        {"food", stockpile.food},   {"wood", stockpile.wood},     {"ore", stockpile.ore},
+        {"metal", stockpile.metal}, {"wealth", stockpile.wealth},
     };
 }
 
@@ -721,7 +719,7 @@ void WriteStateSample(std::ofstream& output, const oikumene::Simulation& sim) {
     output << StateSampleToJson(sim).dump() << '\n';
 }
 
-}  // namespace
+} // namespace
 
 int main(int argc, char** argv) {
     try {

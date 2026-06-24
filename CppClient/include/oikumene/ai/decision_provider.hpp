@@ -15,7 +15,7 @@ struct HealthStatus {
 };
 
 class DecisionProvider {
-public:
+  public:
     virtual ~DecisionProvider() = default;
 
     [[nodiscard]] virtual std::string Name() const = 0;
@@ -23,4 +23,4 @@ public:
     [[nodiscard]] virtual DecisionBatchResponse DecideBatch(const DecisionBatchRequest& request) = 0;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

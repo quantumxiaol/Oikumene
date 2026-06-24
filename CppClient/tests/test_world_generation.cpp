@@ -156,9 +156,8 @@ void TestTopSettlementCandidatesArePlausible() {
 
     const auto world = WorldGenerator::Generate(WorldGenerationParams{});
     std::vector<Tile> tiles = world.Tiles();
-    std::sort(tiles.begin(), tiles.end(), [](const Tile& lhs, const Tile& rhs) {
-        return lhs.settlement_score > rhs.settlement_score;
-    });
+    std::sort(tiles.begin(), tiles.end(),
+              [](const Tile& lhs, const Tile& rhs) { return lhs.settlement_score > rhs.settlement_score; });
 
     std::size_t checked = 0;
     std::size_t plausible = 0;
@@ -210,7 +209,7 @@ void TestReportCountsMatchWorldTiles() {
     assert(ToJson(report)["river_tiles"].get<int>() == river_tiles);
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestSameSeedIsStable();

@@ -84,11 +84,10 @@ void WriteCsvRow(std::ofstream& output, const oikumene::WorldGenerationReport& r
     const int total = report.width * report.height;
     const int grassland = CountBiome(report, oikumene::Biome::Grassland);
     const int mountain = CountBiome(report, oikumene::Biome::Mountain) + CountBiome(report, oikumene::Biome::Hill);
-    output << report.seed << ',' << report.land_ratio << ',' << (1.0F - report.land_ratio) << ','
-           << report.river_tiles << ',' << report.lake_tiles << ',' << report.forest_ratio << ','
-           << report.desert_ratio << ',' << Ratio(grassland, total) << ',' << Ratio(mountain, total) << ','
-           << report.top_settlement_score << ',' << report.high_score_settlement_ratio << ','
-           << CountResource(report, oikumene::ResourceKind::Wood) << ','
+    output << report.seed << ',' << report.land_ratio << ',' << (1.0F - report.land_ratio) << ',' << report.river_tiles
+           << ',' << report.lake_tiles << ',' << report.forest_ratio << ',' << report.desert_ratio << ','
+           << Ratio(grassland, total) << ',' << Ratio(mountain, total) << ',' << report.top_settlement_score << ','
+           << report.high_score_settlement_ratio << ',' << CountResource(report, oikumene::ResourceKind::Wood) << ','
            << CountResource(report, oikumene::ResourceKind::Horse) << ','
            << CountResource(report, oikumene::ResourceKind::Copper) << ','
            << CountResource(report, oikumene::ResourceKind::Tin) << ','
@@ -99,7 +98,7 @@ void WriteCsvRow(std::ofstream& output, const oikumene::WorldGenerationReport& r
            << CountResource(report, oikumene::ResourceKind::Salt) << '\n';
 }
 
-}  // namespace
+} // namespace
 
 int main(int argc, char** argv) {
     try {

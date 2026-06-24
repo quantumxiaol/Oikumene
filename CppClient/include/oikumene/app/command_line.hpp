@@ -16,4 +16,4 @@ struct CommandLineResult {
 [[nodiscard]] CommandLineResult ParseCommandLine(const std::vector<std::string>& args, AppConfig base = {});
 [[nodiscard]] std::string CommandLineUsage();
 
-}  // namespace oikumene
+} // namespace oikumene

@@ -17,4 +17,4 @@ enum class ImprovementKind : std::uint8_t {
 
 [[nodiscard]] std::string ToString(ImprovementKind improvement);
 
-}  // namespace oikumene
+} // namespace oikumene

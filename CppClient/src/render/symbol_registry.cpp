@@ -11,11 +11,7 @@
 namespace oikumene {
 namespace {
 
-SymbolInfo Symbol(SymbolCategory category,
-                  std::string id,
-                  std::string label,
-                  std::string description,
-                  Color color,
+SymbolInfo Symbol(SymbolCategory category, std::string id, std::string label, std::string description, Color color,
                   std::string shape) {
     return SymbolInfo{
         .category = category,
@@ -53,8 +49,8 @@ std::vector<SymbolInfo> BuildSymbols() {
         Symbol(SymbolCategory::Biome, "biome.mountain", "Mountain", "Mountains strongly resist control-field spread.",
                ColorForBiome(Biome::Mountain), "square"),
 
-        Symbol(SymbolCategory::Water, "water.river", "River", "River overlay boosts settlement value and corridor control.",
-               Color{44, 135, 225, 255}, "line"),
+        Symbol(SymbolCategory::Water, "water.river", "River",
+               "River overlay boosts settlement value and corridor control.", Color{44, 135, 225, 255}, "line"),
         Symbol(SymbolCategory::Water, "water.lake", "Lake", "Lake tiles provide water access but block land control.",
                ColorForBiome(Biome::Lake), "circle"),
         Symbol(SymbolCategory::Water, "water.coastline", "Coastline", "Coastline marks early maritime potential.",
@@ -64,8 +60,9 @@ std::vector<SymbolInfo> BuildSymbols() {
                ColorForResource(ResourceKind::Wood), "circle"),
         Symbol(SymbolCategory::Resource, "resource.bamboo", "Bamboo", "Warm wet-region construction and tool material.",
                ColorForResource(ResourceKind::Bamboo), "circle"),
-        Symbol(SymbolCategory::Resource, "resource.horse", "Horse", "Open-land animal resource for mobility and future warfare.",
-               ColorForResource(ResourceKind::Horse), "triangle"),
+        Symbol(SymbolCategory::Resource, "resource.horse", "Horse",
+               "Open-land animal resource for mobility and future warfare.", ColorForResource(ResourceKind::Horse),
+               "triangle"),
         Symbol(SymbolCategory::Resource, "resource.copper", "Copper", "Early metal resource for bronze paths.",
                ColorForResource(ResourceKind::Copper), "circle"),
         Symbol(SymbolCategory::Resource, "resource.tin", "Tin", "Bronze partner resource, usually rarer than copper.",
@@ -74,8 +71,8 @@ std::vector<SymbolInfo> BuildSymbols() {
                ColorForResource(ResourceKind::ShallowIron), "circle"),
         Symbol(SymbolCategory::Resource, "resource.coal", "Shallow Coal", "Fuel resource for later metallurgy.",
                ColorForResource(ResourceKind::ShallowCoal), "circle"),
-        Symbol(SymbolCategory::Resource, "resource.meteoric_iron", "Meteoric Iron", "Rare high-value early metal source.",
-               ColorForResource(ResourceKind::MeteoricIron), "star"),
+        Symbol(SymbolCategory::Resource, "resource.meteoric_iron", "Meteoric Iron",
+               "Rare high-value early metal source.", ColorForResource(ResourceKind::MeteoricIron), "star"),
         Symbol(SymbolCategory::Resource, "resource.gold", "Gold", "Prestige and wealth resource.",
                ColorForResource(ResourceKind::Gold), "circle"),
         Symbol(SymbolCategory::Resource, "resource.silver", "Silver", "Prestige and wealth resource.",
@@ -87,68 +84,69 @@ std::vector<SymbolInfo> BuildSymbols() {
         Symbol(SymbolCategory::Resource, "resource.salt", "Salt", "Food preservation and trade resource.",
                ColorForResource(ResourceKind::Salt), "circle"),
 
-        Symbol(SymbolCategory::Improvement, "improvement.farm", "Farm", "Consumes labor, raises food output and carrying capacity.",
-               Color{226, 202, 104, 255}, "grid"),
-        Symbol(SymbolCategory::Improvement, "improvement.lumbercamp", "Lumber Camp", "Uses nearby forest for wood production.",
-               Color{128, 78, 42, 255}, "square"),
-        Symbol(SymbolCategory::Improvement, "improvement.pasture", "Pasture", "Uses grassland or horse terrain for food and mobility potential.",
-               Color{166, 218, 124, 255}, "ring"),
-        Symbol(SymbolCategory::Improvement, "improvement.shallowmine", "Shallow Mine", "Extracts accessible ore from hills and mineral tiles.",
-               Color{54, 56, 58, 255}, "ring"),
-        Symbol(SymbolCategory::Improvement, "improvement.foraging", "Foraging Ground", "Early subsistence tile used before full agriculture.",
-               Color{80, 190, 108, 255}, "circle"),
+        Symbol(SymbolCategory::Improvement, "improvement.farm", "Farm",
+               "Consumes labor, raises food output and carrying capacity.", Color{226, 202, 104, 255}, "grid"),
+        Symbol(SymbolCategory::Improvement, "improvement.lumbercamp", "Lumber Camp",
+               "Uses nearby forest for wood production.", Color{128, 78, 42, 255}, "square"),
+        Symbol(SymbolCategory::Improvement, "improvement.pasture", "Pasture",
+               "Uses grassland or horse terrain for food and mobility potential.", Color{166, 218, 124, 255}, "ring"),
+        Symbol(SymbolCategory::Improvement, "improvement.shallowmine", "Shallow Mine",
+               "Extracts accessible ore from hills and mineral tiles.", Color{54, 56, 58, 255}, "ring"),
+        Symbol(SymbolCategory::Improvement, "improvement.foraging", "Foraging Ground",
+               "Early subsistence tile used before full agriculture.", Color{80, 190, 108, 255}, "circle"),
 
         Symbol(SymbolCategory::Route, "route.trail", "Trail", "Low-cost early path that slightly improves local reach.",
                Color{196, 172, 122, 255}, "line"),
-        Symbol(SymbolCategory::Route, "route.road", "Road", "Built after roads tech; strongly lowers control and admin distance.",
-               Color{232, 220, 176, 255}, "line"),
-        Symbol(SymbolCategory::Route, "route.river", "River Route", "River corridor route for internal movement and resource access.",
-               Color{84, 170, 232, 255}, "line"),
+        Symbol(SymbolCategory::Route, "route.road", "Road",
+               "Built after roads tech; strongly lowers control and admin distance.", Color{232, 220, 176, 255},
+               "line"),
+        Symbol(SymbolCategory::Route, "route.river", "River Route",
+               "River corridor route for internal movement and resource access.", Color{84, 170, 232, 255}, "line"),
         Symbol(SymbolCategory::Route, "route.coastal", "Coastal Route", "Sailing-enabled coastal movement route.",
                Color{112, 206, 216, 255}, "line"),
 
         Symbol(SymbolCategory::Entity, "entity.band", "Band", "Mobile hunting and gathering group before settlement.",
                Color{245, 245, 236, 255}, "triangle"),
-        Symbol(SymbolCategory::Entity, "entity.camp", "Camp", "Early fixed settlement.",
-               Color{238, 218, 144, 255}, "square"),
+        Symbol(SymbolCategory::Entity, "entity.camp", "Camp", "Early fixed settlement.", Color{238, 218, 144, 255},
+               "square"),
         Symbol(SymbolCategory::Entity, "entity.village", "Village", "Mature settlement that can form or join a polity.",
                Color{246, 235, 185, 255}, "house"),
         Symbol(SymbolCategory::Entity, "entity.capital", "Capital", "Polity center and strongest control source.",
                Color{255, 216, 96, 255}, "double_ring"),
 
-        Symbol(SymbolCategory::Polity, "polity.controlled", "Controlled Tile", "Tile under the strongest polity control field.",
-               Color{86, 158, 226, 160}, "square"),
-        Symbol(SymbolCategory::Polity, "polity.contested", "Contested Tile", "Two control fields are close enough to cause border tension.",
-               Color{246, 226, 108, 255}, "cross"),
-        Symbol(SymbolCategory::Polity, "polity.capital_ring", "Capital Ring", "Capital marker on the Polity Control layer.",
-               Color{255, 216, 96, 255}, "ring"),
+        Symbol(SymbolCategory::Polity, "polity.controlled", "Controlled Tile",
+               "Tile under the strongest polity control field.", Color{86, 158, 226, 160}, "square"),
+        Symbol(SymbolCategory::Polity, "polity.contested", "Contested Tile",
+               "Two control fields are close enough to cause border tension.", Color{246, 226, 108, 255}, "cross"),
+        Symbol(SymbolCategory::Polity, "polity.capital_ring", "Capital Ring",
+               "Capital marker on the Polity Control layer.", Color{255, 216, 96, 255}, "ring"),
         Symbol(SymbolCategory::Overlay, "overlay.selection", "Selection", "Current selected tile, band, or settlement.",
                Color{255, 216, 96, 255}, "outline"),
-        Symbol(SymbolCategory::Overlay, "overlay.hover", "Hover", "Tile under the mouse cursor when no UI captures input.",
-               Color{240, 246, 255, 255}, "outline"),
+        Symbol(SymbolCategory::Overlay, "overlay.hover", "Hover",
+               "Tile under the mouse cursor when no UI captures input.", Color{240, 246, 255, 255}, "outline"),
     };
 }
 
-}  // namespace
+} // namespace
 
 std::string ToString(SymbolCategory category) {
     switch (category) {
-        case SymbolCategory::Biome:
-            return "Terrain / 地形";
-        case SymbolCategory::Water:
-            return "Water / 水文";
-        case SymbolCategory::Resource:
-            return "Resources / 资源";
-        case SymbolCategory::Improvement:
-            return "Improvements / 改良";
-        case SymbolCategory::Route:
-            return "Routes / 路线";
-        case SymbolCategory::Entity:
-            return "Entities / 聚落";
-        case SymbolCategory::Polity:
-            return "Polity / 政治";
-        case SymbolCategory::Overlay:
-            return "Overlay / 覆盖层";
+    case SymbolCategory::Biome:
+        return "Terrain / 地形";
+    case SymbolCategory::Water:
+        return "Water / 水文";
+    case SymbolCategory::Resource:
+        return "Resources / 资源";
+    case SymbolCategory::Improvement:
+        return "Improvements / 改良";
+    case SymbolCategory::Route:
+        return "Routes / 路线";
+    case SymbolCategory::Entity:
+        return "Entities / 聚落";
+    case SymbolCategory::Polity:
+        return "Polity / 政治";
+    case SymbolCategory::Overlay:
+        return "Overlay / 覆盖层";
     }
     return "Unknown";
 }
@@ -170,8 +168,9 @@ std::vector<SymbolInfo> LegendSymbolsFor(SymbolCategory category) {
 
 const SymbolInfo* FindSymbolById(const std::string& id) {
     const auto& symbols = LegendSymbols();
-    const auto it = std::find_if(symbols.begin(), symbols.end(), [&](const SymbolInfo& symbol) { return symbol.id == id; });
+    const auto it =
+        std::find_if(symbols.begin(), symbols.end(), [&](const SymbolInfo& symbol) { return symbol.id == id; });
     return it == symbols.end() ? nullptr : &(*it);
 }
 
-}  // namespace oikumene
+} // namespace oikumene

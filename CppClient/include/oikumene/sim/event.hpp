@@ -39,4 +39,4 @@ struct SimEvent {
     std::string summary;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

@@ -17,4 +17,4 @@ struct SimulationParams {
     bool enable_routes = true;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

@@ -72,4 +72,4 @@ struct Polity {
     Turn founded_turn = 0;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

@@ -23,12 +23,9 @@ struct RouteNetworkStats {
     float admin_distance_saving = 0.0F;
 };
 
-[[nodiscard]] RouteNetworkStats BuildRouteNetworkStats(const World& world,
-                                                       const std::vector<Route>& routes,
+[[nodiscard]] RouteNetworkStats BuildRouteNetworkStats(const World& world, const std::vector<Route>& routes,
                                                        const Polity& polity);
-[[nodiscard]] RouteNetworkStats BuildRouteNetworkStats(const World& world,
-                                                       const std::vector<Settlement>& settlements,
-                                                       const std::vector<Route>& routes,
-                                                       const Polity& polity);
+[[nodiscard]] RouteNetworkStats BuildRouteNetworkStats(const World& world, const std::vector<Settlement>& settlements,
+                                                       const std::vector<Route>& routes, const Polity& polity);
 
-}  // namespace oikumene
+} // namespace oikumene

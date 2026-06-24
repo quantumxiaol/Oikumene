@@ -15,19 +15,13 @@ namespace oikumene {
 [[nodiscard]] float LocalWoodOutput(const World& world, const Settlement& settlement, const SimulationParams& params);
 
 class SettlementSystem {
-public:
-    static void UpdateSettlements(World& world,
-                                  const SimulationParams& params,
-                                  Turn turn,
-                                  std::vector<Settlement>& settlements,
-                                  const std::vector<Polity>& polities,
+  public:
+    static void UpdateSettlements(World& world, const SimulationParams& params, Turn turn,
+                                  std::vector<Settlement>& settlements, const std::vector<Polity>& polities,
                                   EventLog& event_log);
 
-    static void UpdateSettlements(World& world,
-                                  const SimulationParams& params,
-                                  Turn turn,
-                                  std::vector<Settlement>& settlements,
-                                  EventLog& event_log);
+    static void UpdateSettlements(World& world, const SimulationParams& params, Turn turn,
+                                  std::vector<Settlement>& settlements, EventLog& event_log);
 };
 
-}  // namespace oikumene
+} // namespace oikumene

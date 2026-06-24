@@ -42,7 +42,7 @@ void TestDecisionModels() {
     assert(response.responses.front().selected_actions.front().action_id == "research_mining");
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestDecisionModels();

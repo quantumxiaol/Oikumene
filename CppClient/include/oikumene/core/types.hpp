@@ -22,19 +22,19 @@ enum class ActionType {
 
 inline std::string ToString(ActionType type) {
     switch (type) {
-        case ActionType::ResearchTech:
-            return "RESEARCH_TECH";
-        case ActionType::OpenTrade:
-            return "OPEN_TRADE";
-        case ActionType::PrepareWar:
-            return "PREPARE_WAR";
-        case ActionType::DeclareWar:
-            return "DECLARE_WAR";
-        case ActionType::OfferPeace:
-            return "OFFER_PEACE";
-        case ActionType::Unknown:
-        default:
-            return "UNKNOWN";
+    case ActionType::ResearchTech:
+        return "RESEARCH_TECH";
+    case ActionType::OpenTrade:
+        return "OPEN_TRADE";
+    case ActionType::PrepareWar:
+        return "PREPARE_WAR";
+    case ActionType::DeclareWar:
+        return "DECLARE_WAR";
+    case ActionType::OfferPeace:
+        return "OFFER_PEACE";
+    case ActionType::Unknown:
+    default:
+        return "UNKNOWN";
     }
 }
 
@@ -57,4 +57,4 @@ inline ActionType ActionTypeFromString(const std::string& value) {
     return ActionType::Unknown;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

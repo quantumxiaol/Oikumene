@@ -34,4 +34,4 @@ struct SymbolInfo {
 [[nodiscard]] std::vector<SymbolInfo> LegendSymbolsFor(SymbolCategory category);
 [[nodiscard]] const SymbolInfo* FindSymbolById(const std::string& id);
 
-}  // namespace oikumene
+} // namespace oikumene

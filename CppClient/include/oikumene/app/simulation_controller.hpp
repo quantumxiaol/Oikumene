@@ -5,7 +5,7 @@
 namespace oikumene {
 
 class SimulationController {
-public:
+  public:
     void SetRunning(bool running);
     void ToggleRunning();
     void StepTurns(Simulation& sim, int turns);
@@ -16,10 +16,10 @@ public:
     [[nodiscard]] float TurnsPerSecond() const;
     [[nodiscard]] float Accumulator() const;
 
-private:
+  private:
     bool running_ = false;
     float turns_per_second_ = 4.0F;
     float accumulator_ = 0.0F;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

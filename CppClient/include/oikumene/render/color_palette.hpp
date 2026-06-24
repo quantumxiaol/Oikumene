@@ -13,4 +13,4 @@ namespace oikumene {
 [[nodiscard]] Color ColorForResource(ResourceKind resource);
 [[nodiscard]] Color ColorForPolity(PolityId polity_id);
 
-}  // namespace oikumene
+} // namespace oikumene

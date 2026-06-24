@@ -11,19 +11,13 @@
 namespace oikumene {
 
 class PolitySystem {
-public:
+  public:
     static void Reset(World& world, std::vector<Settlement>& settlements, std::vector<Polity>& polities);
-    static void UpdatePolities(World& world,
-                               Turn turn,
-                               std::vector<Settlement>& settlements,
-                               std::vector<Polity>& polities,
-                               EventLog& event_log);
-    static void UpdatePolities(World& world,
-                               const SimulationParams& params,
-                               Turn turn,
-                               std::vector<Settlement>& settlements,
-                               std::vector<Polity>& polities,
+    static void UpdatePolities(World& world, Turn turn, std::vector<Settlement>& settlements,
+                               std::vector<Polity>& polities, EventLog& event_log);
+    static void UpdatePolities(World& world, const SimulationParams& params, Turn turn,
+                               std::vector<Settlement>& settlements, std::vector<Polity>& polities,
                                EventLog& event_log);
 };
 
-}  // namespace oikumene
+} // namespace oikumene

@@ -31,4 +31,4 @@ struct TechEffects {
 [[nodiscard]] TechEffects ComputeTechEffects(const ResearchState& research);
 [[nodiscard]] std::vector<std::string> DescribeActiveEffects(const TechEffects& effects);
 
-}  // namespace oikumene
+} // namespace oikumene

@@ -95,7 +95,7 @@ void TestRegenerateWorldClearsPolities() {
     }
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestVillageCanFoundChiefdom();

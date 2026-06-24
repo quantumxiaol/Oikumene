@@ -23,4 +23,4 @@ enum class Biome : std::uint8_t {
 
 [[nodiscard]] std::string ToString(Biome biome);
 
-}  // namespace oikumene
+} // namespace oikumene

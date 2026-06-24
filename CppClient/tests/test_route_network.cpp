@@ -223,7 +223,7 @@ void TestCoastalRouteCanRepresentCoastalSegments() {
     assert(world.At(2, 1).has_route || world.At(3, 1).has_route);
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestTrailBuildsBeforeRoadsTech();

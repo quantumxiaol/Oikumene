@@ -73,4 +73,4 @@ std::vector<std::string> DescribeActiveEffects(const TechEffects& effects) {
     return descriptions;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

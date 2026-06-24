@@ -24,19 +24,16 @@ bool ContainsMemberSettlement(const Polity& polity, int settlement_id) {
 }
 
 bool IsMineral(ResourceKind resource) {
-    return resource == ResourceKind::Copper || resource == ResourceKind::Tin ||
-           resource == ResourceKind::ShallowIron || resource == ResourceKind::ShallowCoal ||
-           resource == ResourceKind::Gold || resource == ResourceKind::Silver ||
-           resource == ResourceKind::MeteoricIron;
+    return resource == ResourceKind::Copper || resource == ResourceKind::Tin || resource == ResourceKind::ShallowIron ||
+           resource == ResourceKind::ShallowCoal || resource == ResourceKind::Gold ||
+           resource == ResourceKind::Silver || resource == ResourceKind::MeteoricIron;
 }
 
 float EstimatedMineOutput(const Tile& tile) {
     return IsMineral(tile.resource) ? 0.45F + tile.resource_amount * 0.65F : 0.0F;
 }
 
-float RouteSavingFor(const World& world,
-                     const std::vector<Settlement>& settlements,
-                     const Route& route,
+float RouteSavingFor(const World& world, const std::vector<Settlement>& settlements, const Route& route,
                      const Polity& polity) {
     const auto* from = SettlementById(settlements, route.from_settlement_id);
     if (from == nullptr) {
@@ -47,18 +44,16 @@ float RouteSavingFor(const World& world,
     const float without_route = TerrainPathCost(world, from->x, from->y, route.target_x, route.target_y, max_cost,
                                                 effects.control_path_cost_multiplier,
                                                 effects.coastal_control_cost_multiplier, polity.id, false);
-    const float with_route = TerrainPathCost(world, from->x, from->y, route.target_x, route.target_y, max_cost,
-                                             effects.control_path_cost_multiplier,
-                                             effects.coastal_control_cost_multiplier, polity.id, true);
+    const float with_route =
+        TerrainPathCost(world, from->x, from->y, route.target_x, route.target_y, max_cost,
+                        effects.control_path_cost_multiplier, effects.coastal_control_cost_multiplier, polity.id, true);
     if (!std::isfinite(without_route) || !std::isfinite(with_route)) {
         return 0.0F;
     }
     return std::max(0.0F, without_route - with_route);
 }
 
-void AddMineOutputStats(const World& world,
-                        const std::vector<Settlement>& settlements,
-                        const Polity& polity,
+void AddMineOutputStats(const World& world, const std::vector<Settlement>& settlements, const Polity& polity,
                         RouteNetworkStats& stats) {
     if (!HasTech(polity.research, TechId::Mining)) {
         return;
@@ -88,16 +83,14 @@ void AddMineOutputStats(const World& world,
     }
 }
 
-}  // namespace
+} // namespace
 
 RouteNetworkStats BuildRouteNetworkStats(const World& world, const std::vector<Route>& routes, const Polity& polity) {
     return BuildRouteNetworkStats(world, {}, routes, polity);
 }
 
-RouteNetworkStats BuildRouteNetworkStats(const World& world,
-                                         const std::vector<Settlement>& settlements,
-                                         const std::vector<Route>& routes,
-                                         const Polity& polity) {
+RouteNetworkStats BuildRouteNetworkStats(const World& world, const std::vector<Settlement>& settlements,
+                                         const std::vector<Route>& routes, const Polity& polity) {
     RouteNetworkStats stats;
     for (const auto& route : routes) {
         if (route.polity_id != polity.id) {
@@ -129,4 +122,4 @@ RouteNetworkStats BuildRouteNetworkStats(const World& world,
     return stats;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

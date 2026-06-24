@@ -57,4 +57,4 @@ const std::vector<Tile>& World::Tiles() const {
     return tiles_;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

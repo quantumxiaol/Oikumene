@@ -28,7 +28,7 @@ bool NeedValue(const std::vector<std::string>& args, std::size_t index, std::str
     return false;
 }
 
-}  // namespace
+} // namespace
 
 CommandLineResult ParseCommandLine(const std::vector<std::string>& args, AppConfig base) {
     CommandLineResult result;
@@ -134,4 +134,4 @@ std::string CommandLineUsage() {
     return stream.str();
 }
 
-}  // namespace oikumene
+} // namespace oikumene

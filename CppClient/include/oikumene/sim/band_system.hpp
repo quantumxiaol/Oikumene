@@ -18,18 +18,12 @@ namespace oikumene {
 [[nodiscard]] bool IsSettlementNearby(const std::vector<Settlement>& settlements, int x, int y, int radius);
 
 class BandSystem {
-public:
-    static void InitializeBands(const World& world,
-                                const SimulationParams& params,
-                                int count,
+  public:
+    static void InitializeBands(const World& world, const SimulationParams& params, int count,
                                 std::vector<Band>& bands);
 
-    static void UpdateBands(const World& world,
-                            const SimulationParams& params,
-                            Turn turn,
-                            std::vector<Band>& bands,
-                            std::vector<Settlement>& settlements,
-                            EventLog& event_log);
+    static void UpdateBands(const World& world, const SimulationParams& params, Turn turn, std::vector<Band>& bands,
+                            std::vector<Settlement>& settlements, EventLog& event_log);
 };
 
-}  // namespace oikumene
+} // namespace oikumene

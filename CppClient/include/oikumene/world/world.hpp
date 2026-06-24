@@ -8,7 +8,7 @@
 namespace oikumene {
 
 class World {
-public:
+  public:
     World(int width, int height, std::uint64_t seed);
 
     [[nodiscard]] int Width() const;
@@ -22,11 +22,11 @@ public:
     [[nodiscard]] std::vector<Tile>& Tiles();
     [[nodiscard]] const std::vector<Tile>& Tiles() const;
 
-private:
+  private:
     int width_ = 0;
     int height_ = 0;
     std::uint64_t seed_ = 0;
     std::vector<Tile> tiles_;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

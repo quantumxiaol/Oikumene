@@ -6,4 +6,4 @@ namespace oikumene {
 
 void DrawLegendPanel(Rectangle bounds);
 
-}  // namespace oikumene
+} // namespace oikumene

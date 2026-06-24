@@ -22,8 +22,8 @@ int BaseMineralCount(const oikumene::WorldGenerationReport& report) {
 void TestWorldGenerationBalanceAcrossFixedSeeds() {
     using namespace oikumene;
 
-    const std::vector<std::uint64_t> seeds = {0,  1,  2,  3,     4,     5,  7,  11, 13, 17,
-                                             23, 29, 31, 37,    42,    99, 123, 2026, 12345, 20260623};
+    const std::vector<std::uint64_t> seeds = {0,  1,  2,  3,  4,  5,  7,   11,   13,    17,
+                                              23, 29, 31, 37, 42, 99, 123, 2026, 12345, 20260623};
 
     int enough_rivers = 0;
     int enough_wood = 0;
@@ -60,7 +60,7 @@ void TestWorldGenerationBalanceAcrossFixedSeeds() {
     assert(desert_ratio_sum / count > 0.002F);
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestWorldGenerationBalanceAcrossFixedSeeds();

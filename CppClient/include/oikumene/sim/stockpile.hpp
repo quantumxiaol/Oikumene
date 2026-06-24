@@ -10,4 +10,4 @@ struct Stockpile {
     float wealth = 0.0F;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

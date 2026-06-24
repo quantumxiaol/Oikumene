@@ -60,8 +60,10 @@ bool EnsureSocketRuntime(Response&) {
 bool SetTimeouts(SocketHandle socket, std::chrono::milliseconds timeout, Response& response) {
 #if defined(_WIN32)
     const DWORD timeout_ms = static_cast<DWORD>(timeout.count());
-    if (setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout_ms), sizeof(timeout_ms)) != 0 ||
-        setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeout_ms), sizeof(timeout_ms)) != 0) {
+    if (setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout_ms), sizeof(timeout_ms)) !=
+            0 ||
+        setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeout_ms), sizeof(timeout_ms)) !=
+            0) {
         response.error = "setsockopt timeout failed";
         return false;
     }
@@ -94,9 +96,7 @@ int ParseStatusCode(const std::string& raw) {
     return status_code;
 }
 
-Response SendRequest(const std::string& host,
-                     int port,
-                     const std::string& raw_request,
+Response SendRequest(const std::string& host, int port, const std::string& raw_request,
                      std::chrono::milliseconds timeout) {
     const auto start = std::chrono::steady_clock::now();
 
@@ -193,12 +193,9 @@ Response SendRequest(const std::string& host,
     return response;
 }
 
-}  // namespace
+} // namespace
 
-Response Get(const std::string& host,
-             int port,
-             const std::string& path,
-             std::chrono::milliseconds timeout) {
+Response Get(const std::string& host, int port, const std::string& path, std::chrono::milliseconds timeout) {
     std::ostringstream request;
     request << "GET " << path << " HTTP/1.1\r\n"
             << "Host: " << host << ":" << port << "\r\n"
@@ -207,10 +204,7 @@ Response Get(const std::string& host,
     return SendRequest(host, port, request.str(), timeout);
 }
 
-Response PostJson(const std::string& host,
-                  int port,
-                  const std::string& path,
-                  const std::string& body,
+Response PostJson(const std::string& host, int port, const std::string& path, const std::string& body,
                   std::chrono::milliseconds timeout) {
     std::ostringstream request;
     request << "POST " << path << " HTTP/1.1\r\n"
@@ -223,4 +217,4 @@ Response PostJson(const std::string& host,
     return SendRequest(host, port, request.str(), timeout);
 }
 
-}  // namespace oikumene::http
+} // namespace oikumene::http

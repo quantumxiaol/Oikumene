@@ -19,4 +19,4 @@ enum class MapLayer {
 [[nodiscard]] std::string ToString(MapLayer layer);
 [[nodiscard]] MapLayer MapLayerFromHotkey(int key);
 
-}  // namespace oikumene
+} // namespace oikumene

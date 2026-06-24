@@ -32,12 +32,11 @@ DecisionBatchResponse HeuristicDecisionProvider::DecideBatch(const DecisionBatch
         response.confidence = 0.55;
 
         if (!decision_request.candidate_actions.empty()) {
-            const auto best = std::max_element(
-                decision_request.candidate_actions.begin(),
-                decision_request.candidate_actions.end(),
-                [](const CandidateAction& lhs, const CandidateAction& rhs) {
-                    return (lhs.estimated_benefit - lhs.risk) < (rhs.estimated_benefit - rhs.risk);
-                });
+            const auto best =
+                std::max_element(decision_request.candidate_actions.begin(), decision_request.candidate_actions.end(),
+                                 [](const CandidateAction& lhs, const CandidateAction& rhs) {
+                                     return (lhs.estimated_benefit - lhs.risk) < (rhs.estimated_benefit - rhs.risk);
+                                 });
 
             response.selected_actions.push_back(SelectedAction{
                 .action_id = best->action_id,
@@ -52,4 +51,4 @@ DecisionBatchResponse HeuristicDecisionProvider::DecideBatch(const DecisionBatch
     return batch_response;
 }
 
-}  // namespace oikumene
+} // namespace oikumene

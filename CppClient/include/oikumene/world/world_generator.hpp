@@ -9,10 +9,10 @@
 namespace oikumene {
 
 class WorldGenerator {
-public:
+  public:
     [[nodiscard]] static World Generate(const WorldGenerationParams& params);
 
-private:
+  private:
     explicit WorldGenerator(const WorldGenerationParams& params);
 
     [[nodiscard]] World Run();
@@ -37,4 +37,4 @@ private:
     std::mt19937_64 rng_;
 };
 
-}  // namespace oikumene
+} // namespace oikumene

@@ -134,7 +134,7 @@ void TestOverextensionReducesEffectiveControlStrength() {
     assert(stable_world.At(8, 3).control_strength > overextended_world.At(8, 3).control_strength);
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestMountainBarrierReducesControlSpread();

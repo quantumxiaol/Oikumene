@@ -74,7 +74,7 @@ void TestResizePreservesCameraCenter() {
     assert(NearlyEqual(before.y, after.y));
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestScreenToTileAndBackRoundTrip();

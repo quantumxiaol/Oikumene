@@ -79,7 +79,7 @@ void TestUiPanelConsumesMouseClick() {
     assert(!oikumene::PointInAnyRectangle(Vector2{150.0F, 24.0F}, panels));
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestLeftClickSelectsSettlementBeforeTile();

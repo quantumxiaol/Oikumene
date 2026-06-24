@@ -83,7 +83,7 @@ void TestExistingRoadDiscountsSamePolityPath() {
     assert(std::fabs(foreign.total_cost - before.total_cost) < 0.001F);
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     TestPathfindingAvoidsOceanWithoutSailing();

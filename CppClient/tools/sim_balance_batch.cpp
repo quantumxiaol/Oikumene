@@ -266,7 +266,8 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     int controlled_land_tiles = 0;
     for (const auto& tile : sim.GetWorld().Tiles()) {
         metrics.worked_tiles += tile.worked_by_settlement_id >= 0 ? 1 : 0;
-        controlled_land_tiles += tile.controller_polity_id != oikumene::kInvalidPolityId && !tile.is_ocean && !tile.is_lake ? 1 : 0;
+        controlled_land_tiles +=
+            tile.controller_polity_id != oikumene::kInvalidPolityId && !tile.is_ocean && !tile.is_lake ? 1 : 0;
         metrics.contested_tiles += tile.is_contested ? 1 : 0;
         if (tile.has_route) {
             ++metrics.route_tiles;
@@ -361,8 +362,10 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         metrics.polities <= 0 ? 0.0F : static_cast<float>(member_sum) / static_cast<float>(metrics.polities);
     metrics.polity_formation_turn_mean =
         metrics.polities <= 0 ? 0.0F : formation_turn_sum / static_cast<float>(metrics.polities);
-    metrics.average_polity_food_income = metrics.polities <= 0 ? 0.0F : food_income_sum / static_cast<float>(metrics.polities);
-    metrics.average_polity_wood_income = metrics.polities <= 0 ? 0.0F : wood_income_sum / static_cast<float>(metrics.polities);
+    metrics.average_polity_food_income =
+        metrics.polities <= 0 ? 0.0F : food_income_sum / static_cast<float>(metrics.polities);
+    metrics.average_polity_wood_income =
+        metrics.polities <= 0 ? 0.0F : wood_income_sum / static_cast<float>(metrics.polities);
     metrics.average_polity_wealth_income =
         metrics.polities <= 0 ? 0.0F : wealth_income_sum / static_cast<float>(metrics.polities);
     metrics.average_admin_load = metrics.polities <= 0 ? 0.0F : admin_load_sum / static_cast<float>(metrics.polities);
@@ -379,20 +382,25 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         metrics.polities <= 0 ? 0.0F : knowledge_income_sum / static_cast<float>(metrics.polities);
     metrics.first_tech_turn_mean =
         first_tech_turn_count <= 0 ? 0.0F : first_tech_turn_sum / static_cast<float>(first_tech_turn_count);
-    metrics.pottery_unlock_rate = metrics.polities <= 0 ? 0.0F : static_cast<float>(pottery_count) / static_cast<float>(metrics.polities);
+    metrics.pottery_unlock_rate =
+        metrics.polities <= 0 ? 0.0F : static_cast<float>(pottery_count) / static_cast<float>(metrics.polities);
     metrics.irrigation_unlock_rate =
         metrics.polities <= 0 ? 0.0F : static_cast<float>(irrigation_count) / static_cast<float>(metrics.polities);
     metrics.animal_husbandry_unlock_rate =
-        metrics.polities <= 0 ? 0.0F : static_cast<float>(animal_husbandry_count) / static_cast<float>(metrics.polities);
-    metrics.mining_unlock_rate = metrics.polities <= 0 ? 0.0F : static_cast<float>(mining_count) / static_cast<float>(metrics.polities);
-    metrics.roads_unlock_rate = metrics.polities <= 0 ? 0.0F : static_cast<float>(roads_count) / static_cast<float>(metrics.polities);
+        metrics.polities <= 0 ? 0.0F
+                              : static_cast<float>(animal_husbandry_count) / static_cast<float>(metrics.polities);
+    metrics.mining_unlock_rate =
+        metrics.polities <= 0 ? 0.0F : static_cast<float>(mining_count) / static_cast<float>(metrics.polities);
+    metrics.roads_unlock_rate =
+        metrics.polities <= 0 ? 0.0F : static_cast<float>(roads_count) / static_cast<float>(metrics.polities);
     metrics.administration_unlock_rate =
         metrics.polities <= 0 ? 0.0F : static_cast<float>(administration_count) / static_cast<float>(metrics.polities);
     metrics.bronze_working_unlock_rate =
         metrics.polities <= 0 ? 0.0F : static_cast<float>(bronze_count) / static_cast<float>(metrics.polities);
     metrics.fortification_unlock_rate =
         metrics.polities <= 0 ? 0.0F : static_cast<float>(fortification_count) / static_cast<float>(metrics.polities);
-    metrics.sailing_unlock_rate = metrics.polities <= 0 ? 0.0F : static_cast<float>(sailing_count) / static_cast<float>(metrics.polities);
+    metrics.sailing_unlock_rate =
+        metrics.polities <= 0 ? 0.0F : static_cast<float>(sailing_count) / static_cast<float>(metrics.polities);
     metrics.average_ore_income = metrics.polities <= 0 ? 0.0F : ore_income_sum / static_cast<float>(metrics.polities);
     metrics.average_ore_income_for_mining_polities =
         mining_polity_count <= 0 ? 0.0F : mining_polity_ore_income_sum / static_cast<float>(mining_polity_count);
@@ -416,8 +424,7 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     metrics.pasture_events = CountEvents(sim, oikumene::EventType::PastureBuilt);
     metrics.route_events = CountEvents(sim, oikumene::EventType::RouteBuilt);
     metrics.routes = static_cast<int>(sim.Routes().size());
-    metrics.food_output_consumption_ratio =
-        metrics.total_food_output / std::max(1.0F, metrics.total_food_consumption);
+    metrics.food_output_consumption_ratio = metrics.total_food_output / std::max(1.0F, metrics.total_food_consumption);
     metrics.farm_share_of_worked_tiles =
         metrics.worked_tiles <= 0 ? 0.0F : static_cast<float>(metrics.farms) / static_cast<float>(metrics.worked_tiles);
     return metrics;
@@ -498,33 +505,33 @@ nlohmann::json ToJson(const Metrics& metrics) {
 }
 
 void WriteCsvHeader(std::ofstream& output) {
-    output << "seed,routes_enabled,settlements,villages,camps,active_bands,total_population,max_settlement_population,"
-              "farm_count,lumbercamp_count,pasture_count,shallow_mine_count,worked_tile_count,"
-              "polities,controlled_land_ratio,contested_tiles,largest_polity_population,"
-              "average_member_settlements_per_polity,polity_formation_turn_mean,"
-              "average_polity_food_income,average_polity_wood_income,average_polity_wealth_income,"
-              "average_admin_load,average_admin_capacity,average_overextension,average_stability,"
-              "average_control_maintenance,average_unlocked_techs,average_knowledge_income,first_tech_turn_mean,"
-              "pottery_unlock_rate,irrigation_unlock_rate,animal_husbandry_unlock_rate,mining_unlock_rate,"
-              "roads_unlock_rate,administration_unlock_rate,bronze_working_unlock_rate,fortification_unlock_rate,"
-              "sailing_unlock_rate,average_ore_income,average_ore_income_for_mining_polities,"
-              "average_tool_efficiency,average_military_potential,"
-              "routes,route_tile_count,road_tile_count,trail_tile_count,river_route_tile_count,coastal_route_tile_count,"
-              "connected_settlements,connected_mines,connected_mine_potential,active_connected_mines,"
-              "average_route_maintenance,average_admin_distance_cost,average_admin_distance_saving,"
-              "average_connected_ore_income,average_unconnected_ore_income,"
-              "total_food_output_last_turn,total_food_consumption_last_turn,total_wood_output_last_turn,"
-              "average_carrying_capacity,food_output_consumption_ratio,farm_share_of_worked_tiles,"
-              "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events,route_built_events\n";
+    output
+        << "seed,routes_enabled,settlements,villages,camps,active_bands,total_population,max_settlement_population,"
+           "farm_count,lumbercamp_count,pasture_count,shallow_mine_count,worked_tile_count,"
+           "polities,controlled_land_ratio,contested_tiles,largest_polity_population,"
+           "average_member_settlements_per_polity,polity_formation_turn_mean,"
+           "average_polity_food_income,average_polity_wood_income,average_polity_wealth_income,"
+           "average_admin_load,average_admin_capacity,average_overextension,average_stability,"
+           "average_control_maintenance,average_unlocked_techs,average_knowledge_income,first_tech_turn_mean,"
+           "pottery_unlock_rate,irrigation_unlock_rate,animal_husbandry_unlock_rate,mining_unlock_rate,"
+           "roads_unlock_rate,administration_unlock_rate,bronze_working_unlock_rate,fortification_unlock_rate,"
+           "sailing_unlock_rate,average_ore_income,average_ore_income_for_mining_polities,"
+           "average_tool_efficiency,average_military_potential,"
+           "routes,route_tile_count,road_tile_count,trail_tile_count,river_route_tile_count,coastal_route_tile_count,"
+           "connected_settlements,connected_mines,connected_mine_potential,active_connected_mines,"
+           "average_route_maintenance,average_admin_distance_cost,average_admin_distance_saving,"
+           "average_connected_ore_income,average_unconnected_ore_income,"
+           "total_food_output_last_turn,total_food_consumption_last_turn,total_wood_output_last_turn,"
+           "average_carrying_capacity,food_output_consumption_ratio,farm_share_of_worked_tiles,"
+           "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events,route_built_events\n";
 }
 
 void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
     output << metrics.seed << ',' << (metrics.routes_enabled ? 1 : 0) << ',' << metrics.settlements << ','
            << metrics.villages << ',' << metrics.camps << ',' << metrics.active_bands << ',' << metrics.total_population
            << ',' << metrics.max_settlement_population << ',' << metrics.farms << ',' << metrics.lumber_camps << ','
-           << metrics.pastures << ','
-           << metrics.shallow_mines << ',' << metrics.worked_tiles << ',' << metrics.polities << ','
-           << metrics.controlled_land_ratio << ',' << metrics.contested_tiles << ','
+           << metrics.pastures << ',' << metrics.shallow_mines << ',' << metrics.worked_tiles << ',' << metrics.polities
+           << ',' << metrics.controlled_land_ratio << ',' << metrics.contested_tiles << ','
            << metrics.largest_polity_population << ',' << metrics.average_member_settlements_per_polity << ','
            << metrics.polity_formation_turn_mean << ',' << metrics.average_polity_food_income << ','
            << metrics.average_polity_wood_income << ',' << metrics.average_polity_wealth_income << ','
@@ -540,12 +547,11 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.average_ore_income_for_mining_polities << ',' << metrics.average_tool_efficiency << ','
            << metrics.average_military_potential << ',' << metrics.routes << ',' << metrics.route_tiles << ','
            << metrics.road_tiles << ',' << metrics.trail_tiles << ',' << metrics.river_route_tiles << ','
-           << metrics.coastal_route_tiles << ',' << metrics.connected_settlements << ',' << metrics.connected_mines << ','
-           << metrics.connected_mine_potential << ',' << metrics.active_connected_mines << ','
+           << metrics.coastal_route_tiles << ',' << metrics.connected_settlements << ',' << metrics.connected_mines
+           << ',' << metrics.connected_mine_potential << ',' << metrics.active_connected_mines << ','
            << metrics.average_route_maintenance << ',' << metrics.average_admin_distance_cost << ','
            << metrics.average_admin_distance_saving << ',' << metrics.average_connected_ore_income << ','
-           << metrics.average_unconnected_ore_income << ','
-           << metrics.total_food_output << ','
+           << metrics.average_unconnected_ore_income << ',' << metrics.total_food_output << ','
            << metrics.total_food_consumption << ',' << metrics.total_wood_output << ','
            << metrics.average_carrying_capacity << ',' << metrics.food_output_consumption_ratio << ','
            << metrics.farm_share_of_worked_tiles << ',' << metrics.famine_events << ',' << metrics.farm_events << ','
@@ -656,7 +662,7 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
     };
 }
 
-}  // namespace
+} // namespace
 
 int main(int argc, char** argv) {
     try {

@@ -13,7 +13,7 @@ namespace {
     return static_cast<float>(numerator) / static_cast<float>(denominator);
 }
 
-}  // namespace
+} // namespace
 
 WorldGenerationReport BuildWorldGenerationReport(const World& world) {
     WorldGenerationReport report;
@@ -84,9 +84,8 @@ WorldGenerationReport BuildWorldGenerationReport(const World& world) {
     report.desert_ratio = Ratio(desert_tiles, tile_count);
     report.high_score_settlement_ratio = Ratio(high_score_tiles, tile_count);
 
-    std::sort(candidates.begin(), candidates.end(), [](const Tile* lhs, const Tile* rhs) {
-        return lhs->settlement_score > rhs->settlement_score;
-    });
+    std::sort(candidates.begin(), candidates.end(),
+              [](const Tile* lhs, const Tile* rhs) { return lhs->settlement_score > rhs->settlement_score; });
 
     const std::size_t candidate_count = std::min<std::size_t>(10, candidates.size());
     report.top_settlement_candidates.reserve(candidate_count);
@@ -159,4 +158,4 @@ nlohmann::json ToJson(const WorldGenerationReport& report) {
     };
 }
 
-}  // namespace oikumene
+} // namespace oikumene

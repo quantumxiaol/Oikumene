@@ -17,4 +17,4 @@ struct WorldGenerationParams {
     int max_lake_tiles = 32;
 };
 
-}  // namespace oikumene
+} // namespace oikumene
