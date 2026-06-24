@@ -10,10 +10,16 @@
 #include "oikumene/sim/technology_system.hpp"
 #include "oikumene/sim/trade_system.hpp"
 #include "oikumene/sim/war_planner.hpp"
+#include "oikumene/sim/war_target_planner.hpp"
 #include "oikumene/world/world_generation_params.hpp"
 #include "oikumene/world/world_generator.hpp"
 
 namespace oikumene {
+namespace {
+
+constexpr int kWarTargetRefreshInterval = 5;
+
+} // namespace
 
 Simulation::Simulation() : Simulation(WorldGenerator::Generate(WorldGenerationParams{}), SimulationParams{}) {}
 
@@ -87,6 +93,14 @@ std::vector<WarPressure>& Simulation::WarPressures() {
     return war_pressures_;
 }
 
+const std::vector<WarTargetCandidate>& Simulation::WarTargets() const {
+    return war_target_candidates_;
+}
+
+std::vector<WarTargetCandidate>& Simulation::WarTargets() {
+    return war_target_candidates_;
+}
+
 const EventLog& Simulation::Events() const {
     return event_log_;
 }
@@ -116,6 +130,7 @@ void Simulation::InitializeBands(int count) {
     trades_.clear();
     diplomacy_relations_.clear();
     war_pressures_.clear();
+    war_target_candidates_.clear();
     PolitySystem::Reset(world_, settlements_, polities_);
     RouteSystem::Reset(world_, routes_, polities_);
     TradeSystem::Reset(trades_, polities_);
@@ -135,6 +150,11 @@ void Simulation::AdvanceOneTurn() {
     TradeSystem::UpdateTrades(world_, current_turn_, settlements_, polities_, trades_, event_log_);
     DiplomacySystem::UpdateDiplomacy(world_, current_turn_, polities_, trades_, diplomacy_relations_);
     war_pressures_ = BuildWarPressures(polities_, diplomacy_relations_);
+    if (war_pressures_.empty()) {
+        war_target_candidates_.clear();
+    } else if (current_turn_ % kWarTargetRefreshInterval == 0) {
+        war_target_candidates_ = BuildWarTargetCandidates(world_, settlements_, polities_, trades_, war_pressures_);
+    }
     ++current_turn_;
 }
 

@@ -71,6 +71,8 @@ add_library(oikumene_core STATIC
     src/sim/trade_system.cpp
     src/sim/war.cpp
     src/sim/war_planner.cpp
+    src/sim/war_target.cpp
+    src/sim/war_target_planner.cpp
     src/world/biome.cpp
     src/world/improvement.cpp
     src/world/resource.cpp
@@ -263,6 +265,11 @@ add_executable(oikumene_war_planner_tests
 )
 target_link_libraries(oikumene_war_planner_tests PRIVATE oikumene_core)
 
+add_executable(oikumene_war_target_planner_tests
+    tests/test_war_target_planner.cpp
+)
+target_link_libraries(oikumene_war_target_planner_tests PRIVATE oikumene_core)
+
 foreach(target_name oikumene_camera_controller_tests oikumene_selection_tests oikumene_symbol_registry_tests)
     if(raylib_FOUND)
         target_link_libraries(${target_name} PRIVATE raylib)
@@ -294,6 +301,7 @@ if(BUILD_TESTING)
     add_test(NAME oikumene_trade_system_tests COMMAND oikumene_trade_system_tests)
     add_test(NAME oikumene_diplomacy_system_tests COMMAND oikumene_diplomacy_system_tests)
     add_test(NAME oikumene_war_planner_tests COMMAND oikumene_war_planner_tests)
+    add_test(NAME oikumene_war_target_planner_tests COMMAND oikumene_war_target_planner_tests)
     add_test(
         NAME oikumene_sim_batch_smoke
         COMMAND

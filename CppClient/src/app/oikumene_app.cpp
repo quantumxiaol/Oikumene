@@ -327,6 +327,25 @@ std::vector<const WarPressure*> WarPressuresForActor(const std::vector<WarPressu
     return matches;
 }
 
+std::string WarTargetLine(const WarTargetCandidate& target) {
+    return "P" + std::to_string(target.actor_polity_id) + "->P" + std::to_string(target.target_polity_id) + " " +
+           ToString(target.kind) + " " + ToString(target.objective) + " ROI " + Fixed(target.roi, 2) + " Score " +
+           Fixed(target.action_score, 2) + " Cost " + Fixed(target.campaign_cost, 2);
+}
+
+std::vector<const WarTargetCandidate*> WarTargetsForActor(const std::vector<WarTargetCandidate>& targets,
+                                                          PolityId polity_id) {
+    std::vector<const WarTargetCandidate*> matches;
+    for (const auto& target : targets) {
+        if (target.actor_polity_id == polity_id) {
+            matches.push_back(&target);
+        }
+    }
+    std::sort(matches.begin(), matches.end(),
+              [](const auto* lhs, const auto* rhs) { return lhs->action_score > rhs->action_score; });
+    return matches;
+}
+
 int ContestedTileCount(const World& world) {
     int count = 0;
     for (const auto& tile : world.Tiles()) {
@@ -1002,6 +1021,15 @@ void DrawInspectorDetails(const AppState& state, int& y) {
             for (std::size_t i = 0; i < war_count; ++i) {
                 DrawText(Truncate(WarPressureLine(*war_pressures[i]), 58).c_str(), 34, y, 16,
                          Color{232, 178, 142, 255});
+                y += 22;
+            }
+            const auto war_targets = WarTargetsForActor(state.simulation.WarTargets(), polity->id);
+            DrawText(("War targets " + std::to_string(war_targets.size())).c_str(), 34, y, 16,
+                     Color{246, 194, 126, 255});
+            y += 22;
+            const std::size_t target_count = std::min<std::size_t>(war_targets.size(), 3);
+            for (std::size_t i = 0; i < target_count; ++i) {
+                DrawText(Truncate(WarTargetLine(*war_targets[i]), 58).c_str(), 34, y, 16, Color{246, 194, 126, 255});
                 y += 22;
             }
         }

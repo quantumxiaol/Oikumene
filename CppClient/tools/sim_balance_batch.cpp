@@ -61,6 +61,8 @@ struct Metrics {
     int blockade_risk_relations = 0;
     int war_pressure_candidates = 0;
     int high_war_pressure_candidates = 0;
+    int war_target_candidates = 0;
+    int high_war_target_candidates = 0;
     int route_tiles = 0;
     int road_tiles = 0;
     int trail_tiles = 0;
@@ -123,6 +125,11 @@ struct Metrics {
     float average_friendly_penalty = 0.0F;
     float average_blockade_pressure = 0.0F;
     float average_dependency_pressure = 0.0F;
+    float average_war_target_roi = 0.0F;
+    float max_war_target_score = 0.0F;
+    float average_war_target_value = 0.0F;
+    float average_campaign_cost = 0.0F;
+    float average_occupation_cost = 0.0F;
 };
 
 void PrintUsage() {
@@ -522,6 +529,26 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         metrics.average_blockade_pressure = blockade_pressure_sum / count;
         metrics.average_dependency_pressure = dependency_pressure_sum / count;
     }
+    metrics.war_target_candidates = static_cast<int>(sim.WarTargets().size());
+    float war_target_roi_sum = 0.0F;
+    float war_target_value_sum = 0.0F;
+    float campaign_cost_sum = 0.0F;
+    float occupation_cost_sum = 0.0F;
+    for (const auto& target : sim.WarTargets()) {
+        metrics.high_war_target_candidates += target.high_value ? 1 : 0;
+        war_target_roi_sum += target.roi;
+        metrics.max_war_target_score = std::max(metrics.max_war_target_score, target.action_score);
+        war_target_value_sum += target.target_value;
+        campaign_cost_sum += target.campaign_cost;
+        occupation_cost_sum += target.occupation_cost;
+    }
+    if (metrics.war_target_candidates > 0) {
+        const float count = static_cast<float>(metrics.war_target_candidates);
+        metrics.average_war_target_roi = war_target_roi_sum / count;
+        metrics.average_war_target_value = war_target_value_sum / count;
+        metrics.average_campaign_cost = campaign_cost_sum / count;
+        metrics.average_occupation_cost = occupation_cost_sum / count;
+    }
     metrics.food_output_consumption_ratio = metrics.total_food_output / std::max(1.0F, metrics.total_food_consumption);
     metrics.farm_share_of_worked_tiles =
         metrics.worked_tiles <= 0 ? 0.0F : static_cast<float>(metrics.farms) / static_cast<float>(metrics.worked_tiles);
@@ -608,6 +635,8 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"blockade_risk_relations", metrics.blockade_risk_relations},
         {"war_pressure_candidates", metrics.war_pressure_candidates},
         {"high_war_pressure_candidates", metrics.high_war_pressure_candidates},
+        {"war_target_candidates", metrics.war_target_candidates},
+        {"high_war_target_candidates", metrics.high_war_target_candidates},
         {"average_trade_profit", metrics.average_trade_profit},
         {"average_trade_complementarity", metrics.average_trade_complementarity},
         {"average_trade_route_cost", metrics.average_trade_route_cost},
@@ -623,6 +652,11 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"average_friendly_penalty", metrics.average_friendly_penalty},
         {"average_blockade_pressure", metrics.average_blockade_pressure},
         {"average_dependency_pressure", metrics.average_dependency_pressure},
+        {"average_war_target_roi", metrics.average_war_target_roi},
+        {"max_war_target_score", metrics.max_war_target_score},
+        {"average_war_target_value", metrics.average_war_target_value},
+        {"average_campaign_cost", metrics.average_campaign_cost},
+        {"average_occupation_cost", metrics.average_occupation_cost},
     };
 }
 
@@ -648,11 +682,13 @@ void WriteCsvHeader(std::ofstream& output) {
            "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events,route_built_events,"
            "trade_opened_events,active_trades,diplomacy_relations,friendly_relations,competitive_relations,"
            "dependent_relations,blockade_risk_relations,war_pressure_candidates,high_war_pressure_candidates,"
+           "war_target_candidates,high_war_target_candidates,"
            "average_trade_profit,average_trade_complementarity,"
            "average_trade_route_cost,average_trade_route_efficiency,average_trade_weak_refresh_count,"
            "average_trade_path_tiles,average_friendship,average_competition,average_blockade_tendency,"
            "average_war_roi,max_declaration_pressure,average_trade_conflict_weight,average_friendly_penalty,"
-           "average_blockade_pressure,average_dependency_pressure\n";
+           "average_blockade_pressure,average_dependency_pressure,average_war_target_roi,max_war_target_score,"
+           "average_war_target_value,average_campaign_cost,average_occupation_cost\n";
 }
 
 void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
@@ -688,14 +724,17 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.trade_events << ',' << metrics.active_trades << ',' << metrics.diplomacy_relations << ','
            << metrics.friendly_relations << ',' << metrics.competitive_relations << ',' << metrics.dependent_relations
            << ',' << metrics.blockade_risk_relations << ',' << metrics.war_pressure_candidates << ','
-           << metrics.high_war_pressure_candidates << ',' << metrics.average_trade_profit << ','
+           << metrics.high_war_pressure_candidates << ',' << metrics.war_target_candidates << ','
+           << metrics.high_war_target_candidates << ',' << metrics.average_trade_profit << ','
            << metrics.average_trade_complementarity << ',' << metrics.average_trade_route_cost << ','
            << metrics.average_trade_route_efficiency << ',' << metrics.average_trade_weak_refresh_count << ','
            << metrics.average_trade_path_tiles << ',' << metrics.average_friendship << ','
            << metrics.average_competition << ',' << metrics.average_blockade_tendency << ',' << metrics.average_war_roi
            << ',' << metrics.max_declaration_pressure << ',' << metrics.average_trade_conflict_weight << ','
            << metrics.average_friendly_penalty << ',' << metrics.average_blockade_pressure << ','
-           << metrics.average_dependency_pressure << '\n';
+           << metrics.average_dependency_pressure << ',' << metrics.average_war_target_roi << ','
+           << metrics.max_war_target_score << ',' << metrics.average_war_target_value << ','
+           << metrics.average_campaign_cost << ',' << metrics.average_occupation_cost << '\n';
 }
 
 nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
@@ -782,6 +821,8 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_war_pressure_candidates", mean([](const Metrics& item) { return item.war_pressure_candidates; })},
         {"mean_high_war_pressure_candidates",
          mean([](const Metrics& item) { return item.high_war_pressure_candidates; })},
+        {"mean_war_target_candidates", mean([](const Metrics& item) { return item.war_target_candidates; })},
+        {"mean_high_war_target_candidates", mean([](const Metrics& item) { return item.high_war_target_candidates; })},
         {"mean_route_tiles", mean([](const Metrics& item) { return item.route_tiles; })},
         {"mean_road_tiles", mean([](const Metrics& item) { return item.road_tiles; })},
         {"mean_trail_tiles", mean([](const Metrics& item) { return item.trail_tiles; })},
@@ -812,6 +853,11 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_friendly_penalty", mean([](const Metrics& item) { return item.average_friendly_penalty; })},
         {"mean_blockade_pressure", mean([](const Metrics& item) { return item.average_blockade_pressure; })},
         {"mean_dependency_pressure", mean([](const Metrics& item) { return item.average_dependency_pressure; })},
+        {"mean_war_target_roi", mean([](const Metrics& item) { return item.average_war_target_roi; })},
+        {"mean_max_war_target_score", mean([](const Metrics& item) { return item.max_war_target_score; })},
+        {"mean_war_target_value", mean([](const Metrics& item) { return item.average_war_target_value; })},
+        {"mean_campaign_cost", mean([](const Metrics& item) { return item.average_campaign_cost; })},
+        {"mean_occupation_cost", mean([](const Metrics& item) { return item.average_occupation_cost; })},
         {"mean_food_output", mean([](const Metrics& item) { return item.total_food_output; })},
         {"mean_food_consumption", mean([](const Metrics& item) { return item.total_food_consumption; })},
         {"mean_food_output_consumption_ratio",

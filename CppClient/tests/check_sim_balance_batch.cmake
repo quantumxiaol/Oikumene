@@ -73,6 +73,8 @@ foreach(token
     "\"mean_blockade_risk_relations\""
     "\"mean_war_pressure_candidates\""
     "\"mean_high_war_pressure_candidates\""
+    "\"mean_war_target_candidates\""
+    "\"mean_high_war_target_candidates\""
     "\"mean_friendship\""
     "\"mean_competition\""
     "\"mean_blockade_tendency\""
@@ -82,6 +84,10 @@ foreach(token
     "\"mean_friendly_penalty\""
     "\"mean_blockade_pressure\""
     "\"mean_dependency_pressure\""
+    "\"mean_war_target_roi\""
+    "\"mean_max_war_target_score\""
+    "\"mean_campaign_cost\""
+    "\"mean_occupation_cost\""
 )
     string(FIND "${summary}" "${token}" token_index)
     if(token_index EQUAL -1)
@@ -109,6 +115,7 @@ foreach(token
     "\"mean_routes\""
     "\"mean_admin_distance_saving\""
     "\"mean_war_pressure_candidates\""
+    "\"mean_war_target_candidates\""
 )
     string(FIND "${off_summary}" "${token}" token_index)
     if(token_index EQUAL -1)

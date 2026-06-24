@@ -86,8 +86,19 @@
 
 ## Phase 5.4: War Target Valuation and Campaign Costs
 
-- War target valuation.
-- Campaign and occupation costs.
+- Build concrete `WarTargetCandidate` records from diplomacy-aware `WarPressure`.
+- Target settlements, resource regions, contested border tiles, trade route nodes, and strategic passes.
+- Score farmland, resource, settlement, trade, and strategic value.
+- Split campaign cost into mobilization, supply, equipment, terrain attrition, defender power, defense, and occupation maintenance.
+- Export target paths, value/cost components, ROI, and action score to headless JSON/CSV and selected-polity UI details.
+- Refresh target candidates on a strategic cadence instead of every turn to avoid excessive pathfinding work.
+- Keep this phase observational: no war declaration, battle resolution, occupation, resource consumption, or boundary mutation yet.
+
+## Phase 5.5: Abstract War Execution
+
+- Convert high-score `WarTargetCandidate` records into war plans.
+- Track war state, mobilized resources, campaign progress, occupation, retreat, and peace events.
+- Let occupation profit or maintenance feed back into border stability.
 
 ## Phase 6: Remote Strategic AI
 

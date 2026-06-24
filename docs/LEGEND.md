@@ -61,7 +61,7 @@
 
 ## 战争压力
 
-当前版本的战争系统还不执行宣战和占领，只生成用于调试 War ROI 的定向压力候选。
+当前版本的战争系统还不执行宣战和占领，只生成用于调试 War ROI 的定向压力候选和具体目标候选。
 
 - WarPressure：从一个 polity 指向另一个 polity 的战争倾向候选，来源于外交、贸易、边界和军力差异。
 - BorderDispute：边界摩擦和竞争主导的冲突倾向。
@@ -71,6 +71,14 @@
 - Friendly Penalty：友好关系对宣战倾向的抑制；贸易越稳定，惩罚越明显。
 - Trade Conflict Weight：依赖、封锁风险、路线脆弱性和竞争叠加后的贸易冲突权重。
 - Declaration Pressure：归一化后的宣战压力，仅用于观察和后续战争目标选择。
+- WarTargetCandidate：具体战争目标候选，从 WarPressure 推导，包含目标 tile、路径、价值、成本和 ROI。
+- Settlement：夺取敌方村庄或首都的目标。
+- ResourceRegion：夺取铜、锡、铁、煤、马、盐、金银等资源区域的目标。
+- ContestedBorder：争夺双方控制力接近的边境 tile。
+- TradeRouteNode：攻击贸易路径节点，用于封锁、强制贸易或摆脱依赖。
+- StrategicPass：争夺山口、河谷、沿海路线和其他交通瓶颈。
+- Campaign Cost：战役总成本，拆分为动员、补给、装备、地形损耗、防御和占领维护。
+- Occupation Cost：占领后的维护压力；距离、目标稳定性和友好惩罚会让占领更不划算。
 
 ## 实体
 
