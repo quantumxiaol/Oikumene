@@ -10,6 +10,7 @@
 #include "oikumene/sim/route.hpp"
 #include "oikumene/sim/settlement.hpp"
 #include "oikumene/sim/simulation_params.hpp"
+#include "oikumene/sim/trade.hpp"
 #include "oikumene/world/world.hpp"
 
 namespace oikumene {
@@ -30,6 +31,8 @@ class Simulation {
     [[nodiscard]] std::vector<Polity>& Polities();
     [[nodiscard]] const std::vector<Route>& Routes() const;
     [[nodiscard]] std::vector<Route>& Routes();
+    [[nodiscard]] const std::vector<TradeAgreement>& Trades() const;
+    [[nodiscard]] std::vector<TradeAgreement>& Trades();
     [[nodiscard]] const EventLog& Events() const;
     [[nodiscard]] EventLog& Events();
     [[nodiscard]] std::string StatusSummary() const;
@@ -45,6 +48,7 @@ class Simulation {
     std::vector<Settlement> settlements_;
     std::vector<Polity> polities_;
     std::vector<Route> routes_;
+    std::vector<TradeAgreement> trades_;
     EventLog event_log_;
 };
 

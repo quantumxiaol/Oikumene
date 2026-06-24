@@ -42,6 +42,8 @@ std::string ToString(EventType type) {
         return "TechnologyUnlocked";
     case EventType::RouteBuilt:
         return "RouteBuilt";
+    case EventType::TradeOpened:
+        return "TradeOpened";
     }
     return "Unknown";
 }

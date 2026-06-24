@@ -66,6 +66,14 @@ struct Polity {
     float connected_ore_income = 0.0F;
     float unconnected_ore_income = 0.0F;
     float admin_distance_saving = 0.0F;
+    std::vector<int> trade_ids;
+    int active_trade_count = 0;
+    float trade_income = 0.0F;
+    float trade_expense = 0.0F;
+    float trade_profit = 0.0F;
+    float trade_complementarity = 0.0F;
+    float trade_route_cost = 0.0F;
+    float trade_route_efficiency = 0.0F;
     std::uint32_t debug_color_index = 0;
     int controlled_tile_count = 0;
     int contested_tile_count = 0;

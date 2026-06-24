@@ -7,6 +7,7 @@
 #include "oikumene/sim/route_system.hpp"
 #include "oikumene/sim/settlement_system.hpp"
 #include "oikumene/sim/technology_system.hpp"
+#include "oikumene/sim/trade_system.hpp"
 #include "oikumene/world/world_generation_params.hpp"
 #include "oikumene/world/world_generator.hpp"
 
@@ -60,6 +61,14 @@ std::vector<Route>& Simulation::Routes() {
     return routes_;
 }
 
+const std::vector<TradeAgreement>& Simulation::Trades() const {
+    return trades_;
+}
+
+std::vector<TradeAgreement>& Simulation::Trades() {
+    return trades_;
+}
+
 const EventLog& Simulation::Events() const {
     return event_log_;
 }
@@ -86,8 +95,10 @@ std::string Simulation::StatusSummary() const {
 void Simulation::InitializeBands(int count) {
     settlements_.clear();
     routes_.clear();
+    trades_.clear();
     PolitySystem::Reset(world_, settlements_, polities_);
     RouteSystem::Reset(world_, routes_, polities_);
+    TradeSystem::Reset(trades_, polities_);
     event_log_.Events().clear();
     current_turn_ = 0;
     BandSystem::InitializeBands(world_, params_, count, bands_);
@@ -100,6 +111,7 @@ void Simulation::AdvanceOneTurn() {
     TechnologySystem::UpdateTechnologies(world_, current_turn_, settlements_, polities_, event_log_);
     RouteSystem::UpdateRoutes(world_, current_turn_, settlements_, polities_, routes_, event_log_,
                               params_.enable_routes);
+    TradeSystem::UpdateTrades(world_, current_turn_, settlements_, polities_, trades_, event_log_);
     ++current_turn_;
 }
 

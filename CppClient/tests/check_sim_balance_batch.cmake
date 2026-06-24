@@ -55,6 +55,7 @@ foreach(token
     "\"mean_tool_efficiency\""
     "\"mean_military_potential\""
     "\"mean_routes\""
+    "\"mean_active_trades\""
     "\"mean_route_tiles\""
     "\"mean_admin_distance_cost\""
     "\"mean_admin_distance_saving\""
@@ -62,6 +63,10 @@ foreach(token
     "\"mean_active_connected_mines\""
     "\"mean_connected_ore_income\""
     "\"mean_unconnected_ore_income\""
+    "\"mean_trade_profit\""
+    "\"mean_trade_complementarity\""
+    "\"mean_trade_route_cost\""
+    "\"mean_trade_route_efficiency\""
 )
     string(FIND "${summary}" "${token}" token_index)
     if(token_index EQUAL -1)

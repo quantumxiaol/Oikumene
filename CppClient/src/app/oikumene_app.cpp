@@ -247,6 +247,24 @@ int RouteTileCount(const World& world) {
     return count;
 }
 
+int ActiveTradeCount(const std::vector<TradeAgreement>& trades) {
+    int count = 0;
+    for (const auto& trade : trades) {
+        count += trade.active ? 1 : 0;
+    }
+    return count;
+}
+
+float TotalTradeProfit(const std::vector<TradeAgreement>& trades) {
+    float total = 0.0F;
+    for (const auto& trade : trades) {
+        if (trade.active) {
+            total += trade.expected_profit;
+        }
+    }
+    return total;
+}
+
 float ControlledLandRatio(const World& world) {
     int land = 0;
     int controlled = 0;
@@ -622,7 +640,9 @@ void DrawHud(const AppState& state) {
               std::to_string(RouteTileCount(state.simulation.GetWorld())) + "  Tech avg " +
               Fixed(AverageUnlockedTechs(state.simulation.Polities()), 1) + "  Mining " +
               Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Mining) * 100.0F, 0) + "%  Roads " +
-              Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Roads) * 100.0F, 0) + "%")
+              Fixed(TechUnlockRate(state.simulation.Polities(), TechId::Roads) * 100.0F, 0) + "%  Trade " +
+              std::to_string(ActiveTradeCount(state.simulation.Trades())) + " +" +
+              Fixed(TotalTradeProfit(state.simulation.Trades()), 1))
                  .c_str(),
              30, 154, 15, Color{184, 194, 202, 255});
 }
@@ -829,6 +849,11 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                       std::to_string(polity->connected_mines))
                          .c_str(),
                      34, y, 17, Color{224, 202, 136, 255});
+            y += 22;
+            DrawText(("Trade " + std::to_string(polity->active_trade_count) + "  Profit " +
+                      Fixed(polity->trade_profit, 2) + "  Avg route " + Fixed(polity->trade_route_cost, 1))
+                         .c_str(),
+                     34, y, 17, Color{160, 218, 188, 255});
         }
     }
 }

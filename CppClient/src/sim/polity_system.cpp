@@ -174,6 +174,7 @@ void RecalculatePolityBudgetsAndAdministration(const World& world, const std::ve
         }
 
         const auto effects = ComputeTechEffects(polity.research);
+        polity.budget.wealth_income += polity.trade_income;
         const float average_distance = AverageCapitalPathCost(world, settlements, polity, *capital, use_routes);
         const float member_count = static_cast<float>(polity.member_settlement_ids.size());
         polity.admin_load = member_count * 8.0F + static_cast<float>(polity.controlled_tile_count) * 0.08F +

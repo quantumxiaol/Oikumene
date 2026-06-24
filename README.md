@@ -11,7 +11,7 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 
 ## 当前状态
 
-当前已经进入 Phase 4.6：
+当前已经进入 Phase 5.0：
 
 - C++ 主程序能打开 Raylib 窗口，生成 80x56 世界地图。
 - 支持 Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl、RouteNetwork 图层。
@@ -27,12 +27,13 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 - 已有显式路线网络：polity 会根据首都-成员村庄、矿点/资源点连接收益自动建设 Trail、Road、RiverRoute、CoastalRoute；路线会降低同 polity 的路径/控制成本，增加矿点转运效率，并产生维护成本。
 - `RouteNetwork` 图层可以直接查看路线；选中路线 tile 时详情面板会显示 route id、类型、目的、维护成本、ROI 和建造原因。
 - 已有路线效果审计：可以用 `--disable-routes` 关闭路线系统，对照控制范围、行政距离、矿产连接、矿产收入、维护成本和人口规模。
+- 已有早期贸易系统：C++ heuristic 会根据 polity 之间的粮食、木材、矿石、财富互补性和首都间路线成本建立 `TradeAgreement`，贸易收益会写入 polity 的 `trade_profit` 和 wealth surplus。
 - 已有图例系统：`F2` 打开 Legend 面板，`docs/LEGEND.md` 维护图标和覆盖层说明。
 - UI 底部有轻量播放控制条：Play/Pause、Step、+10、+100、TPS 调整、Reset Bands。
 - 已有 headless 工具：
   - `oikumene_worldgen_batch`：批量生成世界并输出世界生成报告。
   - `oikumene_sim_batch`：无窗口跑部落/定居仿真并输出 summary、final_state、events。
-  - `oikumene_sim_balance_batch`：批量跑多个 seed，输出人口、农田、牧场、伐木、粮食供需、承载力、polity 行政、稳定性、科技和路线网络指标。
+  - `oikumene_sim_balance_batch`：批量跑多个 seed，输出人口、农田、牧场、伐木、粮食供需、承载力、polity 行政、稳定性、科技、路线网络和贸易指标。
 
 ## C++ 依赖
 
@@ -195,9 +196,9 @@ cd CppClient
 - `world_report.json`
 - `states.jsonl`：仅在传入 `--sample-every N` 时生成。
 
-`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension、stability、平均解锁科技数、knowledge income、关键科技解锁率和路线网络规模。传入 `--disable-routes` 时会完全关闭路线建设、路线 tile 缓存、路线路径加成和矿点转运加成，用来做 routes-on/off 对照。`final_state.json` 会保留 Band / Settlement / Polity / Route 的调试字段，并导出 `improved_tiles` 与 `route_tiles` 摘要；每个 polity 会包含 `research`、`unlocked_techs`、`active_effects`、`military_potential`、`tool_efficiency`、`route_ids`、`route_maintenance`、`connected_settlements`、`connected_mines`、`connected_mine_potential`、`active_connected_mines`、`connected_ore_income` 和 `unconnected_ore_income`。
+`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension、stability、平均解锁科技数、knowledge income、关键科技解锁率、路线网络规模和贸易规模。传入 `--disable-routes` 时会完全关闭路线建设、路线 tile 缓存、路线路径加成和矿点转运加成，用来做 routes-on/off 对照。`final_state.json` 会保留 Band / Settlement / Polity / Route / Trade 的调试字段，并导出 `improved_tiles` 与 `route_tiles` 摘要；每个 polity 会包含 `research`、`unlocked_techs`、`active_effects`、`military_potential`、`tool_efficiency`、`route_ids`、`route_maintenance`、`connected_settlements`、`connected_mines`、`connected_mine_potential`、`active_connected_mines`、`connected_ore_income`、`unconnected_ore_income`、`trade_ids`、`active_trade_count` 和 `trade_profit`。
 
-批量检查村庄经济、polity 和路线效果：
+批量检查村庄经济、polity、路线和贸易效果：
 
 ```bash
 cd CppClient
@@ -245,6 +246,11 @@ cd CppClient
 - `mean_admin_distance_cost` / `mean_admin_distance_saving`：平均行政距离成本，以及路线带来的真实路径成本节省。
 - `mean_route_maintenance`：路线维护成本。
 - `mean_ore_income_for_mining_polities`：已解锁 Mining 的 polity 的平均 ore income，方便判断矿点路线是否有实际收益。
+- `mean_active_trades`：平均活跃贸易协议数。
+- `mean_trade_profit`：活跃贸易协议的平均净收益。
+- `mean_trade_complementarity`：贸易双方的资源互补评分。
+- `mean_trade_route_cost` / `mean_trade_route_efficiency`：首都间贸易路径成本和效率，用来判断贸易是否真的受地理/路线网络约束。
+- `mean_trade_opened_events`：平均贸易开启事件数，过高通常说明贸易关系过度震荡。
 
 一次 20 seed、1000 turn 的参考结果：
 
@@ -260,6 +266,17 @@ cd CppClient
 | `mean_connected_ore_income` | 0.293 | 0.000 |
 | `mean_unconnected_ore_income` | 0.018 | 0.240 |
 | `mean_route_maintenance` | 0.653 | 0.000 |
+
+一次 6 seed、300 turn 的 Phase 5.0 贸易 smoke 结果：
+
+| 指标 | 数值 |
+| --- | ---: |
+| `mean_total_population` | 1822.50 |
+| `mean_polities` | 3.50 |
+| `mean_routes` | 4.33 |
+| `mean_active_trades` | 3.83 |
+| `mean_trade_profit` | 2.87 |
+| `mean_trade_opened_events` | 9.83 |
 
 ## 开发格式化
 
@@ -279,8 +296,9 @@ python3 scripts/format_cpp.py
 
 ## 下一阶段
 
-Phase 5.0 后续重点：
+Phase 5.1 后续重点：
 
-- 在现有 RouteNetwork 上实现贸易候选、资源互补评分和贸易收益。
-- 贸易系统先使用 C++ heuristic，不接 LLM。
-- 暂时不要做战争和 LLM；路线网络只是基础设施层，贸易路线会建立在这套网络之上。
+- 校准贸易关系的稳定性，避免贸易开启/失效过度震荡。
+- 增加贸易协议详情 UI 和未来贸易路线可视化。
+- 暂时不要接 LLM；贸易系统继续使用 C++ heuristic。
+- 贸易稳定后再进入 Military Potential / War ROI。

@@ -54,10 +54,15 @@
 - Split route audit statistics from route construction code.
 - Keep route infrastructure distinct from future trade routes.
 
-## Phase 5: Trade and War ROI
+## Phase 5.0: Trade Candidates and Agreements
 
 - Resource complementarity.
-- Trade routes.
+- Trade agreements between polities.
+- Route-network-aware capital-to-capital trade cost.
+- Trade profit applied to polity wealth surplus.
+
+## Phase 5.5: War ROI
+
 - War target valuation.
 - Campaign and occupation costs.
 

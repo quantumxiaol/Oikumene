@@ -40,6 +40,8 @@ foreach(token
         "\"polities\""
         "\"routes_enabled\""
         "\"routes\""
+        "\"active_trades\""
+        "\"total_trade_profit\""
         "\"route_tile_count\""
         "\"controlled_land_ratio\""
         "\"average_admin_load\""
@@ -61,6 +63,7 @@ foreach(token
         "\"carrying_capacity\""
         "\"improved_tiles\""
         "\"routes\""
+        "\"trades\""
         "\"route_tiles\""
         "\"polity_id\""
         "\"polities\""
@@ -73,7 +76,8 @@ foreach(token
         "\"military_potential\""
         "\"tool_efficiency\""
         "\"connected_mine_potential\""
-        "\"active_connected_mines\"")
+        "\"active_connected_mines\""
+        "\"trade_profit\"")
     string(FIND "${final_state}" "${token}" token_index)
     if(token_index EQUAL -1)
         message(FATAL_ERROR "final_state.json is missing ${token}")

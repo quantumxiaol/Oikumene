@@ -51,7 +51,9 @@ struct Metrics {
     int lumber_events = 0;
     int pasture_events = 0;
     int route_events = 0;
+    int trade_events = 0;
     int routes = 0;
+    int active_trades = 0;
     int route_tiles = 0;
     int road_tiles = 0;
     int trail_tiles = 0;
@@ -99,6 +101,10 @@ struct Metrics {
     float average_admin_distance_saving = 0.0F;
     float average_connected_ore_income = 0.0F;
     float average_unconnected_ore_income = 0.0F;
+    float average_trade_profit = 0.0F;
+    float average_trade_complementarity = 0.0F;
+    float average_trade_route_cost = 0.0F;
+    float average_trade_route_efficiency = 0.0F;
 };
 
 void PrintUsage() {
@@ -423,7 +429,30 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     metrics.lumber_events = CountEvents(sim, oikumene::EventType::LumberCampBuilt);
     metrics.pasture_events = CountEvents(sim, oikumene::EventType::PastureBuilt);
     metrics.route_events = CountEvents(sim, oikumene::EventType::RouteBuilt);
+    metrics.trade_events = CountEvents(sim, oikumene::EventType::TradeOpened);
     metrics.routes = static_cast<int>(sim.Routes().size());
+    float trade_profit_sum = 0.0F;
+    float trade_complementarity_sum = 0.0F;
+    float trade_route_cost_sum = 0.0F;
+    float trade_route_efficiency_sum = 0.0F;
+    for (const auto& trade : sim.Trades()) {
+        if (!trade.active) {
+            continue;
+        }
+        ++metrics.active_trades;
+        trade_profit_sum += trade.expected_profit;
+        trade_complementarity_sum += trade.complementarity;
+        trade_route_cost_sum += trade.route_cost;
+        trade_route_efficiency_sum += trade.route_efficiency;
+    }
+    metrics.average_trade_profit =
+        metrics.active_trades <= 0 ? 0.0F : trade_profit_sum / static_cast<float>(metrics.active_trades);
+    metrics.average_trade_complementarity =
+        metrics.active_trades <= 0 ? 0.0F : trade_complementarity_sum / static_cast<float>(metrics.active_trades);
+    metrics.average_trade_route_cost =
+        metrics.active_trades <= 0 ? 0.0F : trade_route_cost_sum / static_cast<float>(metrics.active_trades);
+    metrics.average_trade_route_efficiency =
+        metrics.active_trades <= 0 ? 0.0F : trade_route_efficiency_sum / static_cast<float>(metrics.active_trades);
     metrics.food_output_consumption_ratio = metrics.total_food_output / std::max(1.0F, metrics.total_food_consumption);
     metrics.farm_share_of_worked_tiles =
         metrics.worked_tiles <= 0 ? 0.0F : static_cast<float>(metrics.farms) / static_cast<float>(metrics.worked_tiles);
@@ -501,6 +530,12 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"lumbercamp_built_events", metrics.lumber_events},
         {"pasture_built_events", metrics.pasture_events},
         {"route_built_events", metrics.route_events},
+        {"trade_opened_events", metrics.trade_events},
+        {"active_trades", metrics.active_trades},
+        {"average_trade_profit", metrics.average_trade_profit},
+        {"average_trade_complementarity", metrics.average_trade_complementarity},
+        {"average_trade_route_cost", metrics.average_trade_route_cost},
+        {"average_trade_route_efficiency", metrics.average_trade_route_efficiency},
     };
 }
 
@@ -523,7 +558,9 @@ void WriteCsvHeader(std::ofstream& output) {
            "average_connected_ore_income,average_unconnected_ore_income,"
            "total_food_output_last_turn,total_food_consumption_last_turn,total_wood_output_last_turn,"
            "average_carrying_capacity,food_output_consumption_ratio,farm_share_of_worked_tiles,"
-           "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events,route_built_events\n";
+           "famine_events,farm_built_events,lumbercamp_built_events,pasture_built_events,route_built_events,"
+           "trade_opened_events,active_trades,average_trade_profit,average_trade_complementarity,"
+           "average_trade_route_cost,average_trade_route_efficiency\n";
 }
 
 void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
@@ -555,7 +592,10 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.total_food_consumption << ',' << metrics.total_wood_output << ','
            << metrics.average_carrying_capacity << ',' << metrics.food_output_consumption_ratio << ','
            << metrics.farm_share_of_worked_tiles << ',' << metrics.famine_events << ',' << metrics.farm_events << ','
-           << metrics.lumber_events << ',' << metrics.pasture_events << ',' << metrics.route_events << '\n';
+           << metrics.lumber_events << ',' << metrics.pasture_events << ',' << metrics.route_events << ','
+           << metrics.trade_events << ',' << metrics.active_trades << ',' << metrics.average_trade_profit << ','
+           << metrics.average_trade_complementarity << ',' << metrics.average_trade_route_cost << ','
+           << metrics.average_trade_route_efficiency << '\n';
 }
 
 nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
@@ -633,6 +673,7 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_tool_efficiency", mean([](const Metrics& item) { return item.average_tool_efficiency; })},
         {"mean_military_potential", mean([](const Metrics& item) { return item.average_military_potential; })},
         {"mean_routes", mean([](const Metrics& item) { return item.routes; })},
+        {"mean_active_trades", mean([](const Metrics& item) { return item.active_trades; })},
         {"mean_route_tiles", mean([](const Metrics& item) { return item.route_tiles; })},
         {"mean_road_tiles", mean([](const Metrics& item) { return item.road_tiles; })},
         {"mean_trail_tiles", mean([](const Metrics& item) { return item.trail_tiles; })},
@@ -647,6 +688,10 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_admin_distance_saving", mean([](const Metrics& item) { return item.average_admin_distance_saving; })},
         {"mean_connected_ore_income", mean([](const Metrics& item) { return item.average_connected_ore_income; })},
         {"mean_unconnected_ore_income", mean([](const Metrics& item) { return item.average_unconnected_ore_income; })},
+        {"mean_trade_profit", mean([](const Metrics& item) { return item.average_trade_profit; })},
+        {"mean_trade_complementarity", mean([](const Metrics& item) { return item.average_trade_complementarity; })},
+        {"mean_trade_route_cost", mean([](const Metrics& item) { return item.average_trade_route_cost; })},
+        {"mean_trade_route_efficiency", mean([](const Metrics& item) { return item.average_trade_route_efficiency; })},
         {"mean_food_output", mean([](const Metrics& item) { return item.total_food_output; })},
         {"mean_food_consumption", mean([](const Metrics& item) { return item.total_food_consumption; })},
         {"mean_food_output_consumption_ratio",
@@ -659,6 +704,7 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_lumbercamp_built_events", mean([](const Metrics& item) { return item.lumber_events; })},
         {"mean_pasture_built_events", mean([](const Metrics& item) { return item.pasture_events; })},
         {"mean_route_built_events", mean([](const Metrics& item) { return item.route_events; })},
+        {"mean_trade_opened_events", mean([](const Metrics& item) { return item.trade_events; })},
     };
 }
 

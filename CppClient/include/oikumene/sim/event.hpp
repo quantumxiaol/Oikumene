@@ -26,6 +26,7 @@ enum class EventType {
     ResearchStarted,
     TechnologyUnlocked,
     RouteBuilt,
+    TradeOpened,
 };
 
 [[nodiscard]] std::string ToString(EventType type);

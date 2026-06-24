@@ -255,6 +255,14 @@ nlohmann::json PolityToJson(const oikumene::Polity& polity) {
         {"connected_ore_income", polity.connected_ore_income},
         {"unconnected_ore_income", polity.unconnected_ore_income},
         {"admin_distance_saving", polity.admin_distance_saving},
+        {"trade_ids", polity.trade_ids},
+        {"active_trade_count", polity.active_trade_count},
+        {"trade_income", polity.trade_income},
+        {"trade_expense", polity.trade_expense},
+        {"trade_profit", polity.trade_profit},
+        {"trade_complementarity", polity.trade_complementarity},
+        {"trade_route_cost", polity.trade_route_cost},
+        {"trade_route_efficiency", polity.trade_route_efficiency},
     };
 }
 
@@ -280,6 +288,30 @@ nlohmann::json RouteToJson(const oikumene::Route& route) {
         {"route_value", route.route_value},
         {"roi", route.roi},
         {"reason", route.reason},
+    };
+}
+
+nlohmann::json TradeToJson(const oikumene::TradeAgreement& trade) {
+    return nlohmann::json{
+        {"id", trade.id},
+        {"polity_a_id", trade.polity_a_id},
+        {"polity_b_id", trade.polity_b_id},
+        {"opened_turn", trade.opened_turn},
+        {"last_evaluated_turn", trade.last_evaluated_turn},
+        {"active", trade.active},
+        {"export_from_a", oikumene::ToString(trade.export_from_a)},
+        {"export_from_b", oikumene::ToString(trade.export_from_b)},
+        {"value_a_to_b", trade.value_a_to_b},
+        {"value_b_to_a", trade.value_b_to_a},
+        {"complementarity", trade.complementarity},
+        {"route_cost", trade.route_cost},
+        {"route_cost_without_network", trade.route_cost_without_network},
+        {"route_saving", trade.route_saving},
+        {"route_efficiency", trade.route_efficiency},
+        {"gross_value", trade.gross_value},
+        {"transport_cost", trade.transport_cost},
+        {"expected_profit", trade.expected_profit},
+        {"reason", trade.reason},
     };
 }
 
@@ -401,6 +433,37 @@ int CountRouteKindTiles(const oikumene::Simulation& sim, oikumene::RouteKind kin
         count += tile.has_route && tile.route_kind == kind ? 1 : 0;
     }
     return count;
+}
+
+int CountActiveTrades(const oikumene::Simulation& sim) {
+    int count = 0;
+    for (const auto& trade : sim.Trades()) {
+        count += trade.active ? 1 : 0;
+    }
+    return count;
+}
+
+float TotalTradeProfit(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    for (const auto& trade : sim.Trades()) {
+        if (trade.active) {
+            total += trade.expected_profit;
+        }
+    }
+    return total;
+}
+
+float AverageTradeRouteEfficiency(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    int count = 0;
+    for (const auto& trade : sim.Trades()) {
+        if (!trade.active) {
+            continue;
+        }
+        total += trade.route_efficiency;
+        ++count;
+    }
+    return count <= 0 ? 0.0F : total / static_cast<float>(count);
 }
 
 float AverageAdminLoad(const oikumene::Simulation& sim) {
@@ -580,6 +643,10 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
     for (const auto& route : sim.Routes()) {
         routes.push_back(RouteToJson(route));
     }
+    nlohmann::json trades = nlohmann::json::array();
+    for (const auto& trade : sim.Trades()) {
+        trades.push_back(TradeToJson(trade));
+    }
 
     return nlohmann::json{
         {"turn", sim.CurrentTurn()},
@@ -588,6 +655,7 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
         {"settlements", settlements},
         {"polities", polities},
         {"routes", routes},
+        {"trades", trades},
         {"bands", bands},
         {"improved_tiles", ImprovedTilesToJson(sim)},
         {"route_tiles", RouteTilesToJson(sim)},
@@ -627,6 +695,9 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"controlled_land_ratio", ControlledLandRatio(sim)},
         {"contested_tiles", CountContestedTiles(sim)},
         {"routes", sim.Routes().size()},
+        {"active_trades", CountActiveTrades(sim)},
+        {"total_trade_profit", TotalTradeProfit(sim)},
+        {"average_trade_route_efficiency", AverageTradeRouteEfficiency(sim)},
         {"route_tile_count", CountRouteTiles(sim)},
         {"road_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Road)},
         {"trail_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Trail)},
@@ -651,6 +722,7 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"lumbercamp_built_events", CountEvents(sim, oikumene::EventType::LumberCampBuilt)},
         {"pasture_built_events", CountEvents(sim, oikumene::EventType::PastureBuilt)},
         {"route_built_events", CountEvents(sim, oikumene::EventType::RouteBuilt)},
+        {"trade_opened_events", CountEvents(sim, oikumene::EventType::TradeOpened)},
         {"carrying_capacity_reached_events", CountEvents(sim, oikumene::EventType::CarryingCapacityReached)},
     };
 }
@@ -680,6 +752,9 @@ nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
         {"controlled_land_ratio", ControlledLandRatio(sim)},
         {"contested_tiles", CountContestedTiles(sim)},
         {"routes", sim.Routes().size()},
+        {"active_trades", CountActiveTrades(sim)},
+        {"total_trade_profit", TotalTradeProfit(sim)},
+        {"average_trade_route_efficiency", AverageTradeRouteEfficiency(sim)},
         {"route_tile_count", CountRouteTiles(sim)},
         {"road_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Road)},
         {"trail_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Trail)},
