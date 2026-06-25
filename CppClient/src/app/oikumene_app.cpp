@@ -272,7 +272,8 @@ std::string DiplomacyRelationLine(const DiplomacyRelation& relation) {
            Fixed(relation.blockade_tendency, 2) + " G " +
            Fixed(std::max(relation.grievance_a_to_b, relation.grievance_b_to_a), 2) + " V " +
            Fixed(std::max(relation.vassalage_a_to_b, relation.vassalage_b_to_a), 2) + " R " +
-           Fixed(std::max(relation.restraint_a_to_b, relation.restraint_b_to_a), 2);
+           Fixed(std::max(relation.restraint_a_to_b, relation.restraint_b_to_a), 2) + " T " +
+           std::to_string(relation.active_vassal_treaty_id) + " Ld " + Fixed(relation.treaty_liberty_desire, 2);
 }
 
 std::string TradeIdsForPolity(const std::vector<TradeAgreement>& trades, PolityId polity_id) {
@@ -392,6 +393,30 @@ std::vector<const OccupationRecord*> OccupationsForPolity(const std::vector<Occu
     std::sort(matches.begin(), matches.end(), [](const auto* lhs, const auto* rhs) {
         if (lhs->status != rhs->status) {
             return lhs->status == OccupationStatus::Active;
+        }
+        return lhs->started_turn > rhs->started_turn;
+    });
+    return matches;
+}
+
+std::string VassalTreatyLine(const VassalTreaty& treaty) {
+    return "Treaty " + std::to_string(treaty.id) + " P" + std::to_string(treaty.subject_polity_id) + " under P" +
+           std::to_string(treaty.overlord_polity_id) + " " + ToString(treaty.status) + " Str " +
+           Fixed(treaty.strength, 2) + " Loy " + Fixed(treaty.loyalty, 2) + " Lib " + Fixed(treaty.liberty_desire, 2) +
+           " Trib " + Fixed(treaty.tribute_due, 2);
+}
+
+std::vector<const VassalTreaty*> VassalTreatiesForPolity(const std::vector<VassalTreaty>& treaties,
+                                                         PolityId polity_id) {
+    std::vector<const VassalTreaty*> matches;
+    for (const auto& treaty : treaties) {
+        if (treaty.overlord_polity_id == polity_id || treaty.subject_polity_id == polity_id) {
+            matches.push_back(&treaty);
+        }
+    }
+    std::sort(matches.begin(), matches.end(), [](const auto* lhs, const auto* rhs) {
+        if (lhs->status != rhs->status) {
+            return lhs->status == VassalTreatyStatus::Active;
         }
         return lhs->started_turn > rhs->started_turn;
     });
@@ -1057,9 +1082,23 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                          .c_str(),
                      34, y, 17, Color{222, 150, 135, 255});
             y += 22;
+            DrawText(("Vassal tribute +" + Fixed(polity->vassal_tribute_income, 2) + " / -" +
+                      Fixed(polity->vassal_tribute_paid, 2) + "  Liberty " + Fixed(polity->vassal_liberty_desire, 2))
+                         .c_str(),
+                     34, y, 17, Color{214, 170, 156, 255});
+            y += 22;
             DrawText(Truncate("Agreements: " + TradeIdsForPolity(state.simulation.Trades(), polity->id), 58).c_str(),
                      34, y, 16, Color{160, 218, 188, 255});
             y += 22;
+            const auto treaties = VassalTreatiesForPolity(state.simulation.VassalTreaties(), polity->id);
+            DrawText(("Vassal treaties " + std::to_string(treaties.size())).c_str(), 34, y, 16,
+                     Color{214, 170, 156, 255});
+            y += 22;
+            const std::size_t treaty_count = std::min<std::size_t>(treaties.size(), 2);
+            for (std::size_t i = 0; i < treaty_count; ++i) {
+                DrawText(Truncate(VassalTreatyLine(*treaties[i]), 58).c_str(), 34, y, 16, Color{214, 170, 156, 255});
+                y += 22;
+            }
             const auto diplomacy = DiplomacyRelationsForPolity(state.simulation.DiplomacyRelations(), polity->id);
             DrawText(("Diplomacy relations " + std::to_string(diplomacy.size())).c_str(), 34, y, 16,
                      Color{178, 204, 232, 255});

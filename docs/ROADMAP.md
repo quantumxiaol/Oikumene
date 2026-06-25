@@ -121,6 +121,16 @@
 - Calibrate early war cadence and occupation outcome thresholds so small seed batches produce visible wars, vassals, and revolts without overwhelming polity stability.
 - Keep occupation results authoritative in C++; future LLM strategy can only observe this memory and choose from legal actions.
 
+## Phase 5.8: Explicit Vassal Treaties
+
+- Promote vassalization from diplomacy memory into explicit `VassalTreaty` records.
+- Track overlord, subject, source occupation, treaty strength, autonomy, tribute rate, protection, loyalty, liberty desire, tribute due, and military obligation.
+- Let `OccupationSystem` create or refresh a treaty when an occupation resolves into a vassal buffer.
+- Let `VassalSystem` write active treaty state back into polity fields such as overlord, vassal count, subject treaty ids, tribute, protection, and liberty desire.
+- Let `DiplomacyRelation` explicitly reference active treaty ids and treaty direction, while still preserving decaying historical memory.
+- Let War ROI use treaty direction: subjects with high liberty desire get dependency-breakout pressure, while overlords are restrained from directly attacking their own vassals.
+- Export treaty records and treaty aggregate metrics in headless JSON/CSV, and show treaty lines in the selected-polity debug UI.
+
 ## Phase 6: Remote Strategic AI
 
 - Async C++ decision orchestration.

@@ -10,6 +10,7 @@
 #include "oikumene/sim/settlement_system.hpp"
 #include "oikumene/sim/technology_system.hpp"
 #include "oikumene/sim/trade_system.hpp"
+#include "oikumene/sim/vassal_system.hpp"
 #include "oikumene/sim/war_planner.hpp"
 #include "oikumene/sim/war_system.hpp"
 #include "oikumene/sim/war_target_planner.hpp"
@@ -119,6 +120,14 @@ std::vector<OccupationRecord>& Simulation::Occupations() {
     return occupations_;
 }
 
+const std::vector<VassalTreaty>& Simulation::VassalTreaties() const {
+    return vassal_treaties_;
+}
+
+std::vector<VassalTreaty>& Simulation::VassalTreaties() {
+    return vassal_treaties_;
+}
+
 const EventLog& Simulation::Events() const {
     return event_log_;
 }
@@ -145,9 +154,13 @@ std::string Simulation::StatusSummary() const {
     for (const auto& occupation : occupations_) {
         active_occupations += occupation.status == OccupationStatus::Active ? 1 : 0;
     }
+    int active_vassals = 0;
+    for (const auto& treaty : vassal_treaties_) {
+        active_vassals += treaty.status == VassalTreatyStatus::Active ? 1 : 0;
+    }
     stream << "Turn " << current_turn_ << " bands " << active_bands << "/" << bands_.size() << " settlements "
            << settlements_.size() << " villages " << villages << " polities " << polities_.size() << " wars "
-           << active_wars << " occ " << active_occupations;
+           << active_wars << " occ " << active_occupations << " vassals " << active_vassals;
     return stream.str();
 }
 
@@ -160,12 +173,14 @@ void Simulation::InitializeBands(int count) {
     war_target_candidates_.clear();
     war_campaigns_.clear();
     occupations_.clear();
+    vassal_treaties_.clear();
     PolitySystem::Reset(world_, settlements_, polities_);
     RouteSystem::Reset(world_, routes_, polities_);
     TradeSystem::Reset(trades_, polities_);
     DiplomacySystem::Reset(diplomacy_relations_);
     WarSystem::Reset(war_campaigns_);
     OccupationSystem::Reset(occupations_, polities_);
+    VassalSystem::Reset(vassal_treaties_, polities_);
     event_log_.Events().clear();
     current_turn_ = 0;
     BandSystem::InitializeBands(world_, params_, count, bands_);
@@ -179,7 +194,8 @@ void Simulation::AdvanceOneTurn() {
     RouteSystem::UpdateRoutes(world_, current_turn_, settlements_, polities_, routes_, event_log_,
                               params_.enable_routes);
     TradeSystem::UpdateTrades(world_, current_turn_, settlements_, polities_, trades_, event_log_);
-    DiplomacySystem::UpdateDiplomacy(world_, current_turn_, polities_, trades_, diplomacy_relations_);
+    VassalSystem::UpdateTreaties(current_turn_, polities_, diplomacy_relations_, vassal_treaties_);
+    DiplomacySystem::UpdateDiplomacy(world_, current_turn_, polities_, trades_, vassal_treaties_, diplomacy_relations_);
     war_pressures_ = BuildWarPressures(polities_, diplomacy_relations_);
     if (war_pressures_.empty()) {
         war_target_candidates_.clear();
@@ -189,7 +205,8 @@ void Simulation::AdvanceOneTurn() {
     WarSystem::UpdateWars(world_, current_turn_, settlements_, polities_, trades_, war_target_candidates_,
                           war_campaigns_, event_log_);
     OccupationSystem::UpdateOccupations(world_, current_turn_, settlements_, polities_, war_campaigns_, occupations_,
-                                        diplomacy_relations_, event_log_);
+                                        diplomacy_relations_, vassal_treaties_, event_log_);
+    VassalSystem::UpdateTreaties(current_turn_, polities_, diplomacy_relations_, vassal_treaties_);
     ++current_turn_;
 }
 

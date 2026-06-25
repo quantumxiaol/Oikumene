@@ -71,6 +71,8 @@ add_library(oikumene_core STATIC
     src/sim/trade.cpp
     src/sim/trade_planner.cpp
     src/sim/trade_system.cpp
+    src/sim/vassal_system.cpp
+    src/sim/vassal_treaty.cpp
     src/sim/war.cpp
     src/sim/war_campaign.cpp
     src/sim/war_planner.cpp
@@ -284,6 +286,11 @@ add_executable(oikumene_occupation_system_tests
 )
 target_link_libraries(oikumene_occupation_system_tests PRIVATE oikumene_core)
 
+add_executable(oikumene_vassal_system_tests
+    tests/test_vassal_system.cpp
+)
+target_link_libraries(oikumene_vassal_system_tests PRIVATE oikumene_core)
+
 foreach(target_name oikumene_camera_controller_tests oikumene_selection_tests oikumene_symbol_registry_tests)
     if(raylib_FOUND)
         target_link_libraries(${target_name} PRIVATE raylib)
@@ -318,6 +325,7 @@ if(BUILD_TESTING)
     add_test(NAME oikumene_war_target_planner_tests COMMAND oikumene_war_target_planner_tests)
     add_test(NAME oikumene_war_system_tests COMMAND oikumene_war_system_tests)
     add_test(NAME oikumene_occupation_system_tests COMMAND oikumene_occupation_system_tests)
+    add_test(NAME oikumene_vassal_system_tests COMMAND oikumene_vassal_system_tests)
     add_test(
         NAME oikumene_sim_batch_smoke
         COMMAND

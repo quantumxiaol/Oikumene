@@ -13,6 +13,7 @@
 #include "oikumene/sim/settlement.hpp"
 #include "oikumene/sim/simulation_params.hpp"
 #include "oikumene/sim/trade.hpp"
+#include "oikumene/sim/vassal_treaty.hpp"
 #include "oikumene/sim/war.hpp"
 #include "oikumene/sim/war_campaign.hpp"
 #include "oikumene/sim/war_target.hpp"
@@ -48,6 +49,8 @@ class Simulation {
     [[nodiscard]] std::vector<WarCampaign>& Wars();
     [[nodiscard]] const std::vector<OccupationRecord>& Occupations() const;
     [[nodiscard]] std::vector<OccupationRecord>& Occupations();
+    [[nodiscard]] const std::vector<VassalTreaty>& VassalTreaties() const;
+    [[nodiscard]] std::vector<VassalTreaty>& VassalTreaties();
     [[nodiscard]] const EventLog& Events() const;
     [[nodiscard]] EventLog& Events();
     [[nodiscard]] std::string StatusSummary() const;
@@ -69,6 +72,7 @@ class Simulation {
     std::vector<WarTargetCandidate> war_target_candidates_;
     std::vector<WarCampaign> war_campaigns_;
     std::vector<OccupationRecord> occupations_;
+    std::vector<VassalTreaty> vassal_treaties_;
     EventLog event_log_;
 };
 

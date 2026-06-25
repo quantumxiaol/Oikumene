@@ -266,7 +266,14 @@ nlohmann::json PolityToJson(const oikumene::Polity& polity) {
         {"occupation_load", polity.occupation_load},
         {"occupation_unrest", polity.occupation_unrest},
         {"occupied_settlements", polity.occupied_settlements},
+        {"overlord_polity_id", polity.overlord_polity_id},
+        {"active_overlord_treaty_id", polity.active_overlord_treaty_id},
+        {"subject_treaty_ids", polity.subject_treaty_ids},
         {"vassal_count", polity.vassal_count},
+        {"vassal_tribute_income", polity.vassal_tribute_income},
+        {"vassal_tribute_paid", polity.vassal_tribute_paid},
+        {"vassal_liberty_desire", polity.vassal_liberty_desire},
+        {"overlord_protection", polity.overlord_protection},
     };
 }
 
@@ -343,6 +350,13 @@ nlohmann::json DiplomacyToJson(const oikumene::DiplomacyRelation& relation) {
         {"dependence_b_on_a", relation.dependence_b_on_a},
         {"dependent_polity_id", relation.dependent_polity_id},
         {"leverage_polity_id", relation.leverage_polity_id},
+        {"active_vassal_treaty_id", relation.active_vassal_treaty_id},
+        {"treaty_overlord_polity_id", relation.treaty_overlord_polity_id},
+        {"treaty_subject_polity_id", relation.treaty_subject_polity_id},
+        {"treaty_strength", relation.treaty_strength},
+        {"treaty_loyalty", relation.treaty_loyalty},
+        {"treaty_liberty_desire", relation.treaty_liberty_desire},
+        {"treaty_tribute_rate", relation.treaty_tribute_rate},
         {"friendship", relation.friendship},
         {"competition", relation.competition},
         {"blockade_tendency", relation.blockade_tendency},
@@ -476,6 +490,7 @@ nlohmann::json OccupationToJson(const oikumene::OccupationRecord& occupation) {
         {"occupier_polity_id", occupation.occupier_polity_id},
         {"previous_owner_polity_id", occupation.previous_owner_polity_id},
         {"subject_polity_id", occupation.subject_polity_id},
+        {"vassal_treaty_id", occupation.vassal_treaty_id},
         {"target_kind", oikumene::ToString(occupation.target_kind)},
         {"settlement_id", occupation.settlement_id},
         {"x", occupation.x},
@@ -494,6 +509,28 @@ nlohmann::json OccupationToJson(const oikumene::OccupationRecord& occupation) {
         {"revolt_risk", occupation.revolt_risk},
         {"border_stability_delta", occupation.border_stability_delta},
         {"outcome_reason", occupation.outcome_reason},
+    };
+}
+
+nlohmann::json VassalTreatyToJson(const oikumene::VassalTreaty& treaty) {
+    return nlohmann::json{
+        {"id", treaty.id},
+        {"source_occupation_id", treaty.source_occupation_id},
+        {"overlord_polity_id", treaty.overlord_polity_id},
+        {"subject_polity_id", treaty.subject_polity_id},
+        {"status", oikumene::ToString(treaty.status)},
+        {"started_turn", treaty.started_turn},
+        {"last_update_turn", treaty.last_update_turn},
+        {"ended_turn", treaty.ended_turn},
+        {"strength", treaty.strength},
+        {"autonomy", treaty.autonomy},
+        {"tribute_rate", treaty.tribute_rate},
+        {"protection", treaty.protection},
+        {"loyalty", treaty.loyalty},
+        {"liberty_desire", treaty.liberty_desire},
+        {"tribute_due", treaty.tribute_due},
+        {"military_obligation", treaty.military_obligation},
+        {"reason", treaty.reason},
     };
 }
 
@@ -928,6 +965,50 @@ float AverageActiveOccupationMaintenance(const oikumene::Simulation& sim) {
     return count <= 0 ? 0.0F : total / static_cast<float>(count);
 }
 
+int CountVassalTreatiesByStatus(const oikumene::Simulation& sim, oikumene::VassalTreatyStatus status) {
+    int count = 0;
+    for (const auto& treaty : sim.VassalTreaties()) {
+        count += treaty.status == status ? 1 : 0;
+    }
+    return count;
+}
+
+float AverageActiveVassalLoyalty(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    int count = 0;
+    for (const auto& treaty : sim.VassalTreaties()) {
+        if (treaty.status != oikumene::VassalTreatyStatus::Active) {
+            continue;
+        }
+        total += treaty.loyalty;
+        ++count;
+    }
+    return count <= 0 ? 0.0F : total / static_cast<float>(count);
+}
+
+float AverageActiveVassalLibertyDesire(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    int count = 0;
+    for (const auto& treaty : sim.VassalTreaties()) {
+        if (treaty.status != oikumene::VassalTreatyStatus::Active) {
+            continue;
+        }
+        total += treaty.liberty_desire;
+        ++count;
+    }
+    return count <= 0 ? 0.0F : total / static_cast<float>(count);
+}
+
+float TotalActiveVassalTributeDue(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    for (const auto& treaty : sim.VassalTreaties()) {
+        if (treaty.status == oikumene::VassalTreatyStatus::Active) {
+            total += treaty.tribute_due;
+        }
+    }
+    return total;
+}
+
 float TotalWarPopulationLost(const oikumene::Simulation& sim) {
     float total = 0.0F;
     for (const auto& campaign : sim.Wars()) {
@@ -1164,6 +1245,10 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
     for (const auto& occupation : sim.Occupations()) {
         occupations.push_back(OccupationToJson(occupation));
     }
+    nlohmann::json vassal_treaties = nlohmann::json::array();
+    for (const auto& treaty : sim.VassalTreaties()) {
+        vassal_treaties.push_back(VassalTreatyToJson(treaty));
+    }
 
     return nlohmann::json{
         {"turn", sim.CurrentTurn()},
@@ -1178,6 +1263,7 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
         {"war_targets", war_targets},
         {"wars", wars},
         {"occupations", occupations},
+        {"vassal_treaties", vassal_treaties},
         {"bands", bands},
         {"improved_tiles", ImprovedTilesToJson(sim)},
         {"route_tiles", RouteTilesToJson(sim)},
@@ -1260,6 +1346,12 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"withdrawn_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Withdrawn)},
         {"vassalized_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Vassalized)},
         {"revolted_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Revolted)},
+        {"vassal_treaties", sim.VassalTreaties().size()},
+        {"active_vassal_treaties", CountVassalTreatiesByStatus(sim, oikumene::VassalTreatyStatus::Active)},
+        {"broken_vassal_treaties", CountVassalTreatiesByStatus(sim, oikumene::VassalTreatyStatus::Broken)},
+        {"average_vassal_loyalty", AverageActiveVassalLoyalty(sim)},
+        {"average_vassal_liberty_desire", AverageActiveVassalLibertyDesire(sim)},
+        {"total_vassal_tribute_due", TotalActiveVassalTributeDue(sim)},
         {"average_active_occupation_unrest", AverageActiveOccupationUnrest(sim)},
         {"average_active_occupation_maintenance", AverageActiveOccupationMaintenance(sim)},
         {"war_population_lost", TotalWarPopulationLost(sim)},
@@ -1367,6 +1459,12 @@ nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
         {"withdrawn_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Withdrawn)},
         {"vassalized_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Vassalized)},
         {"revolted_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Revolted)},
+        {"vassal_treaties", sim.VassalTreaties().size()},
+        {"active_vassal_treaties", CountVassalTreatiesByStatus(sim, oikumene::VassalTreatyStatus::Active)},
+        {"broken_vassal_treaties", CountVassalTreatiesByStatus(sim, oikumene::VassalTreatyStatus::Broken)},
+        {"average_vassal_loyalty", AverageActiveVassalLoyalty(sim)},
+        {"average_vassal_liberty_desire", AverageActiveVassalLibertyDesire(sim)},
+        {"total_vassal_tribute_due", TotalActiveVassalTributeDue(sim)},
         {"average_active_occupation_unrest", AverageActiveOccupationUnrest(sim)},
         {"average_active_occupation_maintenance", AverageActiveOccupationMaintenance(sim)},
         {"war_population_lost", TotalWarPopulationLost(sim)},

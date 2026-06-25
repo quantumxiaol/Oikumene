@@ -23,6 +23,7 @@ struct OccupationRecord {
     PolityId occupier_polity_id = kInvalidPolityId;
     PolityId previous_owner_polity_id = kInvalidPolityId;
     PolityId subject_polity_id = kInvalidPolityId;
+    int vassal_treaty_id = -1;
     WarTargetKind target_kind = WarTargetKind::Settlement;
     int settlement_id = -1;
     int x = 0;

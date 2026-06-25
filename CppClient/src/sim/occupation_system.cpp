@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "oikumene/sim/diplomacy_system.hpp"
+#include "oikumene/sim/vassal_system.hpp"
 
 namespace oikumene {
 namespace {
@@ -300,7 +301,6 @@ void ResetPolityOccupationPressure(std::vector<Polity>& polities) {
         polity.occupation_load = 0.0F;
         polity.occupation_unrest = 0.0F;
         polity.occupied_settlements = 0;
-        polity.vassal_count = 0;
     }
 }
 
@@ -315,15 +315,14 @@ void ApplyOccupationPressure(std::vector<Polity>& polities, const std::vector<Oc
             occupier->occupation_load += occupation.maintenance_cost * (1.0F + occupation.unrest);
             occupier->occupation_unrest += occupation.unrest + occupation.border_stability_delta;
             occupier->occupied_settlements += occupation.settlement_id >= 0 ? 1 : 0;
-        } else if (occupation.status == OccupationStatus::Vassalized) {
-            ++occupier->vassal_count;
         }
     }
 }
 
 void ResolveOccupation(World& world, Turn turn, std::vector<Settlement>& settlements, std::vector<Polity>& polities,
                        OccupationRecord& occupation, OccupationStatus status, const std::string& reason,
-                       std::vector<DiplomacyRelation>& diplomacy_relations, EventLog& event_log) {
+                       std::vector<DiplomacyRelation>& diplomacy_relations, std::vector<VassalTreaty>& vassal_treaties,
+                       EventLog& event_log) {
     occupation.status = status;
     occupation.ended_turn = turn;
     occupation.last_update_turn = turn;
@@ -338,6 +337,9 @@ void ResolveOccupation(World& world, Turn turn, std::vector<Settlement>& settlem
                                         occupation.occupation_value);
     } else if (status == OccupationStatus::Vassalized) {
         occupation.subject_polity_id = occupation.previous_owner_polity_id;
+        occupation.vassal_treaty_id =
+            VassalSystem::CreateOrRefreshTreaty(vassal_treaties, turn, occupation.occupier_polity_id,
+                                                occupation.subject_polity_id, occupation.id, occupation.unrest);
         ReturnTarget(world, settlements, polities, occupation);
         type = EventType::VassalCreated;
         DiplomacySystem::RecordIncident(diplomacy_relations, turn, occupation.occupier_polity_id,
@@ -376,7 +378,7 @@ bool OccupierStillControlsTarget(const World& world, const std::vector<Settlemen
 
 void AdvanceOccupation(World& world, Turn turn, std::vector<Settlement>& settlements, std::vector<Polity>& polities,
                        OccupationRecord& occupation, std::vector<DiplomacyRelation>& diplomacy_relations,
-                       EventLog& event_log) {
+                       std::vector<VassalTreaty>& vassal_treaties, EventLog& event_log) {
     if (occupation.status != OccupationStatus::Active) {
         return;
     }
@@ -384,12 +386,12 @@ void AdvanceOccupation(World& world, Turn turn, std::vector<Settlement>& settlem
     auto* occupier = PolityById(polities, occupation.occupier_polity_id);
     if (occupier == nullptr) {
         ResolveOccupation(world, turn, settlements, polities, occupation, OccupationStatus::Withdrawn,
-                          "occupier polity disappeared", diplomacy_relations, event_log);
+                          "occupier polity disappeared", diplomacy_relations, vassal_treaties, event_log);
         return;
     }
     if (!OccupierStillControlsTarget(world, settlements, occupation)) {
         ResolveOccupation(world, turn, settlements, polities, occupation, OccupationStatus::Withdrawn,
-                          "occupier no longer controls target", diplomacy_relations, event_log);
+                          "occupier no longer controls target", diplomacy_relations, vassal_treaties, event_log);
         return;
     }
 
@@ -419,27 +421,27 @@ void AdvanceOccupation(World& world, Turn turn, std::vector<Settlement>& settlem
     if (occupation.turns_held >= kMinimumResolutionTurns && occupation.integration >= kCessionIntegrationThreshold &&
         occupation.revolt_risk < 0.45F) {
         ResolveOccupation(world, turn, settlements, polities, occupation, OccupationStatus::Ceded,
-                          "occupation integrated into occupier", diplomacy_relations, event_log);
+                          "occupation integrated into occupier", diplomacy_relations, vassal_treaties, event_log);
         return;
     }
     if (occupation.turns_held >= kMinimumResolutionTurns &&
         (occupation.revolt_risk >= kRevoltRiskThreshold || occupation.unrest > 1.02F)) {
         ResolveOccupation(world, turn, settlements, polities, occupation, OccupationStatus::Revolted,
-                          "occupation unrest became unmanageable", diplomacy_relations, event_log);
+                          "occupation unrest became unmanageable", diplomacy_relations, vassal_treaties, event_log);
         return;
     }
     if (occupation.turns_held >= kMinimumResolutionTurns &&
         (occupation.cumulative_shortfall > occupation.occupation_value * 2.4F + 1.0F ||
          (occupier->stability < 0.18F && occupation.unrest > 0.65F))) {
         ResolveOccupation(world, turn, settlements, polities, occupation, OccupationStatus::Withdrawn,
-                          "occupation maintenance became uneconomic", diplomacy_relations, event_log);
+                          "occupation maintenance became uneconomic", diplomacy_relations, vassal_treaties, event_log);
         return;
     }
     if (occupation.turns_held >= kVassalResolutionTurns && occupation.integration < 0.55F &&
         occupation.unrest >= 0.52F && occupation.unrest < kRevoltRiskThreshold &&
         PolityById(polities, occupation.previous_owner_polity_id) != nullptr) {
         ResolveOccupation(world, turn, settlements, polities, occupation, OccupationStatus::Vassalized,
-                          "occupation converted into vassal buffer", diplomacy_relations, event_log);
+                          "occupation converted into vassal buffer", diplomacy_relations, vassal_treaties, event_log);
     }
 }
 
@@ -453,10 +455,12 @@ void OccupationSystem::Reset(std::vector<OccupationRecord>& occupations, std::ve
 void OccupationSystem::UpdateOccupations(World& world, Turn turn, std::vector<Settlement>& settlements,
                                          std::vector<Polity>& polities, const std::vector<WarCampaign>& campaigns,
                                          std::vector<OccupationRecord>& occupations,
-                                         std::vector<DiplomacyRelation>& diplomacy_relations, EventLog& event_log) {
+                                         std::vector<DiplomacyRelation>& diplomacy_relations,
+                                         std::vector<VassalTreaty>& vassal_treaties, EventLog& event_log) {
     RegisterNewOccupations(turn, campaigns, polities, occupations);
     for (auto& occupation : occupations) {
-        AdvanceOccupation(world, turn, settlements, polities, occupation, diplomacy_relations, event_log);
+        AdvanceOccupation(world, turn, settlements, polities, occupation, diplomacy_relations, vassal_treaties,
+                          event_log);
     }
     ApplyOccupationPressure(polities, occupations);
 }

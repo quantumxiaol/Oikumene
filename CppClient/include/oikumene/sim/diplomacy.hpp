@@ -43,6 +43,13 @@ struct DiplomacyRelation {
     float dependence_b_on_a = 0.0F;
     PolityId dependent_polity_id = kInvalidPolityId;
     PolityId leverage_polity_id = kInvalidPolityId;
+    int active_vassal_treaty_id = -1;
+    PolityId treaty_overlord_polity_id = kInvalidPolityId;
+    PolityId treaty_subject_polity_id = kInvalidPolityId;
+    float treaty_strength = 0.0F;
+    float treaty_loyalty = 0.0F;
+    float treaty_liberty_desire = 0.0F;
+    float treaty_tribute_rate = 0.0F;
 
     float friendship = 0.0F;
     float competition = 0.0F;

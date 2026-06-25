@@ -65,17 +65,28 @@ float RestraintFromActorToTarget(const DiplomacyRelation& relation, PolityId act
 }
 
 float VassalageFromActorToTarget(const DiplomacyRelation& relation, PolityId actor_id) {
-    if (actor_id == relation.polity_a_id) {
-        return relation.vassalage_a_to_b;
+    const float memory_value = actor_id == relation.polity_a_id   ? relation.vassalage_a_to_b
+                               : actor_id == relation.polity_b_id ? relation.vassalage_b_to_a
+                                                                  : 0.0F;
+    if (actor_id == relation.treaty_subject_polity_id) {
+        return std::max(relation.treaty_strength, memory_value);
     }
-    if (actor_id == relation.polity_b_id) {
-        return relation.vassalage_b_to_a;
-    }
-    return 0.0F;
+    return memory_value;
+}
+
+bool ActorIsTreatySubject(const DiplomacyRelation& relation, PolityId actor_id) {
+    return relation.active_vassal_treaty_id >= 0 && relation.treaty_subject_polity_id == actor_id;
+}
+
+bool ActorIsTreatyOverlord(const DiplomacyRelation& relation, PolityId actor_id) {
+    return relation.active_vassal_treaty_id >= 0 && relation.treaty_overlord_polity_id == actor_id;
 }
 
 WarObjective ChooseObjective(const DiplomacyRelation& relation, PolityId actor_id, float trade_conflict_weight,
                              float border_pressure) {
+    if (ActorIsTreatySubject(relation, actor_id) && relation.treaty_liberty_desire >= 0.48F) {
+        return WarObjective::DependencyBreakout;
+    }
     if (VassalageFromActorToTarget(relation, actor_id) >= 0.45F && trade_conflict_weight >= 0.38F) {
         return WarObjective::DependencyBreakout;
     }
@@ -122,13 +133,20 @@ WarPressure BuildDirectedPressure(int id, const Polity& actor, const Polity& tar
     const float target_restraint = RestraintFromActorToTarget(relation, target.id);
     const float actor_vassalage = VassalageFromActorToTarget(relation, actor.id);
     const float target_vassalage = VassalageFromActorToTarget(relation, target.id);
+    const bool actor_is_treaty_subject = ActorIsTreatySubject(relation, actor.id);
+    const bool actor_is_treaty_overlord = ActorIsTreatyOverlord(relation, actor.id);
+    const float treaty_breakout_pressure =
+        actor_is_treaty_subject ? Clamp01(relation.treaty_liberty_desire * 0.82F + actor_grievance * 0.26F) : 0.0F;
+    const float overlord_restraint =
+        actor_is_treaty_overlord ? Clamp01(relation.treaty_loyalty * 0.52F + relation.treaty_strength * 0.34F) : 0.0F;
     pressure.grievance_pressure = Clamp01(actor_grievance * 0.76F + target_grievance * 0.20F);
     pressure.restraint_pressure =
-        Clamp01(actor_restraint * 0.70F + target_restraint * 0.16F + target_vassalage * 0.26F);
-    pressure.vassalage_pressure = Clamp01(actor_vassalage);
-    pressure.dependency_pressure = Clamp01(actor_dependence * (actor_is_dependent ? 0.72F : 0.24F) +
-                                           target_dependence * (actor_has_leverage ? 0.68F : 0.18F) +
-                                           actor_vassalage * 0.58F + target_vassalage * 0.16F);
+        Clamp01(actor_restraint * 0.70F + target_restraint * 0.16F + target_vassalage * 0.26F + overlord_restraint);
+    pressure.vassalage_pressure = Clamp01(actor_vassalage + treaty_breakout_pressure);
+    pressure.dependency_pressure =
+        Clamp01(actor_dependence * (actor_is_dependent ? 0.72F : 0.24F) +
+                target_dependence * (actor_has_leverage ? 0.68F : 0.18F) + actor_vassalage * 0.58F +
+                target_vassalage * 0.16F + treaty_breakout_pressure * 0.58F);
     pressure.blockade_pressure = Clamp01(relation.blockade_tendency * (actor_has_leverage   ? 1.00F
                                                                        : actor_is_dependent ? 0.78F
                                                                                             : 0.55F));
@@ -136,7 +154,7 @@ WarPressure BuildDirectedPressure(int id, const Polity& actor, const Polity& tar
     pressure.trade_conflict_weight =
         Clamp01(pressure.blockade_pressure * 0.48F + pressure.dependency_pressure * 0.38F + route_fragility * 0.22F +
                 relation.competition * 0.18F + pressure.grievance_pressure * 0.26F -
-                pressure.restraint_pressure * 0.32F - relation.friendship * 0.18F);
+                pressure.restraint_pressure * 0.32F - relation.friendship * 0.18F + treaty_breakout_pressure * 0.22F);
     pressure.friendly_penalty = Clamp01(relation.friendship * (relation.has_active_trade ? 0.88F : 0.62F) +
                                         pressure.restraint_pressure * 0.72F);
     pressure.objective = ChooseObjective(relation, actor.id, pressure.trade_conflict_weight, pressure.border_pressure);
@@ -146,17 +164,18 @@ WarPressure BuildDirectedPressure(int id, const Polity& actor, const Polity& tar
                                                                                            : 0.0F;
     pressure.target_value = Clamp01(pressure.border_pressure * 0.42F + pressure.trade_conflict_weight * 0.58F +
                                     relation.competition * 0.20F + pressure.grievance_pressure * 0.17F +
-                                    actor_vassalage * 0.14F + objective_bonus);
+                                    actor_vassalage * 0.14F + treaty_breakout_pressure * 0.16F + objective_bonus);
     const float defender_strength =
         Clamp01(SafeRatio(target.military_potential, actor.military_potential + target.military_potential + 8.0F));
     pressure.campaign_cost = 0.42F + defender_strength * 0.72F + target.stability * 0.22F +
                              pressure.friendly_penalty * 0.62F + pressure.restraint_pressure * 0.36F +
-                             target_vassalage * 0.18F;
+                             target_vassalage * 0.18F + (actor_is_treaty_overlord ? 0.28F : 0.0F);
     pressure.base_roi = pressure.target_value / std::max(0.10F, pressure.campaign_cost);
     pressure.diplomatic_modifier = std::clamp(
         1.0F + relation.competition * 0.24F + pressure.blockade_pressure * 0.34F +
             pressure.dependency_pressure * 0.26F + pressure.grievance_pressure * 0.30F + actor_vassalage * 0.20F -
-            pressure.friendly_penalty * 0.74F - pressure.restraint_pressure * 0.50F - target_vassalage * 0.24F,
+            pressure.friendly_penalty * 0.74F - pressure.restraint_pressure * 0.50F - target_vassalage * 0.24F +
+            treaty_breakout_pressure * 0.18F - (actor_is_treaty_overlord ? 0.42F : 0.0F),
         0.12F, 1.75F);
     pressure.war_roi = pressure.base_roi * (0.34F + pressure.military_advantage * 0.92F) * pressure.diplomatic_modifier;
     pressure.declaration_pressure = Clamp01(pressure.war_roi / 0.82F);

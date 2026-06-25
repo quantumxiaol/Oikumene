@@ -77,7 +77,14 @@ struct Polity {
     float occupation_load = 0.0F;
     float occupation_unrest = 0.0F;
     int occupied_settlements = 0;
+    PolityId overlord_polity_id = kInvalidPolityId;
+    int active_overlord_treaty_id = -1;
+    std::vector<int> subject_treaty_ids;
     int vassal_count = 0;
+    float vassal_tribute_income = 0.0F;
+    float vassal_tribute_paid = 0.0F;
+    float vassal_liberty_desire = 0.0F;
+    float overlord_protection = 0.0F;
     std::uint32_t debug_color_index = 0;
     int controlled_tile_count = 0;
     int contested_tile_count = 0;

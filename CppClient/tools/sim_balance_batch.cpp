@@ -82,6 +82,9 @@ struct Metrics {
     int withdrawn_occupations = 0;
     int vassalized_occupations = 0;
     int revolted_occupations = 0;
+    int vassal_treaties = 0;
+    int active_vassal_treaties = 0;
+    int broken_vassal_treaties = 0;
     int route_tiles = 0;
     int road_tiles = 0;
     int trail_tiles = 0;
@@ -161,6 +164,9 @@ struct Metrics {
     float average_war_progress = 0.0F;
     float average_active_occupation_unrest = 0.0F;
     float average_active_occupation_maintenance = 0.0F;
+    float average_vassal_loyalty = 0.0F;
+    float average_vassal_liberty_desire = 0.0F;
+    float total_vassal_tribute_due = 0.0F;
     float average_occupation_load = 0.0F;
     float average_occupation_unrest = 0.0F;
 };
@@ -657,6 +663,24 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         metrics.active_occupations <= 0
             ? 0.0F
             : active_occupation_maintenance_sum / static_cast<float>(metrics.active_occupations);
+    metrics.vassal_treaties = static_cast<int>(sim.VassalTreaties().size());
+    float vassal_loyalty_sum = 0.0F;
+    float vassal_liberty_sum = 0.0F;
+    for (const auto& treaty : sim.VassalTreaties()) {
+        metrics.active_vassal_treaties += treaty.status == oikumene::VassalTreatyStatus::Active ? 1 : 0;
+        metrics.broken_vassal_treaties += treaty.status == oikumene::VassalTreatyStatus::Broken ? 1 : 0;
+        if (treaty.status == oikumene::VassalTreatyStatus::Active) {
+            vassal_loyalty_sum += treaty.loyalty;
+            vassal_liberty_sum += treaty.liberty_desire;
+            metrics.total_vassal_tribute_due += treaty.tribute_due;
+        }
+    }
+    metrics.average_vassal_loyalty = metrics.active_vassal_treaties <= 0
+                                         ? 0.0F
+                                         : vassal_loyalty_sum / static_cast<float>(metrics.active_vassal_treaties);
+    metrics.average_vassal_liberty_desire =
+        metrics.active_vassal_treaties <= 0 ? 0.0F
+                                            : vassal_liberty_sum / static_cast<float>(metrics.active_vassal_treaties);
     metrics.food_output_consumption_ratio = metrics.total_food_output / std::max(1.0F, metrics.total_food_consumption);
     metrics.farm_share_of_worked_tiles =
         metrics.worked_tiles <= 0 ? 0.0F : static_cast<float>(metrics.farms) / static_cast<float>(metrics.worked_tiles);
@@ -784,6 +808,12 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"withdrawn_occupations", metrics.withdrawn_occupations},
         {"vassalized_occupations", metrics.vassalized_occupations},
         {"revolted_occupations", metrics.revolted_occupations},
+        {"vassal_treaties", metrics.vassal_treaties},
+        {"active_vassal_treaties", metrics.active_vassal_treaties},
+        {"broken_vassal_treaties", metrics.broken_vassal_treaties},
+        {"average_vassal_loyalty", metrics.average_vassal_loyalty},
+        {"average_vassal_liberty_desire", metrics.average_vassal_liberty_desire},
+        {"total_vassal_tribute_due", metrics.total_vassal_tribute_due},
         {"average_active_occupation_unrest", metrics.average_active_occupation_unrest},
         {"average_active_occupation_maintenance", metrics.average_active_occupation_maintenance},
         {"war_population_lost", metrics.war_population_lost},
@@ -835,7 +865,9 @@ void WriteCsvHeader(std::ofstream& output) {
            "average_war_target_value,average_campaign_cost,average_occupation_cost,"
            "war_campaigns,active_wars,occupied_wars,withdrawn_wars,peace_wars,"
            "occupations,active_occupations,ceded_occupations,withdrawn_occupations,vassalized_occupations,"
-           "revolted_occupations,average_active_occupation_unrest,average_active_occupation_maintenance,"
+           "revolted_occupations,vassal_treaties,active_vassal_treaties,broken_vassal_treaties,"
+           "average_vassal_loyalty,average_vassal_liberty_desire,total_vassal_tribute_due,"
+           "average_active_occupation_unrest,average_active_occupation_maintenance,"
            "war_population_lost,war_food_spent,war_equipment_spent,average_war_progress,"
            "war_declared_events,war_occupied_events,war_retreat_events,peace_events,"
            "territory_ceded_events,occupation_withdrawn_events,vassal_created_events,occupation_revolt_events\n";
@@ -893,12 +925,14 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.occupied_wars << ',' << metrics.withdrawn_wars << ',' << metrics.peace_wars << ','
            << metrics.occupations << ',' << metrics.active_occupations << ',' << metrics.ceded_occupations << ','
            << metrics.withdrawn_occupations << ',' << metrics.vassalized_occupations << ','
-           << metrics.revolted_occupations << ',' << metrics.average_active_occupation_unrest << ','
-           << metrics.average_active_occupation_maintenance << ',' << metrics.war_population_lost << ','
-           << metrics.war_food_spent << ',' << metrics.war_equipment_spent << ',' << metrics.average_war_progress << ','
-           << metrics.war_declared_events << ',' << metrics.war_occupied_events << ',' << metrics.war_retreat_events
-           << ',' << metrics.peace_events << ',' << metrics.territory_ceded_events << ','
-           << metrics.occupation_withdrawn_events << ',' << metrics.vassal_created_events << ','
+           << metrics.revolted_occupations << ',' << metrics.vassal_treaties << ',' << metrics.active_vassal_treaties
+           << ',' << metrics.broken_vassal_treaties << ',' << metrics.average_vassal_loyalty << ','
+           << metrics.average_vassal_liberty_desire << ',' << metrics.total_vassal_tribute_due << ','
+           << metrics.average_active_occupation_unrest << ',' << metrics.average_active_occupation_maintenance << ','
+           << metrics.war_population_lost << ',' << metrics.war_food_spent << ',' << metrics.war_equipment_spent << ','
+           << metrics.average_war_progress << ',' << metrics.war_declared_events << ',' << metrics.war_occupied_events
+           << ',' << metrics.war_retreat_events << ',' << metrics.peace_events << ',' << metrics.territory_ceded_events
+           << ',' << metrics.occupation_withdrawn_events << ',' << metrics.vassal_created_events << ','
            << metrics.occupation_revolt_events << '\n';
 }
 
@@ -1042,6 +1076,12 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_withdrawn_occupations", mean([](const Metrics& item) { return item.withdrawn_occupations; })},
         {"mean_vassalized_occupations", mean([](const Metrics& item) { return item.vassalized_occupations; })},
         {"mean_revolted_occupations", mean([](const Metrics& item) { return item.revolted_occupations; })},
+        {"mean_vassal_treaties", mean([](const Metrics& item) { return item.vassal_treaties; })},
+        {"mean_active_vassal_treaties", mean([](const Metrics& item) { return item.active_vassal_treaties; })},
+        {"mean_broken_vassal_treaties", mean([](const Metrics& item) { return item.broken_vassal_treaties; })},
+        {"mean_vassal_loyalty", mean([](const Metrics& item) { return item.average_vassal_loyalty; })},
+        {"mean_vassal_liberty_desire", mean([](const Metrics& item) { return item.average_vassal_liberty_desire; })},
+        {"mean_vassal_tribute_due", mean([](const Metrics& item) { return item.total_vassal_tribute_due; })},
         {"mean_active_occupation_unrest",
          mean([](const Metrics& item) { return item.average_active_occupation_unrest; })},
         {"mean_active_occupation_maintenance",

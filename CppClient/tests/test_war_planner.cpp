@@ -165,6 +165,34 @@ void TestVassalageCreatesDependencyBreakoutPressure() {
     assert(pressure->dependency_pressure > 0.80F);
 }
 
+void TestExplicitTreatySubjectGetsBreakoutPressure() {
+    std::vector<oikumene::Polity> polities{MakeWarPolity(0, 30.0F), MakeWarPolity(1, 26.0F)};
+    auto relation = MakeRelation();
+    relation.friendship = 0.22F;
+    relation.competition = 0.18F;
+    relation.border_tension = 0.12F;
+    relation.active_vassal_treaty_id = 5;
+    relation.treaty_overlord_polity_id = 0;
+    relation.treaty_subject_polity_id = 1;
+    relation.treaty_strength = 0.70F;
+    relation.treaty_loyalty = 0.36F;
+    relation.treaty_liberty_desire = 0.76F;
+    relation.dependence_b_on_a = 0.82F;
+    relation.dependent_polity_id = 1;
+    relation.leverage_polity_id = 0;
+
+    const auto pressures = oikumene::BuildWarPressures(polities, {relation});
+    const auto* subject_pressure = PressureFor(pressures, 1, 0);
+    const auto* overlord_pressure = PressureFor(pressures, 0, 1);
+
+    assert(subject_pressure != nullptr);
+    assert(overlord_pressure != nullptr);
+    assert(subject_pressure->objective == oikumene::WarObjective::DependencyBreakout);
+    assert(subject_pressure->vassalage_pressure > 0.70F);
+    assert(subject_pressure->declaration_pressure > overlord_pressure->declaration_pressure);
+    assert(overlord_pressure->restraint_pressure > 0.55F);
+}
+
 } // namespace
 
 int main() {
@@ -173,6 +201,7 @@ int main() {
     TestDependentPolityGetsBreakoutPressure();
     TestGrievanceRaisesAndRestraintSuppressesWarPressure();
     TestVassalageCreatesDependencyBreakoutPressure();
+    TestExplicitTreatySubjectGetsBreakoutPressure();
     std::cout << "war planner tests passed\n";
     return 0;
 }
