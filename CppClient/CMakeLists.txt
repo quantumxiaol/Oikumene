@@ -45,7 +45,10 @@ add_library(oikumene_core STATIC
     src/app/simulation_controller.cpp
     src/ai/heuristic_decision_provider.cpp
     src/ai/remote_decision_provider.cpp
+    src/ai/strategic_report_actions.cpp
     src/ai/strategic_report.cpp
+    src/ai/strategic_report_helpers.cpp
+    src/ai/strategic_report_summary.cpp
     src/core/simulation.cpp
     src/io/simulation_json.cpp
     src/io/simulation_snapshot_json.cpp
