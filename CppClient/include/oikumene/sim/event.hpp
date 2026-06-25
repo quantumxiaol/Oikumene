@@ -31,6 +31,10 @@ enum class EventType {
     WarTargetOccupied,
     WarRetreated,
     PeaceSigned,
+    TerritoryCeded,
+    OccupationWithdrawn,
+    VassalCreated,
+    OccupationRevolt,
 };
 
 [[nodiscard]] std::string ToString(EventType type);

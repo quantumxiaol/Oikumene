@@ -56,6 +56,10 @@ struct Metrics {
     int war_occupied_events = 0;
     int war_retreat_events = 0;
     int peace_events = 0;
+    int territory_ceded_events = 0;
+    int occupation_withdrawn_events = 0;
+    int vassal_created_events = 0;
+    int occupation_revolt_events = 0;
     int routes = 0;
     int active_trades = 0;
     int diplomacy_relations = 0;
@@ -72,6 +76,12 @@ struct Metrics {
     int occupied_wars = 0;
     int withdrawn_wars = 0;
     int peace_wars = 0;
+    int occupations = 0;
+    int active_occupations = 0;
+    int ceded_occupations = 0;
+    int withdrawn_occupations = 0;
+    int vassalized_occupations = 0;
+    int revolted_occupations = 0;
     int route_tiles = 0;
     int road_tiles = 0;
     int trail_tiles = 0;
@@ -143,6 +153,10 @@ struct Metrics {
     float war_food_spent = 0.0F;
     float war_equipment_spent = 0.0F;
     float average_war_progress = 0.0F;
+    float average_active_occupation_unrest = 0.0F;
+    float average_active_occupation_maintenance = 0.0F;
+    float average_occupation_load = 0.0F;
+    float average_occupation_unrest = 0.0F;
 };
 
 void PrintUsage() {
@@ -334,6 +348,8 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     float admin_capacity_sum = 0.0F;
     float overextension_sum = 0.0F;
     float stability_sum = 0.0F;
+    float occupation_load_sum = 0.0F;
+    float occupation_unrest_sum = 0.0F;
     float control_maintenance_sum = 0.0F;
     float unlocked_tech_sum = 0.0F;
     float knowledge_income_sum = 0.0F;
@@ -369,6 +385,8 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         admin_capacity_sum += polity.admin_capacity;
         overextension_sum += polity.overextension;
         stability_sum += polity.stability;
+        occupation_load_sum += polity.occupation_load;
+        occupation_unrest_sum += polity.occupation_unrest;
         control_maintenance_sum += polity.budget.control_maintenance;
         unlocked_tech_sum += static_cast<float>(polity.research.unlocked.size());
         knowledge_income_sum += polity.knowledge_income;
@@ -418,6 +436,10 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     metrics.average_overextension =
         metrics.polities <= 0 ? 0.0F : overextension_sum / static_cast<float>(metrics.polities);
     metrics.average_stability = metrics.polities <= 0 ? 0.0F : stability_sum / static_cast<float>(metrics.polities);
+    metrics.average_occupation_load =
+        metrics.polities <= 0 ? 0.0F : occupation_load_sum / static_cast<float>(metrics.polities);
+    metrics.average_occupation_unrest =
+        metrics.polities <= 0 ? 0.0F : occupation_unrest_sum / static_cast<float>(metrics.polities);
     metrics.average_control_maintenance =
         metrics.polities <= 0 ? 0.0F : control_maintenance_sum / static_cast<float>(metrics.polities);
     metrics.average_unlocked_techs =
@@ -472,6 +494,10 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     metrics.war_occupied_events = CountEvents(sim, oikumene::EventType::WarTargetOccupied);
     metrics.war_retreat_events = CountEvents(sim, oikumene::EventType::WarRetreated);
     metrics.peace_events = CountEvents(sim, oikumene::EventType::PeaceSigned);
+    metrics.territory_ceded_events = CountEvents(sim, oikumene::EventType::TerritoryCeded);
+    metrics.occupation_withdrawn_events = CountEvents(sim, oikumene::EventType::OccupationWithdrawn);
+    metrics.vassal_created_events = CountEvents(sim, oikumene::EventType::VassalCreated);
+    metrics.occupation_revolt_events = CountEvents(sim, oikumene::EventType::OccupationRevolt);
     metrics.routes = static_cast<int>(sim.Routes().size());
     float trade_profit_sum = 0.0F;
     float trade_complementarity_sum = 0.0F;
@@ -580,6 +606,27 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     }
     metrics.average_war_progress =
         metrics.war_campaigns <= 0 ? 0.0F : war_progress_sum / static_cast<float>(metrics.war_campaigns);
+    metrics.occupations = static_cast<int>(sim.Occupations().size());
+    float active_occupation_unrest_sum = 0.0F;
+    float active_occupation_maintenance_sum = 0.0F;
+    for (const auto& occupation : sim.Occupations()) {
+        metrics.active_occupations += occupation.status == oikumene::OccupationStatus::Active ? 1 : 0;
+        metrics.ceded_occupations += occupation.status == oikumene::OccupationStatus::Ceded ? 1 : 0;
+        metrics.withdrawn_occupations += occupation.status == oikumene::OccupationStatus::Withdrawn ? 1 : 0;
+        metrics.vassalized_occupations += occupation.status == oikumene::OccupationStatus::Vassalized ? 1 : 0;
+        metrics.revolted_occupations += occupation.status == oikumene::OccupationStatus::Revolted ? 1 : 0;
+        if (occupation.status == oikumene::OccupationStatus::Active) {
+            active_occupation_unrest_sum += occupation.unrest;
+            active_occupation_maintenance_sum += occupation.maintenance_cost;
+        }
+    }
+    metrics.average_active_occupation_unrest =
+        metrics.active_occupations <= 0 ? 0.0F
+                                        : active_occupation_unrest_sum / static_cast<float>(metrics.active_occupations);
+    metrics.average_active_occupation_maintenance =
+        metrics.active_occupations <= 0
+            ? 0.0F
+            : active_occupation_maintenance_sum / static_cast<float>(metrics.active_occupations);
     metrics.food_output_consumption_ratio = metrics.total_food_output / std::max(1.0F, metrics.total_food_consumption);
     metrics.farm_share_of_worked_tiles =
         metrics.worked_tiles <= 0 ? 0.0F : static_cast<float>(metrics.farms) / static_cast<float>(metrics.worked_tiles);
@@ -614,6 +661,8 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"average_admin_capacity", metrics.average_admin_capacity},
         {"average_overextension", metrics.average_overextension},
         {"average_stability", metrics.average_stability},
+        {"average_occupation_load", metrics.average_occupation_load},
+        {"average_occupation_unrest", metrics.average_occupation_unrest},
         {"average_control_maintenance", metrics.average_control_maintenance},
         {"average_unlocked_techs", metrics.average_unlocked_techs},
         {"average_knowledge_income", metrics.average_knowledge_income},
@@ -693,6 +742,14 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"occupied_wars", metrics.occupied_wars},
         {"withdrawn_wars", metrics.withdrawn_wars},
         {"peace_wars", metrics.peace_wars},
+        {"occupations", metrics.occupations},
+        {"active_occupations", metrics.active_occupations},
+        {"ceded_occupations", metrics.ceded_occupations},
+        {"withdrawn_occupations", metrics.withdrawn_occupations},
+        {"vassalized_occupations", metrics.vassalized_occupations},
+        {"revolted_occupations", metrics.revolted_occupations},
+        {"average_active_occupation_unrest", metrics.average_active_occupation_unrest},
+        {"average_active_occupation_maintenance", metrics.average_active_occupation_maintenance},
         {"war_population_lost", metrics.war_population_lost},
         {"war_food_spent", metrics.war_food_spent},
         {"war_equipment_spent", metrics.war_equipment_spent},
@@ -701,6 +758,10 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"war_occupied_events", metrics.war_occupied_events},
         {"war_retreat_events", metrics.war_retreat_events},
         {"peace_events", metrics.peace_events},
+        {"territory_ceded_events", metrics.territory_ceded_events},
+        {"occupation_withdrawn_events", metrics.occupation_withdrawn_events},
+        {"vassal_created_events", metrics.vassal_created_events},
+        {"occupation_revolt_events", metrics.occupation_revolt_events},
     };
 }
 
@@ -712,6 +773,7 @@ void WriteCsvHeader(std::ofstream& output) {
            "average_member_settlements_per_polity,polity_formation_turn_mean,"
            "average_polity_food_income,average_polity_wood_income,average_polity_wealth_income,"
            "average_admin_load,average_admin_capacity,average_overextension,average_stability,"
+           "average_occupation_load,average_occupation_unrest,"
            "average_control_maintenance,average_unlocked_techs,average_knowledge_income,first_tech_turn_mean,"
            "pottery_unlock_rate,irrigation_unlock_rate,animal_husbandry_unlock_rate,mining_unlock_rate,"
            "roads_unlock_rate,administration_unlock_rate,bronze_working_unlock_rate,fortification_unlock_rate,"
@@ -734,8 +796,11 @@ void WriteCsvHeader(std::ofstream& output) {
            "average_blockade_pressure,average_dependency_pressure,average_war_target_roi,max_war_target_score,"
            "average_war_target_value,average_campaign_cost,average_occupation_cost,"
            "war_campaigns,active_wars,occupied_wars,withdrawn_wars,peace_wars,"
+           "occupations,active_occupations,ceded_occupations,withdrawn_occupations,vassalized_occupations,"
+           "revolted_occupations,average_active_occupation_unrest,average_active_occupation_maintenance,"
            "war_population_lost,war_food_spent,war_equipment_spent,average_war_progress,"
-           "war_declared_events,war_occupied_events,war_retreat_events,peace_events\n";
+           "war_declared_events,war_occupied_events,war_retreat_events,peace_events,"
+           "territory_ceded_events,occupation_withdrawn_events,vassal_created_events,occupation_revolt_events\n";
 }
 
 void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
@@ -749,6 +814,7 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.average_polity_wood_income << ',' << metrics.average_polity_wealth_income << ','
            << metrics.average_admin_load << ',' << metrics.average_admin_capacity << ','
            << metrics.average_overextension << ',' << metrics.average_stability << ','
+           << metrics.average_occupation_load << ',' << metrics.average_occupation_unrest << ','
            << metrics.average_control_maintenance << ',' << metrics.average_unlocked_techs << ','
            << metrics.average_knowledge_income << ',' << metrics.first_tech_turn_mean << ','
            << metrics.pottery_unlock_rate << ',' << metrics.irrigation_unlock_rate << ','
@@ -783,10 +849,15 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.max_war_target_score << ',' << metrics.average_war_target_value << ','
            << metrics.average_campaign_cost << ',' << metrics.average_occupation_cost << ',' << metrics.war_campaigns
            << ',' << metrics.active_wars << ',' << metrics.occupied_wars << ',' << metrics.withdrawn_wars << ','
-           << metrics.peace_wars << ',' << metrics.war_population_lost << ',' << metrics.war_food_spent << ','
-           << metrics.war_equipment_spent << ',' << metrics.average_war_progress << ',' << metrics.war_declared_events
-           << ',' << metrics.war_occupied_events << ',' << metrics.war_retreat_events << ',' << metrics.peace_events
-           << '\n';
+           << metrics.peace_wars << ',' << metrics.occupations << ',' << metrics.active_occupations << ','
+           << metrics.ceded_occupations << ',' << metrics.withdrawn_occupations << ',' << metrics.vassalized_occupations
+           << ',' << metrics.revolted_occupations << ',' << metrics.average_active_occupation_unrest << ','
+           << metrics.average_active_occupation_maintenance << ',' << metrics.war_population_lost << ','
+           << metrics.war_food_spent << ',' << metrics.war_equipment_spent << ',' << metrics.average_war_progress << ','
+           << metrics.war_declared_events << ',' << metrics.war_occupied_events << ',' << metrics.war_retreat_events
+           << ',' << metrics.peace_events << ',' << metrics.territory_ceded_events << ','
+           << metrics.occupation_withdrawn_events << ',' << metrics.vassal_created_events << ','
+           << metrics.occupation_revolt_events << '\n';
 }
 
 nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
@@ -845,6 +916,8 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_admin_capacity", mean([](const Metrics& item) { return item.average_admin_capacity; })},
         {"mean_overextension", mean([](const Metrics& item) { return item.average_overextension; })},
         {"mean_stability", mean([](const Metrics& item) { return item.average_stability; })},
+        {"mean_occupation_load", mean([](const Metrics& item) { return item.average_occupation_load; })},
+        {"mean_occupation_unrest", mean([](const Metrics& item) { return item.average_occupation_unrest; })},
         {"mean_control_maintenance", mean([](const Metrics& item) { return item.average_control_maintenance; })},
         {"mean_unlocked_techs", mean([](const Metrics& item) { return item.average_unlocked_techs; })},
         {"mean_knowledge_income", mean([](const Metrics& item) { return item.average_knowledge_income; })},
@@ -915,6 +988,16 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_occupied_wars", mean([](const Metrics& item) { return item.occupied_wars; })},
         {"mean_withdrawn_wars", mean([](const Metrics& item) { return item.withdrawn_wars; })},
         {"mean_peace_wars", mean([](const Metrics& item) { return item.peace_wars; })},
+        {"mean_occupations", mean([](const Metrics& item) { return item.occupations; })},
+        {"mean_active_occupations", mean([](const Metrics& item) { return item.active_occupations; })},
+        {"mean_ceded_occupations", mean([](const Metrics& item) { return item.ceded_occupations; })},
+        {"mean_withdrawn_occupations", mean([](const Metrics& item) { return item.withdrawn_occupations; })},
+        {"mean_vassalized_occupations", mean([](const Metrics& item) { return item.vassalized_occupations; })},
+        {"mean_revolted_occupations", mean([](const Metrics& item) { return item.revolted_occupations; })},
+        {"mean_active_occupation_unrest",
+         mean([](const Metrics& item) { return item.average_active_occupation_unrest; })},
+        {"mean_active_occupation_maintenance",
+         mean([](const Metrics& item) { return item.average_active_occupation_maintenance; })},
         {"mean_war_population_lost", mean([](const Metrics& item) { return item.war_population_lost; })},
         {"mean_war_food_spent", mean([](const Metrics& item) { return item.war_food_spent; })},
         {"mean_war_equipment_spent", mean([](const Metrics& item) { return item.war_equipment_spent; })},
@@ -936,6 +1019,11 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_war_occupied_events", mean([](const Metrics& item) { return item.war_occupied_events; })},
         {"mean_war_retreat_events", mean([](const Metrics& item) { return item.war_retreat_events; })},
         {"mean_peace_events", mean([](const Metrics& item) { return item.peace_events; })},
+        {"mean_territory_ceded_events", mean([](const Metrics& item) { return item.territory_ceded_events; })},
+        {"mean_occupation_withdrawn_events",
+         mean([](const Metrics& item) { return item.occupation_withdrawn_events; })},
+        {"mean_vassal_created_events", mean([](const Metrics& item) { return item.vassal_created_events; })},
+        {"mean_occupation_revolt_events", mean([](const Metrics& item) { return item.occupation_revolt_events; })},
     };
 }
 

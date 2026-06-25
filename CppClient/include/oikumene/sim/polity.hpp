@@ -74,6 +74,10 @@ struct Polity {
     float trade_complementarity = 0.0F;
     float trade_route_cost = 0.0F;
     float trade_route_efficiency = 0.0F;
+    float occupation_load = 0.0F;
+    float occupation_unrest = 0.0F;
+    int occupied_settlements = 0;
+    int vassal_count = 0;
     std::uint32_t debug_color_index = 0;
     int controlled_tile_count = 0;
     int contested_tile_count = 0;

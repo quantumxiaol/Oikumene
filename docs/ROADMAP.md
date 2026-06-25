@@ -104,9 +104,13 @@
 
 ## Phase 5.6: Occupation and Settlement Aftermath
 
-- Let occupation profit or maintenance feed back into border stability.
-- Add treaties, cession, withdrawal, vassalization, and frontier revolt events.
-- Calibrate war frequency across seeds and map geographies.
+- Convert successful `WarCampaign` occupations into persistent `OccupationRecord` records.
+- Consume food, wood, and wealth every turn while an occupation is active.
+- Track maintenance shortfall, unrest, integration, revolt risk, and border stability pressure.
+- Resolve occupations into cession, withdrawal, vassal buffer, or frontier revolt events.
+- Feed active occupation load and unrest back into polity administration, stability, and control power.
+- Export occupation records, outcome counts, maintenance, and unrest metrics to headless JSON/CSV and selected-polity UI details.
+- Calibrate occupation outcome frequency across seeds and map geographies.
 
 ## Phase 6: Remote Strategic AI
 

@@ -52,6 +52,14 @@ std::string ToString(EventType type) {
         return "WarRetreated";
     case EventType::PeaceSigned:
         return "PeaceSigned";
+    case EventType::TerritoryCeded:
+        return "TerritoryCeded";
+    case EventType::OccupationWithdrawn:
+        return "OccupationWithdrawn";
+    case EventType::VassalCreated:
+        return "VassalCreated";
+    case EventType::OccupationRevolt:
+        return "OccupationRevolt";
     }
     return "Unknown";
 }

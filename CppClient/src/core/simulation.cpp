@@ -4,6 +4,7 @@
 
 #include "oikumene/sim/band_system.hpp"
 #include "oikumene/sim/diplomacy_system.hpp"
+#include "oikumene/sim/occupation_system.hpp"
 #include "oikumene/sim/polity_system.hpp"
 #include "oikumene/sim/route_system.hpp"
 #include "oikumene/sim/settlement_system.hpp"
@@ -110,6 +111,14 @@ std::vector<WarCampaign>& Simulation::Wars() {
     return war_campaigns_;
 }
 
+const std::vector<OccupationRecord>& Simulation::Occupations() const {
+    return occupations_;
+}
+
+std::vector<OccupationRecord>& Simulation::Occupations() {
+    return occupations_;
+}
+
 const EventLog& Simulation::Events() const {
     return event_log_;
 }
@@ -132,9 +141,13 @@ std::string Simulation::StatusSummary() const {
     for (const auto& campaign : war_campaigns_) {
         active_wars += campaign.status == WarCampaignStatus::Active ? 1 : 0;
     }
+    int active_occupations = 0;
+    for (const auto& occupation : occupations_) {
+        active_occupations += occupation.status == OccupationStatus::Active ? 1 : 0;
+    }
     stream << "Turn " << current_turn_ << " bands " << active_bands << "/" << bands_.size() << " settlements "
            << settlements_.size() << " villages " << villages << " polities " << polities_.size() << " wars "
-           << active_wars;
+           << active_wars << " occ " << active_occupations;
     return stream.str();
 }
 
@@ -146,11 +159,13 @@ void Simulation::InitializeBands(int count) {
     war_pressures_.clear();
     war_target_candidates_.clear();
     war_campaigns_.clear();
+    occupations_.clear();
     PolitySystem::Reset(world_, settlements_, polities_);
     RouteSystem::Reset(world_, routes_, polities_);
     TradeSystem::Reset(trades_, polities_);
     DiplomacySystem::Reset(diplomacy_relations_);
     WarSystem::Reset(war_campaigns_);
+    OccupationSystem::Reset(occupations_, polities_);
     event_log_.Events().clear();
     current_turn_ = 0;
     BandSystem::InitializeBands(world_, params_, count, bands_);
@@ -173,6 +188,8 @@ void Simulation::AdvanceOneTurn() {
     }
     WarSystem::UpdateWars(world_, current_turn_, settlements_, polities_, trades_, war_target_candidates_,
                           war_campaigns_, event_log_);
+    OccupationSystem::UpdateOccupations(world_, current_turn_, settlements_, polities_, war_campaigns_, occupations_,
+                                        event_log_);
     ++current_turn_;
 }
 

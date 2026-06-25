@@ -263,6 +263,10 @@ nlohmann::json PolityToJson(const oikumene::Polity& polity) {
         {"trade_complementarity", polity.trade_complementarity},
         {"trade_route_cost", polity.trade_route_cost},
         {"trade_route_efficiency", polity.trade_route_efficiency},
+        {"occupation_load", polity.occupation_load},
+        {"occupation_unrest", polity.occupation_unrest},
+        {"occupied_settlements", polity.occupied_settlements},
+        {"vassal_count", polity.vassal_count},
     };
 }
 
@@ -449,6 +453,34 @@ nlohmann::json WarCampaignToJson(const oikumene::WarCampaign& campaign) {
         {"occupation_profit", campaign.occupation_profit},
         {"supply_failures", campaign.supply_failures},
         {"outcome_reason", campaign.outcome_reason},
+    };
+}
+
+nlohmann::json OccupationToJson(const oikumene::OccupationRecord& occupation) {
+    return nlohmann::json{
+        {"id", occupation.id},
+        {"source_campaign_id", occupation.source_campaign_id},
+        {"occupier_polity_id", occupation.occupier_polity_id},
+        {"previous_owner_polity_id", occupation.previous_owner_polity_id},
+        {"subject_polity_id", occupation.subject_polity_id},
+        {"target_kind", oikumene::ToString(occupation.target_kind)},
+        {"settlement_id", occupation.settlement_id},
+        {"x", occupation.x},
+        {"y", occupation.y},
+        {"status", oikumene::ToString(occupation.status)},
+        {"started_turn", occupation.started_turn},
+        {"ended_turn", occupation.ended_turn},
+        {"last_update_turn", occupation.last_update_turn},
+        {"turns_held", occupation.turns_held},
+        {"occupation_value", occupation.occupation_value},
+        {"maintenance_cost", occupation.maintenance_cost},
+        {"cumulative_maintenance", occupation.cumulative_maintenance},
+        {"cumulative_shortfall", occupation.cumulative_shortfall},
+        {"unrest", occupation.unrest},
+        {"integration", occupation.integration},
+        {"revolt_risk", occupation.revolt_risk},
+        {"border_stability_delta", occupation.border_stability_delta},
+        {"outcome_reason", occupation.outcome_reason},
     };
 }
 
@@ -783,6 +815,40 @@ int CountWarsByStatus(const oikumene::Simulation& sim, oikumene::WarCampaignStat
     return count;
 }
 
+int CountOccupationsByStatus(const oikumene::Simulation& sim, oikumene::OccupationStatus status) {
+    int count = 0;
+    for (const auto& occupation : sim.Occupations()) {
+        count += occupation.status == status ? 1 : 0;
+    }
+    return count;
+}
+
+float AverageActiveOccupationUnrest(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    int count = 0;
+    for (const auto& occupation : sim.Occupations()) {
+        if (occupation.status != oikumene::OccupationStatus::Active) {
+            continue;
+        }
+        total += occupation.unrest;
+        ++count;
+    }
+    return count <= 0 ? 0.0F : total / static_cast<float>(count);
+}
+
+float AverageActiveOccupationMaintenance(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    int count = 0;
+    for (const auto& occupation : sim.Occupations()) {
+        if (occupation.status != oikumene::OccupationStatus::Active) {
+            continue;
+        }
+        total += occupation.maintenance_cost;
+        ++count;
+    }
+    return count <= 0 ? 0.0F : total / static_cast<float>(count);
+}
+
 float TotalWarPopulationLost(const oikumene::Simulation& sim) {
     float total = 0.0F;
     for (const auto& campaign : sim.Wars()) {
@@ -1015,6 +1081,10 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
     for (const auto& campaign : sim.Wars()) {
         wars.push_back(WarCampaignToJson(campaign));
     }
+    nlohmann::json occupations = nlohmann::json::array();
+    for (const auto& occupation : sim.Occupations()) {
+        occupations.push_back(OccupationToJson(occupation));
+    }
 
     return nlohmann::json{
         {"turn", sim.CurrentTurn()},
@@ -1028,6 +1098,7 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
         {"war_pressures", war_pressures},
         {"war_targets", war_targets},
         {"wars", wars},
+        {"occupations", occupations},
         {"bands", bands},
         {"improved_tiles", ImprovedTilesToJson(sim)},
         {"route_tiles", RouteTilesToJson(sim)},
@@ -1098,6 +1169,14 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"occupied_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Occupied)},
         {"withdrawn_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Withdrawn)},
         {"peace_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Peace)},
+        {"occupations", sim.Occupations().size()},
+        {"active_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Active)},
+        {"ceded_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Ceded)},
+        {"withdrawn_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Withdrawn)},
+        {"vassalized_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Vassalized)},
+        {"revolted_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Revolted)},
+        {"average_active_occupation_unrest", AverageActiveOccupationUnrest(sim)},
+        {"average_active_occupation_maintenance", AverageActiveOccupationMaintenance(sim)},
         {"war_population_lost", TotalWarPopulationLost(sim)},
         {"war_food_spent", TotalWarFoodSpent(sim)},
         {"war_equipment_spent", TotalWarEquipmentSpent(sim)},
@@ -1127,6 +1206,10 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"pasture_built_events", CountEvents(sim, oikumene::EventType::PastureBuilt)},
         {"route_built_events", CountEvents(sim, oikumene::EventType::RouteBuilt)},
         {"trade_opened_events", CountEvents(sim, oikumene::EventType::TradeOpened)},
+        {"territory_ceded_events", CountEvents(sim, oikumene::EventType::TerritoryCeded)},
+        {"occupation_withdrawn_events", CountEvents(sim, oikumene::EventType::OccupationWithdrawn)},
+        {"vassal_created_events", CountEvents(sim, oikumene::EventType::VassalCreated)},
+        {"occupation_revolt_events", CountEvents(sim, oikumene::EventType::OccupationRevolt)},
         {"carrying_capacity_reached_events", CountEvents(sim, oikumene::EventType::CarryingCapacityReached)},
     };
 }
@@ -1187,6 +1270,14 @@ nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
         {"occupied_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Occupied)},
         {"withdrawn_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Withdrawn)},
         {"peace_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Peace)},
+        {"occupations", sim.Occupations().size()},
+        {"active_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Active)},
+        {"ceded_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Ceded)},
+        {"withdrawn_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Withdrawn)},
+        {"vassalized_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Vassalized)},
+        {"revolted_occupations", CountOccupationsByStatus(sim, oikumene::OccupationStatus::Revolted)},
+        {"average_active_occupation_unrest", AverageActiveOccupationUnrest(sim)},
+        {"average_active_occupation_maintenance", AverageActiveOccupationMaintenance(sim)},
         {"war_population_lost", TotalWarPopulationLost(sim)},
         {"war_food_spent", TotalWarFoodSpent(sim)},
         {"war_equipment_spent", TotalWarEquipmentSpent(sim)},

@@ -44,6 +44,8 @@ foreach(token
     "\"mean_admin_capacity\""
     "\"mean_overextension\""
     "\"mean_stability\""
+    "\"mean_occupation_load\""
+    "\"mean_occupation_unrest\""
     "\"mean_control_maintenance\""
     "\"mean_unlocked_techs\""
     "\"mean_knowledge_income\""
@@ -92,9 +94,15 @@ foreach(token
     "\"mean_active_wars\""
     "\"mean_occupied_wars\""
     "\"mean_withdrawn_wars\""
+    "\"mean_occupations\""
+    "\"mean_active_occupations\""
+    "\"mean_vassalized_occupations\""
+    "\"mean_active_occupation_unrest\""
     "\"mean_war_population_lost\""
     "\"mean_war_food_spent\""
     "\"mean_war_declared_events\""
+    "\"mean_territory_ceded_events\""
+    "\"mean_vassal_created_events\""
 )
     string(FIND "${summary}" "${token}" token_index)
     if(token_index EQUAL -1)

@@ -369,6 +369,31 @@ std::vector<const WarCampaign*> WarsForPolity(const std::vector<WarCampaign>& ca
     return matches;
 }
 
+std::string OccupationLine(const OccupationRecord& occupation) {
+    return "Occ " + std::to_string(occupation.id) + " P" + std::to_string(occupation.occupier_polity_id) + "<-P" +
+           std::to_string(occupation.previous_owner_polity_id) + " " + ToString(occupation.status) + " U " +
+           Fixed(occupation.unrest, 2) + " Int " + Fixed(occupation.integration, 2) + " M " +
+           Fixed(occupation.maintenance_cost, 2);
+}
+
+std::vector<const OccupationRecord*> OccupationsForPolity(const std::vector<OccupationRecord>& occupations,
+                                                          PolityId polity_id) {
+    std::vector<const OccupationRecord*> matches;
+    for (const auto& occupation : occupations) {
+        if (occupation.occupier_polity_id == polity_id || occupation.previous_owner_polity_id == polity_id ||
+            occupation.subject_polity_id == polity_id) {
+            matches.push_back(&occupation);
+        }
+    }
+    std::sort(matches.begin(), matches.end(), [](const auto* lhs, const auto* rhs) {
+        if (lhs->status != rhs->status) {
+            return lhs->status == OccupationStatus::Active;
+        }
+        return lhs->started_turn > rhs->started_turn;
+    });
+    return matches;
+}
+
 int ContestedTileCount(const World& world) {
     int count = 0;
     for (const auto& tile : world.Tiles()) {
@@ -1023,6 +1048,11 @@ void DrawInspectorDetails(const AppState& state, int& y) {
                          .c_str(),
                      34, y, 17, Color{160, 218, 188, 255});
             y += 22;
+            DrawText(("Occupation load " + Fixed(polity->occupation_load, 2) + "  Unrest " +
+                      Fixed(polity->occupation_unrest, 2) + "  Vassals " + std::to_string(polity->vassal_count))
+                         .c_str(),
+                     34, y, 17, Color{222, 150, 135, 255});
+            y += 22;
             DrawText(Truncate("Agreements: " + TradeIdsForPolity(state.simulation.Trades(), polity->id), 58).c_str(),
                      34, y, 16, Color{160, 218, 188, 255});
             y += 22;
@@ -1061,6 +1091,15 @@ void DrawInspectorDetails(const AppState& state, int& y) {
             const std::size_t campaign_count = std::min<std::size_t>(wars.size(), 3);
             for (std::size_t i = 0; i < campaign_count; ++i) {
                 DrawText(Truncate(WarCampaignLine(*wars[i]), 58).c_str(), 34, y, 16, Color{246, 150, 120, 255});
+                y += 22;
+            }
+            const auto occupations = OccupationsForPolity(state.simulation.Occupations(), polity->id);
+            DrawText(("Occupations " + std::to_string(occupations.size())).c_str(), 34, y, 16,
+                     Color{222, 150, 135, 255});
+            y += 22;
+            const std::size_t occupation_count = std::min<std::size_t>(occupations.size(), 3);
+            for (std::size_t i = 0; i < occupation_count; ++i) {
+                DrawText(Truncate(OccupationLine(*occupations[i]), 58).c_str(), 34, y, 16, Color{222, 150, 135, 255});
                 y += 22;
             }
         }

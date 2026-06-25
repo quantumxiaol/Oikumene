@@ -53,6 +53,8 @@ add_library(oikumene_core STATIC
     src/sim/diplomacy_system.cpp
     src/sim/event.cpp
     src/sim/event_log.cpp
+    src/sim/occupation.cpp
+    src/sim/occupation_system.cpp
     src/sim/pathfinding.cpp
     src/sim/polity.cpp
     src/sim/polity_system.cpp
@@ -277,6 +279,11 @@ add_executable(oikumene_war_system_tests
 )
 target_link_libraries(oikumene_war_system_tests PRIVATE oikumene_core)
 
+add_executable(oikumene_occupation_system_tests
+    tests/test_occupation_system.cpp
+)
+target_link_libraries(oikumene_occupation_system_tests PRIVATE oikumene_core)
+
 foreach(target_name oikumene_camera_controller_tests oikumene_selection_tests oikumene_symbol_registry_tests)
     if(raylib_FOUND)
         target_link_libraries(${target_name} PRIVATE raylib)
@@ -310,6 +317,7 @@ if(BUILD_TESTING)
     add_test(NAME oikumene_war_planner_tests COMMAND oikumene_war_planner_tests)
     add_test(NAME oikumene_war_target_planner_tests COMMAND oikumene_war_target_planner_tests)
     add_test(NAME oikumene_war_system_tests COMMAND oikumene_war_system_tests)
+    add_test(NAME oikumene_occupation_system_tests COMMAND oikumene_occupation_system_tests)
     add_test(
         NAME oikumene_sim_batch_smoke
         COMMAND

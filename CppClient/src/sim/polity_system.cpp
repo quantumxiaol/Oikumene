@@ -177,9 +177,12 @@ void RecalculatePolityBudgetsAndAdministration(const World& world, const std::ve
         polity.budget.wealth_income += polity.trade_income;
         const float average_distance = AverageCapitalPathCost(world, settlements, polity, *capital, use_routes);
         const float member_count = static_cast<float>(polity.member_settlement_ids.size());
+        const float occupation_load = std::max(0.0F, polity.occupation_load);
+        const float occupation_unrest = std::max(0.0F, polity.occupation_unrest);
         polity.admin_load = member_count * 8.0F + static_cast<float>(polity.controlled_tile_count) * 0.08F +
                             static_cast<float>(polity.contested_tile_count) * 0.25F +
-                            average_distance * 1.2F * effects.distance_admin_load_multiplier;
+                            average_distance * 1.2F * effects.distance_admin_load_multiplier + occupation_load * 10.0F +
+                            static_cast<float>(polity.occupied_settlements) * 5.0F;
         polity.admin_capacity =
             (40.0F + static_cast<float>(capital->population) * 0.08F + PolityLevelAdminBonus(polity.level)) *
             effects.admin_capacity_multiplier;
@@ -188,13 +191,15 @@ void RecalculatePolityBudgetsAndAdministration(const World& world, const std::ve
                                    : std::max(0.0F, polity.admin_load / polity.admin_capacity - 1.0F) *
                                          effects.overextension_penalty_multiplier;
 
-        polity.budget.food_maintenance =
-            member_count * 1.5F + static_cast<float>(polity.controlled_tile_count) * 0.006F;
+        polity.budget.food_maintenance = member_count * 1.5F +
+                                         static_cast<float>(polity.controlled_tile_count) * 0.006F +
+                                         static_cast<float>(polity.occupied_settlements) * 0.90F;
         polity.budget.wood_maintenance = member_count * 0.32F;
         polity.budget.admin_maintenance = polity.admin_load * 0.055F;
         polity.budget.control_maintenance = static_cast<float>(polity.controlled_tile_count) * 0.012F +
                                             static_cast<float>(polity.contested_tile_count) * 0.055F +
-                                            polity.route_maintenance;
+                                            polity.route_maintenance + occupation_load * 0.38F +
+                                            occupation_unrest * 0.16F;
         polity.budget.food_surplus = polity.budget.food_income - polity.budget.food_maintenance;
         polity.budget.wood_surplus = polity.budget.wood_income - polity.budget.wood_maintenance;
         polity.budget.wealth_surplus =
@@ -206,11 +211,13 @@ void RecalculatePolityBudgetsAndAdministration(const World& world, const std::ve
                 : static_cast<float>(polity.contested_tile_count) / static_cast<float>(polity.controlled_tile_count);
         const float deficit_pressure =
             polity.budget.wealth_surplus < 0.0F ? std::min(0.35F, -polity.budget.wealth_surplus * 0.025F) : 0.0F;
-        polity.stability =
-            std::clamp(1.0F - polity.overextension * 0.45F -
-                           contested_pressure * 0.35F * effects.contested_stability_loss_multiplier - deficit_pressure,
-                       0.10F, 1.0F);
-        polity.legitimacy = std::clamp(1.0F - polity.overextension * 0.25F - deficit_pressure * 0.20F, 0.15F, 1.0F);
+        const float occupation_pressure = std::min(0.40F, occupation_unrest * 0.14F + occupation_load * 0.025F);
+        polity.stability = std::clamp(1.0F - polity.overextension * 0.45F -
+                                          contested_pressure * 0.35F * effects.contested_stability_loss_multiplier -
+                                          deficit_pressure - occupation_pressure,
+                                      0.10F, 1.0F);
+        polity.legitimacy = std::clamp(
+            1.0F - polity.overextension * 0.25F - deficit_pressure * 0.20F - occupation_unrest * 0.08F, 0.15F, 1.0F);
         polity.control_power =
             (38.0F + static_cast<float>(polity.population) * 0.045F) * (0.65F + polity.stability * 0.35F);
     }

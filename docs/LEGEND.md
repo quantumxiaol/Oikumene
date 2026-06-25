@@ -83,6 +83,9 @@
 - Active / Occupied / Withdrawn / Peace：战争状态，分别表示进行中、占领目标、撤退失败和议和结束。
 - Population Lost / Food Spent / Equipment Spent：战争执行消耗，直接从成员 settlement 的人口和库存中扣除。
 - WarDeclared / WarTargetOccupied / WarRetreated / PeaceSigned：战争事件日志，用于复盘每次开战和战后结果。
+- OccupationRecord：成功占领后的长期维护记录，记录维护成本、累计短缺、动荡、整合度、叛乱风险和边界稳定压力。
+- Active / Ceded / Withdrawn / Vassalized / Revolted：占领状态，分别表示维护中、割让整合、主动撤军、转为附庸缓冲和边疆叛乱。
+- TerritoryCeded / OccupationWithdrawn / VassalCreated / OccupationRevolt：战后占领结算事件，用于复盘占领是否真正改变长期边界。
 
 ## 实体
 

@@ -7,6 +7,7 @@
 #include "oikumene/sim/band.hpp"
 #include "oikumene/sim/diplomacy.hpp"
 #include "oikumene/sim/event_log.hpp"
+#include "oikumene/sim/occupation.hpp"
 #include "oikumene/sim/polity.hpp"
 #include "oikumene/sim/route.hpp"
 #include "oikumene/sim/settlement.hpp"
@@ -45,6 +46,8 @@ class Simulation {
     [[nodiscard]] std::vector<WarTargetCandidate>& WarTargets();
     [[nodiscard]] const std::vector<WarCampaign>& Wars() const;
     [[nodiscard]] std::vector<WarCampaign>& Wars();
+    [[nodiscard]] const std::vector<OccupationRecord>& Occupations() const;
+    [[nodiscard]] std::vector<OccupationRecord>& Occupations();
     [[nodiscard]] const EventLog& Events() const;
     [[nodiscard]] EventLog& Events();
     [[nodiscard]] std::string StatusSummary() const;
@@ -65,6 +68,7 @@ class Simulation {
     std::vector<WarPressure> war_pressures_;
     std::vector<WarTargetCandidate> war_target_candidates_;
     std::vector<WarCampaign> war_campaigns_;
+    std::vector<OccupationRecord> occupations_;
     EventLog event_log_;
 };
 
