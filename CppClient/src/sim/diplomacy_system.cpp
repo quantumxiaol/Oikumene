@@ -12,6 +12,37 @@ float Clamp01(float value) {
     return std::clamp(value, 0.0F, 1.0F);
 }
 
+bool SameRelation(const DiplomacyRelation& relation, PolityId a, PolityId b) {
+    return (relation.polity_a_id == a && relation.polity_b_id == b) ||
+           (relation.polity_a_id == b && relation.polity_b_id == a);
+}
+
+const DiplomacyRelation* RelationForPair(const std::vector<DiplomacyRelation>& relations, PolityId a, PolityId b) {
+    for (const auto& relation : relations) {
+        if (SameRelation(relation, a, b)) {
+            return &relation;
+        }
+    }
+    return nullptr;
+}
+
+DiplomacyRelation* RelationForPair(std::vector<DiplomacyRelation>& relations, PolityId a, PolityId b) {
+    for (auto& relation : relations) {
+        if (SameRelation(relation, a, b)) {
+            return &relation;
+        }
+    }
+    return nullptr;
+}
+
+int NextRelationId(const std::vector<DiplomacyRelation>& relations) {
+    int next = 0;
+    for (const auto& relation : relations) {
+        next = std::max(next, relation.id + 1);
+    }
+    return next;
+}
+
 bool SamePair(const TradeAgreement& trade, PolityId a, PolityId b) {
     return (trade.polity_a_id == a && trade.polity_b_id == b) || (trade.polity_a_id == b && trade.polity_b_id == a);
 }
@@ -131,10 +162,55 @@ void FillTradeFeatures(DiplomacyRelation& relation, const TradeAgreement* trade)
     }
 }
 
+void PreserveMemory(DiplomacyRelation& relation, const DiplomacyRelation* previous, Turn turn) {
+    relation.memory_updated_turn = turn;
+    if (previous == nullptr) {
+        return;
+    }
+
+    const float elapsed = static_cast<float>(std::max<Turn>(0, turn - previous->memory_updated_turn));
+    const float grievance_decay = std::pow(0.996F, elapsed);
+    const float vassalage_decay = std::pow(0.998F, elapsed);
+    const float restraint_decay = std::pow(0.990F, elapsed);
+    relation.grievance_a_to_b = previous->grievance_a_to_b * grievance_decay;
+    relation.grievance_b_to_a = previous->grievance_b_to_a * grievance_decay;
+    relation.vassalage_a_to_b = previous->vassalage_a_to_b * vassalage_decay;
+    relation.vassalage_b_to_a = previous->vassalage_b_to_a * vassalage_decay;
+    relation.restraint_a_to_b = previous->restraint_a_to_b * restraint_decay;
+    relation.restraint_b_to_a = previous->restraint_b_to_a * restraint_decay;
+    relation.last_incident_turn = previous->last_incident_turn;
+    relation.last_incident = previous->last_incident;
+    relation.incident_count = previous->incident_count;
+}
+
+float MaxGrievance(const DiplomacyRelation& relation) {
+    return std::max(relation.grievance_a_to_b, relation.grievance_b_to_a);
+}
+
+float MaxRestraint(const DiplomacyRelation& relation) {
+    return std::max(relation.restraint_a_to_b, relation.restraint_b_to_a);
+}
+
+void ApplyMemoryDependence(DiplomacyRelation& relation) {
+    relation.dependence_a_on_b = std::max(relation.dependence_a_on_b, relation.vassalage_a_to_b);
+    relation.dependence_b_on_a = std::max(relation.dependence_b_on_a, relation.vassalage_b_to_a);
+    if (relation.vassalage_a_to_b > relation.vassalage_b_to_a + 0.08F && relation.vassalage_a_to_b > 0.20F) {
+        relation.dependent_polity_id = relation.polity_a_id;
+        relation.leverage_polity_id = relation.polity_b_id;
+    } else if (relation.vassalage_b_to_a > relation.vassalage_a_to_b + 0.08F && relation.vassalage_b_to_a > 0.20F) {
+        relation.dependent_polity_id = relation.polity_b_id;
+        relation.leverage_polity_id = relation.polity_a_id;
+    }
+}
+
 DiplomaticPosture ClassifyPosture(const DiplomacyRelation& relation) {
     const float max_dependence = std::max(relation.dependence_a_on_b, relation.dependence_b_on_a);
+    const float max_vassalage = std::max(relation.vassalage_a_to_b, relation.vassalage_b_to_a);
     if (relation.blockade_tendency >= 0.58F && max_dependence >= 0.35F) {
         return DiplomaticPosture::BlockadeRisk;
+    }
+    if (max_vassalage >= 0.58F && relation.blockade_tendency < 0.74F) {
+        return DiplomaticPosture::Dependent;
     }
     if (max_dependence >= 0.58F && relation.friendship >= relation.competition * 0.75F) {
         return DiplomaticPosture::Dependent;
@@ -153,19 +229,22 @@ std::string BuildReason(const DiplomacyRelation& relation) {
     stream << ToString(relation.posture) << ": trade " << relation.trade_id << " friendship " << relation.friendship
            << " competition " << relation.competition << " dependence "
            << std::max(relation.dependence_a_on_b, relation.dependence_b_on_a) << " blockade "
-           << relation.blockade_tendency;
+           << relation.blockade_tendency << " grievance " << MaxGrievance(relation) << " restraint "
+           << MaxRestraint(relation) << " last_incident " << ToString(relation.last_incident);
     return stream.str();
 }
 
 DiplomacyRelation BuildRelation(int id, const World& world, Turn turn, const Polity& polity_a, const Polity& polity_b,
-                                const std::vector<TradeAgreement>& trades) {
+                                const std::vector<TradeAgreement>& trades, const DiplomacyRelation* previous) {
     DiplomacyRelation relation;
     relation.id = id;
     relation.polity_a_id = polity_a.id;
     relation.polity_b_id = polity_b.id;
+    PreserveMemory(relation, previous, turn);
 
     const auto* trade = ActiveTradeForPair(trades, polity_a.id, polity_b.id);
     FillTradeFeatures(relation, trade);
+    ApplyMemoryDependence(relation);
 
     relation.border_tension = ControlledBorderTension(world, polity_a.id, polity_b.id);
     relation.economic_overlap = EconomicOverlap(polity_a, polity_b);
@@ -175,20 +254,49 @@ DiplomacyRelation BuildRelation(int id, const World& world, Turn turn, const Pol
     const float weak_penalty = trade == nullptr ? 0.0F : static_cast<float>(trade->weak_refresh_count) * 0.08F;
     const float route_efficiency = trade == nullptr ? 0.0F : trade->route_efficiency;
     const float military_rivalry = MilitaryRivalry(polity_a, polity_b);
+    const float max_grievance = MaxGrievance(relation);
+    const float max_restraint = MaxRestraint(relation);
 
-    relation.friendship = Clamp01(0.05F + trade_intensity * 0.58F + route_efficiency * 0.22F + duration_bonus -
-                                  relation.border_tension * 0.25F - weak_penalty);
+    relation.friendship =
+        Clamp01(0.05F + trade_intensity * 0.58F + route_efficiency * 0.22F + duration_bonus -
+                relation.border_tension * 0.25F - weak_penalty - max_grievance * 0.22F + max_restraint * 0.08F);
     relation.competition = Clamp01(relation.border_tension * 0.52F + relation.economic_overlap * 0.22F +
                                    military_rivalry * relation.border_tension * 0.20F - trade_intensity * 0.18F -
-                                   relation.friendship * 0.08F);
+                                   relation.friendship * 0.08F + max_grievance * 0.34F - max_restraint * 0.14F);
 
     const float max_dependence = std::max(relation.dependence_a_on_b, relation.dependence_b_on_a);
     const float route_fragility = trade == nullptr ? 0.0F : 1.0F - route_efficiency;
-    relation.blockade_tendency = Clamp01(max_dependence * 0.42F + relation.competition * 0.36F +
-                                         route_fragility * 0.24F - relation.friendship * 0.18F + weak_penalty);
+    relation.blockade_tendency =
+        Clamp01(max_dependence * 0.42F + relation.competition * 0.36F + route_fragility * 0.24F -
+                relation.friendship * 0.18F + weak_penalty + max_grievance * 0.18F - max_restraint * 0.12F);
     relation.posture = ClassifyPosture(relation);
     relation.reason = BuildReason(relation);
     return relation;
+}
+
+float& GrievanceFromTo(DiplomacyRelation& relation, PolityId from_id, PolityId to_id) {
+    return from_id == relation.polity_a_id && to_id == relation.polity_b_id ? relation.grievance_a_to_b
+                                                                            : relation.grievance_b_to_a;
+}
+
+float& VassalageFromTo(DiplomacyRelation& relation, PolityId from_id, PolityId to_id) {
+    return from_id == relation.polity_a_id && to_id == relation.polity_b_id ? relation.vassalage_a_to_b
+                                                                            : relation.vassalage_b_to_a;
+}
+
+float& RestraintFromTo(DiplomacyRelation& relation, PolityId from_id, PolityId to_id) {
+    return from_id == relation.polity_a_id && to_id == relation.polity_b_id ? relation.restraint_a_to_b
+                                                                            : relation.restraint_b_to_a;
+}
+
+void AddDirectedMemory(DiplomacyRelation& relation, PolityId from_id, PolityId to_id, float grievance, float vassalage,
+                       float restraint) {
+    auto& grievance_value = GrievanceFromTo(relation, from_id, to_id);
+    auto& vassalage_value = VassalageFromTo(relation, from_id, to_id);
+    auto& restraint_value = RestraintFromTo(relation, from_id, to_id);
+    grievance_value = Clamp01(grievance_value + grievance);
+    vassalage_value = Clamp01(vassalage_value + vassalage);
+    restraint_value = Clamp01(restraint_value + restraint);
 }
 
 } // namespace
@@ -200,13 +308,64 @@ void DiplomacySystem::Reset(std::vector<DiplomacyRelation>& relations) {
 void DiplomacySystem::UpdateDiplomacy(const World& world, Turn turn, const std::vector<Polity>& polities,
                                       const std::vector<TradeAgreement>& trades,
                                       std::vector<DiplomacyRelation>& relations) {
+    const std::vector<DiplomacyRelation> previous_relations = relations;
     relations.clear();
     int next_id = 0;
     for (std::size_t i = 0; i < polities.size(); ++i) {
         for (std::size_t j = i + 1; j < polities.size(); ++j) {
-            relations.push_back(BuildRelation(next_id++, world, turn, polities[i], polities[j], trades));
+            const auto* previous = RelationForPair(previous_relations, polities[i].id, polities[j].id);
+            relations.push_back(BuildRelation(next_id++, world, turn, polities[i], polities[j], trades, previous));
         }
     }
+}
+
+void DiplomacySystem::RecordIncident(std::vector<DiplomacyRelation>& relations, Turn turn, PolityId actor_id,
+                                     PolityId target_id, DiplomaticIncidentKind kind, float strength) {
+    if (actor_id == kInvalidPolityId || target_id == kInvalidPolityId || actor_id == target_id ||
+        kind == DiplomaticIncidentKind::None) {
+        return;
+    }
+
+    auto* relation = RelationForPair(relations, actor_id, target_id);
+    if (relation == nullptr) {
+        DiplomacyRelation created;
+        created.id = NextRelationId(relations);
+        created.polity_a_id = std::min(actor_id, target_id);
+        created.polity_b_id = std::max(actor_id, target_id);
+        created.memory_updated_turn = turn;
+        relations.push_back(created);
+        relation = &relations.back();
+    }
+
+    strength = Clamp01(strength);
+    const float scaled = 0.55F + strength * 0.45F;
+    switch (kind) {
+    case DiplomaticIncidentKind::TerritoryCeded:
+        AddDirectedMemory(*relation, target_id, actor_id, 0.58F * scaled, 0.0F, 0.08F * scaled);
+        AddDirectedMemory(*relation, actor_id, target_id, 0.10F * scaled, 0.0F, 0.14F * scaled);
+        break;
+    case DiplomaticIncidentKind::OccupationWithdrawn:
+        AddDirectedMemory(*relation, target_id, actor_id, 0.28F * scaled, 0.0F, 0.28F * scaled);
+        AddDirectedMemory(*relation, actor_id, target_id, 0.08F * scaled, 0.0F, 0.62F * scaled);
+        break;
+    case DiplomaticIncidentKind::VassalCreated:
+        AddDirectedMemory(*relation, target_id, actor_id, 0.22F * scaled, 0.86F * scaled, 0.12F * scaled);
+        AddDirectedMemory(*relation, actor_id, target_id, 0.06F * scaled, 0.0F, 0.56F * scaled);
+        break;
+    case DiplomaticIncidentKind::OccupationRevolt:
+        VassalageFromTo(*relation, target_id, actor_id) *= 0.18F;
+        VassalageFromTo(*relation, actor_id, target_id) *= 0.18F;
+        AddDirectedMemory(*relation, actor_id, target_id, 0.62F * scaled, 0.0F, 0.04F * scaled);
+        AddDirectedMemory(*relation, target_id, actor_id, 0.46F * scaled, 0.0F, 0.06F * scaled);
+        break;
+    case DiplomaticIncidentKind::None:
+        break;
+    }
+
+    relation->last_incident = kind;
+    relation->last_incident_turn = turn;
+    relation->memory_updated_turn = turn;
+    ++relation->incident_count;
 }
 
 } // namespace oikumene

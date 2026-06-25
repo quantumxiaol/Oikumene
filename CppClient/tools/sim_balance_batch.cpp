@@ -138,12 +138,18 @@ struct Metrics {
     float average_friendship = 0.0F;
     float average_competition = 0.0F;
     float average_blockade_tendency = 0.0F;
+    float average_diplomatic_grievance = 0.0F;
+    float average_diplomatic_vassalage = 0.0F;
+    float average_diplomatic_restraint = 0.0F;
     float average_war_roi = 0.0F;
     float max_declaration_pressure = 0.0F;
     float average_trade_conflict_weight = 0.0F;
     float average_friendly_penalty = 0.0F;
     float average_blockade_pressure = 0.0F;
     float average_dependency_pressure = 0.0F;
+    float average_grievance_pressure = 0.0F;
+    float average_restraint_pressure = 0.0F;
+    float average_vassalage_pressure = 0.0F;
     float average_war_target_roi = 0.0F;
     float max_war_target_score = 0.0F;
     float average_war_target_value = 0.0F;
@@ -533,6 +539,9 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     float friendship_sum = 0.0F;
     float competition_sum = 0.0F;
     float blockade_sum = 0.0F;
+    float diplomatic_grievance_sum = 0.0F;
+    float diplomatic_vassalage_sum = 0.0F;
+    float diplomatic_restraint_sum = 0.0F;
     for (const auto& relation : sim.DiplomacyRelations()) {
         metrics.friendly_relations += relation.posture == oikumene::DiplomaticPosture::Friendly ? 1 : 0;
         metrics.competitive_relations += relation.posture == oikumene::DiplomaticPosture::Competitive ? 1 : 0;
@@ -541,6 +550,9 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         friendship_sum += relation.friendship;
         competition_sum += relation.competition;
         blockade_sum += relation.blockade_tendency;
+        diplomatic_grievance_sum += std::max(relation.grievance_a_to_b, relation.grievance_b_to_a);
+        diplomatic_vassalage_sum += std::max(relation.vassalage_a_to_b, relation.vassalage_b_to_a);
+        diplomatic_restraint_sum += std::max(relation.restraint_a_to_b, relation.restraint_b_to_a);
     }
     metrics.average_friendship =
         metrics.diplomacy_relations <= 0 ? 0.0F : friendship_sum / static_cast<float>(metrics.diplomacy_relations);
@@ -548,6 +560,15 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         metrics.diplomacy_relations <= 0 ? 0.0F : competition_sum / static_cast<float>(metrics.diplomacy_relations);
     metrics.average_blockade_tendency =
         metrics.diplomacy_relations <= 0 ? 0.0F : blockade_sum / static_cast<float>(metrics.diplomacy_relations);
+    metrics.average_diplomatic_grievance =
+        metrics.diplomacy_relations <= 0 ? 0.0F
+                                         : diplomatic_grievance_sum / static_cast<float>(metrics.diplomacy_relations);
+    metrics.average_diplomatic_vassalage =
+        metrics.diplomacy_relations <= 0 ? 0.0F
+                                         : diplomatic_vassalage_sum / static_cast<float>(metrics.diplomacy_relations);
+    metrics.average_diplomatic_restraint =
+        metrics.diplomacy_relations <= 0 ? 0.0F
+                                         : diplomatic_restraint_sum / static_cast<float>(metrics.diplomacy_relations);
 
     metrics.war_pressure_candidates = static_cast<int>(sim.WarPressures().size());
     float war_roi_sum = 0.0F;
@@ -555,6 +576,9 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     float friendly_penalty_sum = 0.0F;
     float blockade_pressure_sum = 0.0F;
     float dependency_pressure_sum = 0.0F;
+    float grievance_pressure_sum = 0.0F;
+    float restraint_pressure_sum = 0.0F;
+    float vassalage_pressure_sum = 0.0F;
     for (const auto& pressure : sim.WarPressures()) {
         metrics.high_war_pressure_candidates += pressure.high_pressure ? 1 : 0;
         war_roi_sum += pressure.war_roi;
@@ -563,6 +587,9 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         friendly_penalty_sum += pressure.friendly_penalty;
         blockade_pressure_sum += pressure.blockade_pressure;
         dependency_pressure_sum += pressure.dependency_pressure;
+        grievance_pressure_sum += pressure.grievance_pressure;
+        restraint_pressure_sum += pressure.restraint_pressure;
+        vassalage_pressure_sum += pressure.vassalage_pressure;
     }
     if (metrics.war_pressure_candidates > 0) {
         const float count = static_cast<float>(metrics.war_pressure_candidates);
@@ -571,6 +598,9 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         metrics.average_friendly_penalty = friendly_penalty_sum / count;
         metrics.average_blockade_pressure = blockade_pressure_sum / count;
         metrics.average_dependency_pressure = dependency_pressure_sum / count;
+        metrics.average_grievance_pressure = grievance_pressure_sum / count;
+        metrics.average_restraint_pressure = restraint_pressure_sum / count;
+        metrics.average_vassalage_pressure = vassalage_pressure_sum / count;
     }
     metrics.war_target_candidates = static_cast<int>(sim.WarTargets().size());
     float war_target_roi_sum = 0.0F;
@@ -726,12 +756,18 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"average_friendship", metrics.average_friendship},
         {"average_competition", metrics.average_competition},
         {"average_blockade_tendency", metrics.average_blockade_tendency},
+        {"average_diplomatic_grievance", metrics.average_diplomatic_grievance},
+        {"average_diplomatic_vassalage", metrics.average_diplomatic_vassalage},
+        {"average_diplomatic_restraint", metrics.average_diplomatic_restraint},
         {"average_war_roi", metrics.average_war_roi},
         {"max_declaration_pressure", metrics.max_declaration_pressure},
         {"average_trade_conflict_weight", metrics.average_trade_conflict_weight},
         {"average_friendly_penalty", metrics.average_friendly_penalty},
         {"average_blockade_pressure", metrics.average_blockade_pressure},
         {"average_dependency_pressure", metrics.average_dependency_pressure},
+        {"average_grievance_pressure", metrics.average_grievance_pressure},
+        {"average_restraint_pressure", metrics.average_restraint_pressure},
+        {"average_vassalage_pressure", metrics.average_vassalage_pressure},
         {"average_war_target_roi", metrics.average_war_target_roi},
         {"max_war_target_score", metrics.max_war_target_score},
         {"average_war_target_value", metrics.average_war_target_value},
@@ -792,8 +828,10 @@ void WriteCsvHeader(std::ofstream& output) {
            "average_trade_profit,average_trade_complementarity,"
            "average_trade_route_cost,average_trade_route_efficiency,average_trade_weak_refresh_count,"
            "average_trade_path_tiles,average_friendship,average_competition,average_blockade_tendency,"
+           "average_diplomatic_grievance,average_diplomatic_vassalage,average_diplomatic_restraint,"
            "average_war_roi,max_declaration_pressure,average_trade_conflict_weight,average_friendly_penalty,"
-           "average_blockade_pressure,average_dependency_pressure,average_war_target_roi,max_war_target_score,"
+           "average_blockade_pressure,average_dependency_pressure,average_grievance_pressure,"
+           "average_restraint_pressure,average_vassalage_pressure,average_war_target_roi,max_war_target_score,"
            "average_war_target_value,average_campaign_cost,average_occupation_cost,"
            "war_campaigns,active_wars,occupied_wars,withdrawn_wars,peace_wars,"
            "occupations,active_occupations,ceded_occupations,withdrawn_occupations,vassalized_occupations,"
@@ -842,16 +880,20 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.average_trade_complementarity << ',' << metrics.average_trade_route_cost << ','
            << metrics.average_trade_route_efficiency << ',' << metrics.average_trade_weak_refresh_count << ','
            << metrics.average_trade_path_tiles << ',' << metrics.average_friendship << ','
-           << metrics.average_competition << ',' << metrics.average_blockade_tendency << ',' << metrics.average_war_roi
-           << ',' << metrics.max_declaration_pressure << ',' << metrics.average_trade_conflict_weight << ','
+           << metrics.average_competition << ',' << metrics.average_blockade_tendency << ','
+           << metrics.average_diplomatic_grievance << ',' << metrics.average_diplomatic_vassalage << ','
+           << metrics.average_diplomatic_restraint << ',' << metrics.average_war_roi << ','
+           << metrics.max_declaration_pressure << ',' << metrics.average_trade_conflict_weight << ','
            << metrics.average_friendly_penalty << ',' << metrics.average_blockade_pressure << ','
-           << metrics.average_dependency_pressure << ',' << metrics.average_war_target_roi << ','
-           << metrics.max_war_target_score << ',' << metrics.average_war_target_value << ','
-           << metrics.average_campaign_cost << ',' << metrics.average_occupation_cost << ',' << metrics.war_campaigns
-           << ',' << metrics.active_wars << ',' << metrics.occupied_wars << ',' << metrics.withdrawn_wars << ','
-           << metrics.peace_wars << ',' << metrics.occupations << ',' << metrics.active_occupations << ','
-           << metrics.ceded_occupations << ',' << metrics.withdrawn_occupations << ',' << metrics.vassalized_occupations
-           << ',' << metrics.revolted_occupations << ',' << metrics.average_active_occupation_unrest << ','
+           << metrics.average_dependency_pressure << ',' << metrics.average_grievance_pressure << ','
+           << metrics.average_restraint_pressure << ',' << metrics.average_vassalage_pressure << ','
+           << metrics.average_war_target_roi << ',' << metrics.max_war_target_score << ','
+           << metrics.average_war_target_value << ',' << metrics.average_campaign_cost << ','
+           << metrics.average_occupation_cost << ',' << metrics.war_campaigns << ',' << metrics.active_wars << ','
+           << metrics.occupied_wars << ',' << metrics.withdrawn_wars << ',' << metrics.peace_wars << ','
+           << metrics.occupations << ',' << metrics.active_occupations << ',' << metrics.ceded_occupations << ','
+           << metrics.withdrawn_occupations << ',' << metrics.vassalized_occupations << ','
+           << metrics.revolted_occupations << ',' << metrics.average_active_occupation_unrest << ','
            << metrics.average_active_occupation_maintenance << ',' << metrics.war_population_lost << ','
            << metrics.war_food_spent << ',' << metrics.war_equipment_spent << ',' << metrics.average_war_progress << ','
            << metrics.war_declared_events << ',' << metrics.war_occupied_events << ',' << metrics.war_retreat_events
@@ -972,12 +1014,18 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_friendship", mean([](const Metrics& item) { return item.average_friendship; })},
         {"mean_competition", mean([](const Metrics& item) { return item.average_competition; })},
         {"mean_blockade_tendency", mean([](const Metrics& item) { return item.average_blockade_tendency; })},
+        {"mean_diplomatic_grievance", mean([](const Metrics& item) { return item.average_diplomatic_grievance; })},
+        {"mean_diplomatic_vassalage", mean([](const Metrics& item) { return item.average_diplomatic_vassalage; })},
+        {"mean_diplomatic_restraint", mean([](const Metrics& item) { return item.average_diplomatic_restraint; })},
         {"mean_war_roi", mean([](const Metrics& item) { return item.average_war_roi; })},
         {"mean_max_declaration_pressure", mean([](const Metrics& item) { return item.max_declaration_pressure; })},
         {"mean_trade_conflict_weight", mean([](const Metrics& item) { return item.average_trade_conflict_weight; })},
         {"mean_friendly_penalty", mean([](const Metrics& item) { return item.average_friendly_penalty; })},
         {"mean_blockade_pressure", mean([](const Metrics& item) { return item.average_blockade_pressure; })},
         {"mean_dependency_pressure", mean([](const Metrics& item) { return item.average_dependency_pressure; })},
+        {"mean_grievance_pressure", mean([](const Metrics& item) { return item.average_grievance_pressure; })},
+        {"mean_restraint_pressure", mean([](const Metrics& item) { return item.average_restraint_pressure; })},
+        {"mean_vassalage_pressure", mean([](const Metrics& item) { return item.average_vassalage_pressure; })},
         {"mean_war_target_roi", mean([](const Metrics& item) { return item.average_war_target_roi; })},
         {"mean_max_war_target_score", mean([](const Metrics& item) { return item.max_war_target_score; })},
         {"mean_war_target_value", mean([](const Metrics& item) { return item.average_war_target_value; })},

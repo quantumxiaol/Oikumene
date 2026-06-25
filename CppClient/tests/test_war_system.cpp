@@ -162,7 +162,7 @@ void TestSupplyFailureCausesRetreat() {
     target.occupation_cost = 0.5F;
     const std::vector<oikumene::WarTargetCandidate> targets{target};
 
-    for (int turn = 10; turn < 20; ++turn) {
+    for (int turn = 10; turn < 28; ++turn) {
         oikumene::WarSystem::UpdateWars(world, turn, settlements, polities, {}, targets, campaigns, log);
     }
 

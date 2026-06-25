@@ -127,6 +127,47 @@ void TestDependenceAndBorderPressureCreatesBlockadeRisk() {
     assert(relation.blockade_tendency > 0.58F);
 }
 
+void TestOccupationIncidentMemorySurvivesDiplomacyRefresh() {
+    auto world = MakeDiplomacyWorld();
+    std::vector<oikumene::Polity> polities{MakePolity(0), MakePolity(1)};
+    std::vector<oikumene::TradeAgreement> trades;
+    std::vector<oikumene::DiplomacyRelation> relations;
+
+    oikumene::DiplomacySystem::UpdateDiplomacy(world, 80, polities, trades, relations);
+    oikumene::DiplomacySystem::RecordIncident(relations, 81, 0, 1, oikumene::DiplomaticIncidentKind::VassalCreated,
+                                              1.0F);
+
+    assert(OnlyRelation(relations).last_incident == oikumene::DiplomaticIncidentKind::VassalCreated);
+    assert(OnlyRelation(relations).vassalage_b_to_a > 0.70F);
+
+    oikumene::DiplomacySystem::UpdateDiplomacy(world, 95, polities, trades, relations);
+
+    const auto& relation = OnlyRelation(relations);
+    assert(relation.incident_count == 1);
+    assert(relation.last_incident == oikumene::DiplomaticIncidentKind::VassalCreated);
+    assert(relation.vassalage_b_to_a > 0.65F);
+    assert(relation.dependent_polity_id == 1);
+    assert(relation.leverage_polity_id == 0);
+    assert(relation.posture == oikumene::DiplomaticPosture::Dependent);
+}
+
+void TestWithdrawalIncidentCreatesRestraintMemory() {
+    auto world = MakeDiplomacyWorld();
+    std::vector<oikumene::Polity> polities{MakePolity(0), MakePolity(1)};
+    std::vector<oikumene::TradeAgreement> trades;
+    std::vector<oikumene::DiplomacyRelation> relations;
+
+    oikumene::DiplomacySystem::UpdateDiplomacy(world, 80, polities, trades, relations);
+    oikumene::DiplomacySystem::RecordIncident(relations, 81, 0, 1,
+                                              oikumene::DiplomaticIncidentKind::OccupationWithdrawn, 1.0F);
+    oikumene::DiplomacySystem::UpdateDiplomacy(world, 90, polities, trades, relations);
+
+    const auto& relation = OnlyRelation(relations);
+    assert(relation.restraint_a_to_b > 0.50F);
+    assert(relation.grievance_b_to_a > 0.20F);
+    assert(relation.last_incident == oikumene::DiplomaticIncidentKind::OccupationWithdrawn);
+}
+
 } // namespace
 
 int main() {
@@ -134,6 +175,8 @@ int main() {
     TestOneWayTradeCreatesDependence();
     TestSharedBorderWithoutTradeCreatesCompetition();
     TestDependenceAndBorderPressureCreatesBlockadeRisk();
+    TestOccupationIncidentMemorySurvivesDiplomacyRefresh();
+    TestWithdrawalIncidentCreatesRestraintMemory();
     std::cout << "diplomacy system tests passed\n";
     return 0;
 }

@@ -11,7 +11,7 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 
 ## 当前状态
 
-当前已经进入 Phase 5.6：
+当前已经进入 Phase 5.7：
 
 - C++ 主程序能打开 Raylib 窗口，生成 80x56 世界地图。
 - 支持 Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl、RouteNetwork、TradeNetwork 图层。
@@ -37,12 +37,13 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 - 已有抽象战争执行：`WarSystem` 会把高分 WarTargetCandidate 转成 `WarCampaign`，按回合消耗人口、粮食和装备，推进战役进度，并产生 WarDeclared、WarTargetOccupied、WarRetreated、PeaceSigned 事件。
 - 已有战后占领系统：`OccupationSystem` 会把成功占领转成 `OccupationRecord`，持续消耗粮食、木材和财富，积累动荡与整合度，并产生 TerritoryCeded、OccupationWithdrawn、VassalCreated、OccupationRevolt 事件。
 - 占领压力会写回 polity 的 `occupation_load`、`occupation_unrest`、`occupied_settlements` 和 `vassal_count`，并在下一轮行政维护、稳定度和控制力扩散中体现；当前战争仍是战略层抽象结算，不做逐格战棋。战争目标每 5 回合刷新一次，避免每回合全量路径搜索拖慢模拟。
+- 已有占领结局外交长期记忆：割让、撤军、附庸化和叛乱会写回 `DiplomacyRelation`，形成 `grievance`、`vassalage`、`restraint` 记忆，并随时间衰减；这些记忆会继续影响外交姿态、战争压力和宣战倾向。
 - 已有图例系统：`F2` 打开 Legend 面板，`docs/LEGEND.md` 维护图标和覆盖层说明。
 - UI 底部有轻量播放控制条：Play/Pause、Step、+10、+100、TPS 调整、Reset Bands。
 - 已有 headless 工具：
   - `oikumene_worldgen_batch`：批量生成世界并输出世界生成报告。
   - `oikumene_sim_batch`：无窗口跑部落/定居仿真并输出 summary、final_state、events。
-  - `oikumene_sim_balance_batch`：批量跑多个 seed，输出人口、农田、牧场、伐木、粮食供需、承载力、polity 行政、稳定性、科技、路线网络、贸易、外交、战争压力、战争目标和战争执行指标。
+  - `oikumene_sim_balance_batch`：批量跑多个 seed，输出人口、农田、牧场、伐木、粮食供需、承载力、polity 行政、稳定性、科技、路线网络、贸易、外交、外交长期记忆、战争压力、战争目标、战争执行和战后占领指标。
 
 ## C++ 依赖
 
@@ -207,7 +208,7 @@ cd CppClient
 - `world_report.json`
 - `states.jsonl`：仅在传入 `--sample-every N` 时生成。
 
-`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension、stability、平均解锁科技数、knowledge income、关键科技解锁率、路线网络规模、贸易规模、外交关系分布、战争压力候选摘要、战争目标价值/成本摘要、战争执行摘要和战后占领摘要。传入 `--disable-routes` 时会完全关闭路线建设、路线 tile 缓存、路线路径加成和矿点转运加成，用来做 routes-on/off 对照。`final_state.json` 会保留 Band / Settlement / Polity / Route / Trade / DiplomacyRelation / WarPressure / WarTargetCandidate / WarCampaign / OccupationRecord 的调试字段，并导出 `improved_tiles` 与 `route_tiles` 摘要；每个 Trade 会导出 `path`、`tile_count` 和 `weak_refresh_count`，方便检查贸易路线与协议稳定性；每个 DiplomacyRelation 会导出 posture、friendship、competition、dependence、blockade_tendency、border_tension 和 economic_overlap；每个 WarPressure 会导出 objective、war_roi、declaration_pressure、friendly_penalty、trade_conflict_weight、dependency_pressure 和 blockade_pressure；每个 WarTargetCandidate 会导出 kind、objective、path、target_value、campaign_cost、occupation_cost、roi、action_score 和各项价值/成本拆分；每个 WarCampaign 会导出 status、progress、mobilized_manpower、population_lost、food_spent、equipment_spent、occupation_profit 和 outcome_reason；每个 OccupationRecord 会导出 status、maintenance_cost、cumulative_maintenance、cumulative_shortfall、unrest、integration、revolt_risk、border_stability_delta 和 outcome_reason；每个 polity 会包含 `research`、`unlocked_techs`、`active_effects`、`military_potential`、`tool_efficiency`、`route_ids`、`route_maintenance`、`connected_settlements`、`connected_mines`、`connected_mine_potential`、`active_connected_mines`、`connected_ore_income`、`unconnected_ore_income`、`trade_ids`、`active_trade_count`、`trade_profit`、`occupation_load`、`occupation_unrest`、`occupied_settlements` 和 `vassal_count`。
+`summary.json` 会包含 camps、villages、active/inactive bands、total population、settlement 平均分、settlement 平均肥沃度、最大 settlement 人口，以及 farm/lumbercamp/pasture/worked tile 数量、上一回合食物/木材产出、食物消耗、平均承载力、polity 数量、controlled land ratio、contested tiles、平均 admin load/capacity、overextension、stability、平均解锁科技数、knowledge income、关键科技解锁率、路线网络规模、贸易规模、外交关系分布、外交长期记忆、战争压力候选摘要、战争目标价值/成本摘要、战争执行摘要和战后占领摘要。传入 `--disable-routes` 时会完全关闭路线建设、路线 tile 缓存、路线路径加成和矿点转运加成，用来做 routes-on/off 对照。`final_state.json` 会保留 Band / Settlement / Polity / Route / Trade / DiplomacyRelation / WarPressure / WarTargetCandidate / WarCampaign / OccupationRecord 的调试字段，并导出 `improved_tiles` 与 `route_tiles` 摘要；每个 Trade 会导出 `path`、`tile_count` 和 `weak_refresh_count`，方便检查贸易路线与协议稳定性；每个 DiplomacyRelation 会导出 posture、friendship、competition、dependence、blockade_tendency、border_tension、economic_overlap、grievance、vassalage、restraint、last_incident 和 incident_count；每个 WarPressure 会导出 objective、war_roi、declaration_pressure、friendly_penalty、trade_conflict_weight、dependency_pressure、blockade_pressure、grievance_pressure、restraint_pressure 和 vassalage_pressure；每个 WarTargetCandidate 会导出 kind、objective、path、target_value、campaign_cost、occupation_cost、roi、action_score 和各项价值/成本拆分；每个 WarCampaign 会导出 status、progress、mobilized_manpower、population_lost、food_spent、equipment_spent、occupation_profit 和 outcome_reason；每个 OccupationRecord 会导出 status、maintenance_cost、cumulative_maintenance、cumulative_shortfall、unrest、integration、revolt_risk、border_stability_delta 和 outcome_reason；每个 polity 会包含 `research`、`unlocked_techs`、`active_effects`、`military_potential`、`tool_efficiency`、`route_ids`、`route_maintenance`、`connected_settlements`、`connected_mines`、`connected_mine_potential`、`active_connected_mines`、`connected_ore_income`、`unconnected_ore_income`、`trade_ids`、`active_trade_count`、`trade_profit`、`occupation_load`、`occupation_unrest`、`occupied_settlements` 和 `vassal_count`。
 
 批量检查村庄经济、polity、路线、贸易和外交效果：
 
@@ -267,11 +268,13 @@ cd CppClient
 - `mean_diplomacy_relations`：平均 polity 关系数量。
 - `mean_friendly_relations` / `mean_competitive_relations` / `mean_dependent_relations` / `mean_blockade_risk_relations`：不同外交姿态数量。
 - `mean_friendship` / `mean_competition` / `mean_blockade_tendency`：外交评分均值，用来校准贸易是否过度导致友好、竞争或封锁风险。
+- `mean_diplomatic_grievance` / `mean_diplomatic_vassalage` / `mean_diplomatic_restraint`：战后结局写回外交关系后的平均长期记忆强度，分别表示怨恨、附庸依赖和克制倾向。
 - `mean_war_pressure_candidates` / `mean_high_war_pressure_candidates`：平均 War ROI 候选数量和高宣战压力候选数量。
 - `mean_war_roi` / `mean_max_declaration_pressure`：平均战争 ROI 和每个 seed 中最高宣战倾向。
 - `mean_trade_conflict_weight`：依赖、封锁风险、路线脆弱性和竞争叠加后的贸易冲突权重。
 - `mean_friendly_penalty`：友好关系对宣战倾向的平均抑制强度。
 - `mean_blockade_pressure` / `mean_dependency_pressure`：封锁和依赖对战争目标倾向的平均贡献。
+- `mean_grievance_pressure` / `mean_restraint_pressure` / `mean_vassalage_pressure`：长期怨恨、克制和附庸记忆对战争压力的平均贡献。
 - `mean_war_target_candidates` / `mean_high_war_target_candidates`：平均具体战争目标数量和高价值目标数量。
 - `mean_war_target_roi` / `mean_max_war_target_score`：具体目标平均 ROI 和每个 seed 中最高目标行动评分。
 - `mean_war_target_value`：目标综合价值，来自农田、资源、聚落、贸易路线和战略位置。
@@ -386,6 +389,28 @@ cd CppClient
 | `mean_active_occupation_maintenance` | 0.31 |
 | `mean_vassal_created_events` | 0.17 |
 
+一次 6 seed、300 turn 的 Phase 5.7 外交长期记忆与战争频率校准 smoke 结果：
+
+| 指标 | 数值 |
+| --- | ---: |
+| `mean_war_campaigns` | 1.83 |
+| `mean_active_wars` | 0.17 |
+| `mean_occupied_wars` | 1.67 |
+| `mean_occupations` | 1.67 |
+| `mean_active_occupations` | 0.50 |
+| `mean_vassalized_occupations` | 1.00 |
+| `mean_revolted_occupations` | 0.17 |
+| `mean_diplomatic_grievance` | 0.052 |
+| `mean_diplomatic_vassalage` | 0.124 |
+| `mean_diplomatic_restraint` | 0.052 |
+| `mean_grievance_pressure` | 0.038 |
+| `mean_restraint_pressure` | 0.048 |
+| `mean_vassalage_pressure` | 0.071 |
+| `mean_max_declaration_pressure` | 0.586 |
+| `mean_high_war_target_candidates` | 2.17 |
+| `mean_stability` | 0.898 |
+| `mean_overextension` | 0.111 |
+
 ## 开发格式化
 
 仓库包含：
@@ -404,9 +429,9 @@ python3 scripts/format_cpp.py
 
 ## 下一阶段
 
-Phase 5.7 后续重点：
+Phase 5.8 / Phase 6 前置重点：
 
-- 校准战争和占领频率，避免少数 seed 完全无战争或占领长期没有结局。
-- 把附庸、叛乱和撤军结果写回外交关系，让旧宗主、附庸和原主人之间形成长期记忆。
-- 增强边境稳定观测：对比占领前后 contested tiles、control strength 和 polity stability 的变化。
+- 把附庸从当前的长期外交记忆进一步升级为显式条约/宗主关系对象，方便后续外交和 LLM 读取。
+- 在更大的 seed 集合上继续校准割让、撤军、附庸和叛乱频率，避免单一结局过度占优。
+- 增强边境稳定观测：对比占领前后 contested tiles、control strength、polity stability 和外交记忆变化。
 - 为 Phase 6 的 Python/LLM 宏观决策准备更紧凑的国家战略报告。

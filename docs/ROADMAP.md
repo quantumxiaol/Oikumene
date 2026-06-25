@@ -112,6 +112,15 @@
 - Export occupation records, outcome counts, maintenance, and unrest metrics to headless JSON/CSV and selected-polity UI details.
 - Calibrate occupation outcome frequency across seeds and map geographies.
 
+## Phase 5.7: Diplomatic Memory and War Outcome Calibration
+
+- Write cession, withdrawal, vassalization, and revolt outcomes back into pairwise `DiplomacyRelation` memory.
+- Track long-term grievance, vassalage, and restraint memories with slow decay across diplomacy refreshes.
+- Let diplomatic memory influence posture classification, War ROI, declaration pressure, and dependency-breakout conflicts.
+- Surface memory terms in the selected-polity UI and export them in headless JSON/CSV metrics.
+- Calibrate early war cadence and occupation outcome thresholds so small seed batches produce visible wars, vassals, and revolts without overwhelming polity stability.
+- Keep occupation results authoritative in C++; future LLM strategy can only observe this memory and choose from legal actions.
+
 ## Phase 6: Remote Strategic AI
 
 - Async C++ decision orchestration.

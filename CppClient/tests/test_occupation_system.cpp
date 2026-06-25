@@ -130,9 +130,11 @@ void TestOccupiedCampaignRegistersOccupationPressure() {
     auto polities = MakePolities();
     std::vector<oikumene::WarCampaign> campaigns{MakeOccupiedCampaign()};
     std::vector<oikumene::OccupationRecord> occupations;
+    std::vector<oikumene::DiplomacyRelation> diplomacy;
     oikumene::EventLog log;
 
-    oikumene::OccupationSystem::UpdateOccupations(world, 19, settlements, polities, campaigns, occupations, log);
+    oikumene::OccupationSystem::UpdateOccupations(world, 19, settlements, polities, campaigns, occupations, diplomacy,
+                                                  log);
 
     assert(occupations.size() == 1);
     assert(occupations.front().status == oikumene::OccupationStatus::Active);
@@ -147,12 +149,16 @@ void TestStableOccupationCedesTerritory() {
     auto polities = MakePolities();
     std::vector<oikumene::WarCampaign> campaigns;
     std::vector<oikumene::OccupationRecord> occupations{MakeActiveOccupation(0.18F, 0.05F, 0.84F)};
+    std::vector<oikumene::DiplomacyRelation> diplomacy;
     oikumene::EventLog log;
 
-    oikumene::OccupationSystem::UpdateOccupations(world, 24, settlements, polities, campaigns, occupations, log);
+    oikumene::OccupationSystem::UpdateOccupations(world, 24, settlements, polities, campaigns, occupations, diplomacy,
+                                                  log);
 
     assert(occupations.front().status == oikumene::OccupationStatus::Ceded);
     assert(settlements[1].polity_id == 0);
+    assert(diplomacy.size() == 1);
+    assert(diplomacy.front().last_incident == oikumene::DiplomaticIncidentKind::TerritoryCeded);
     assert(CountEvents(log, oikumene::EventType::TerritoryCeded) == 1);
 }
 
@@ -162,11 +168,13 @@ void TestUnpaidOccupationWithdrawsOrRevolts() {
     auto polities = MakePolities(0.15F);
     std::vector<oikumene::WarCampaign> campaigns;
     std::vector<oikumene::OccupationRecord> occupations{MakeActiveOccupation(3.0F, 0.72F, 0.08F)};
+    std::vector<oikumene::DiplomacyRelation> diplomacy;
     occupations.front().occupation_value = 0.2F;
     occupations.front().cumulative_shortfall = 1.6F;
     oikumene::EventLog log;
 
-    oikumene::OccupationSystem::UpdateOccupations(world, 24, settlements, polities, campaigns, occupations, log);
+    oikumene::OccupationSystem::UpdateOccupations(world, 24, settlements, polities, campaigns, occupations, diplomacy,
+                                                  log);
 
     assert(occupations.front().status == oikumene::OccupationStatus::Withdrawn ||
            occupations.front().status == oikumene::OccupationStatus::Revolted);
@@ -175,6 +183,9 @@ void TestUnpaidOccupationWithdrawsOrRevolts() {
     assert(CountEvents(log, oikumene::EventType::OccupationWithdrawn) +
                CountEvents(log, oikumene::EventType::OccupationRevolt) ==
            1);
+    assert(!diplomacy.empty());
+    assert(diplomacy.front().last_incident == oikumene::DiplomaticIncidentKind::OccupationWithdrawn ||
+           diplomacy.front().last_incident == oikumene::DiplomaticIncidentKind::OccupationRevolt);
 }
 
 void TestOccupationCanBecomeVassalBuffer() {
@@ -182,17 +193,22 @@ void TestOccupationCanBecomeVassalBuffer() {
     auto settlements = MakeSettlements();
     auto polities = MakePolities();
     std::vector<oikumene::WarCampaign> campaigns;
-    std::vector<oikumene::OccupationRecord> occupations{MakeActiveOccupation(0.22F, 0.46F, 0.32F)};
+    std::vector<oikumene::OccupationRecord> occupations{MakeActiveOccupation(0.22F, 0.56F, 0.32F)};
+    std::vector<oikumene::DiplomacyRelation> diplomacy;
     occupations.front().turns_held = 6;
     occupations.front().occupation_value = 2.5F;
     oikumene::EventLog log;
 
-    oikumene::OccupationSystem::UpdateOccupations(world, 28, settlements, polities, campaigns, occupations, log);
+    oikumene::OccupationSystem::UpdateOccupations(world, 28, settlements, polities, campaigns, occupations, diplomacy,
+                                                  log);
 
     assert(occupations.front().status == oikumene::OccupationStatus::Vassalized);
     assert(occupations.front().subject_polity_id == 1);
     assert(settlements[1].polity_id == 1);
     assert(polities[0].vassal_count == 1);
+    assert(diplomacy.size() == 1);
+    assert(diplomacy.front().last_incident == oikumene::DiplomaticIncidentKind::VassalCreated);
+    assert(diplomacy.front().vassalage_b_to_a > 0.5F);
     assert(CountEvents(log, oikumene::EventType::VassalCreated) == 1);
 }
 

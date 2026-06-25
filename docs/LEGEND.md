@@ -58,6 +58,8 @@
 - Dependent：一方从另一方进口价值明显更高，形成依赖和潜在外交杠杆。
 - BlockadeRisk：依赖、竞争、路线脆弱性和弱势贸易叠加后的封锁风险倾向。
 - `Dip F/C/D/B`：HUD 中的外交关系摘要，分别表示 Friendly、Competitive、Dependent、BlockadeRisk 数量。
+- `G/V/R`：外交详情中的长期记忆摘要，分别表示 Grievance（怨恨）、Vassalage（附庸/依赖记忆）和 Restraint（克制/避免再战倾向）的最大强度。
+- TerritoryCeded / OccupationWithdrawn / VassalCreated / OccupationRevolt 会写回外交长期记忆，并随时间衰减。
 
 ## 战争压力
 
@@ -70,6 +72,9 @@
 - DependencyBreakout：依赖方因为受制于对方贸易杠杆而产生摆脱依赖的冲突压力。
 - Friendly Penalty：友好关系对宣战倾向的抑制；贸易越稳定，惩罚越明显。
 - Trade Conflict Weight：依赖、封锁风险、路线脆弱性和竞争叠加后的贸易冲突权重。
+- Grievance Pressure：长期怨恨对宣战倾向和目标价值的推动。
+- Restraint Pressure：撤军、代价过高或长期疲惫留下的克制记忆，会压低宣战倾向并提高战役成本。
+- Vassalage Pressure：附庸/依赖记忆产生的压力；被支配方更容易出现摆脱依赖的战争倾向，宗主方则更不倾向直接吞并附庸。
 - Declaration Pressure：归一化后的宣战压力，仅用于观察和后续战争目标选择。
 - WarTargetCandidate：具体战争目标候选，从 WarPressure 推导，包含目标 tile、路径、价值、成本和 ROI。
 - Settlement：夺取敌方村庄或首都的目标。

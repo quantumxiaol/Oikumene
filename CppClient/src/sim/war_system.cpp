@@ -7,9 +7,9 @@
 namespace oikumene {
 namespace {
 
-constexpr int kWarOpenInterval = 10;
+constexpr int kWarOpenInterval = 8;
 constexpr int kMaxActiveCampaigns = 6;
-constexpr float kDeclarationThreshold = 0.72F;
+constexpr float kDeclarationThreshold = 0.68F;
 constexpr float kOccupationProfitThreshold = -0.05F;
 
 Polity* PolityById(std::vector<Polity>& polities, PolityId id) {

@@ -346,6 +346,16 @@ nlohmann::json DiplomacyToJson(const oikumene::DiplomacyRelation& relation) {
         {"friendship", relation.friendship},
         {"competition", relation.competition},
         {"blockade_tendency", relation.blockade_tendency},
+        {"grievance_a_to_b", relation.grievance_a_to_b},
+        {"grievance_b_to_a", relation.grievance_b_to_a},
+        {"vassalage_a_to_b", relation.vassalage_a_to_b},
+        {"vassalage_b_to_a", relation.vassalage_b_to_a},
+        {"restraint_a_to_b", relation.restraint_a_to_b},
+        {"restraint_b_to_a", relation.restraint_b_to_a},
+        {"memory_updated_turn", relation.memory_updated_turn},
+        {"last_incident_turn", relation.last_incident_turn},
+        {"last_incident", oikumene::ToString(relation.last_incident)},
+        {"incident_count", relation.incident_count},
         {"posture", oikumene::ToString(relation.posture)},
         {"reason", relation.reason},
     };
@@ -365,6 +375,9 @@ nlohmann::json WarPressureToJson(const oikumene::WarPressure& pressure) {
         {"dependency_pressure", pressure.dependency_pressure},
         {"blockade_pressure", pressure.blockade_pressure},
         {"friendly_penalty", pressure.friendly_penalty},
+        {"grievance_pressure", pressure.grievance_pressure},
+        {"restraint_pressure", pressure.restraint_pressure},
+        {"vassalage_pressure", pressure.vassalage_pressure},
         {"target_value", pressure.target_value},
         {"campaign_cost", pressure.campaign_cost},
         {"base_roi", pressure.base_roi},
@@ -676,6 +689,39 @@ float AverageBlockadeTendency(const oikumene::Simulation& sim) {
     return total / static_cast<float>(sim.DiplomacyRelations().size());
 }
 
+float AverageDiplomaticGrievance(const oikumene::Simulation& sim) {
+    if (sim.DiplomacyRelations().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& relation : sim.DiplomacyRelations()) {
+        total += std::max(relation.grievance_a_to_b, relation.grievance_b_to_a);
+    }
+    return total / static_cast<float>(sim.DiplomacyRelations().size());
+}
+
+float AverageDiplomaticVassalage(const oikumene::Simulation& sim) {
+    if (sim.DiplomacyRelations().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& relation : sim.DiplomacyRelations()) {
+        total += std::max(relation.vassalage_a_to_b, relation.vassalage_b_to_a);
+    }
+    return total / static_cast<float>(sim.DiplomacyRelations().size());
+}
+
+float AverageDiplomaticRestraint(const oikumene::Simulation& sim) {
+    if (sim.DiplomacyRelations().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& relation : sim.DiplomacyRelations()) {
+        total += std::max(relation.restraint_a_to_b, relation.restraint_b_to_a);
+    }
+    return total / static_cast<float>(sim.DiplomacyRelations().size());
+}
+
 int CountHighWarPressures(const oikumene::Simulation& sim) {
     int count = 0;
     for (const auto& pressure : sim.WarPressures()) {
@@ -743,6 +789,39 @@ float AverageDependencyPressure(const oikumene::Simulation& sim) {
     float total = 0.0F;
     for (const auto& pressure : sim.WarPressures()) {
         total += pressure.dependency_pressure;
+    }
+    return total / static_cast<float>(sim.WarPressures().size());
+}
+
+float AverageGrievancePressure(const oikumene::Simulation& sim) {
+    if (sim.WarPressures().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& pressure : sim.WarPressures()) {
+        total += pressure.grievance_pressure;
+    }
+    return total / static_cast<float>(sim.WarPressures().size());
+}
+
+float AverageRestraintPressure(const oikumene::Simulation& sim) {
+    if (sim.WarPressures().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& pressure : sim.WarPressures()) {
+        total += pressure.restraint_pressure;
+    }
+    return total / static_cast<float>(sim.WarPressures().size());
+}
+
+float AverageVassalagePressure(const oikumene::Simulation& sim) {
+    if (sim.WarPressures().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& pressure : sim.WarPressures()) {
+        total += pressure.vassalage_pressure;
     }
     return total / static_cast<float>(sim.WarPressures().size());
 }
@@ -1149,6 +1228,9 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"average_friendship", AverageFriendship(sim)},
         {"average_competition", AverageCompetition(sim)},
         {"average_blockade_tendency", AverageBlockadeTendency(sim)},
+        {"average_diplomatic_grievance", AverageDiplomaticGrievance(sim)},
+        {"average_diplomatic_vassalage", AverageDiplomaticVassalage(sim)},
+        {"average_diplomatic_restraint", AverageDiplomaticRestraint(sim)},
         {"war_pressure_candidates", sim.WarPressures().size()},
         {"high_war_pressure_candidates", CountHighWarPressures(sim)},
         {"average_war_roi", AverageWarRoi(sim)},
@@ -1157,6 +1239,9 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"average_friendly_penalty", AverageFriendlyPenalty(sim)},
         {"average_blockade_pressure", AverageBlockadePressure(sim)},
         {"average_dependency_pressure", AverageDependencyPressure(sim)},
+        {"average_grievance_pressure", AverageGrievancePressure(sim)},
+        {"average_restraint_pressure", AverageRestraintPressure(sim)},
+        {"average_vassalage_pressure", AverageVassalagePressure(sim)},
         {"war_target_candidates", sim.WarTargets().size()},
         {"high_war_target_candidates", CountHighWarTargets(sim)},
         {"average_war_target_roi", AverageWarTargetRoi(sim)},
@@ -1250,6 +1335,9 @@ nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
         {"average_friendship", AverageFriendship(sim)},
         {"average_competition", AverageCompetition(sim)},
         {"average_blockade_tendency", AverageBlockadeTendency(sim)},
+        {"average_diplomatic_grievance", AverageDiplomaticGrievance(sim)},
+        {"average_diplomatic_vassalage", AverageDiplomaticVassalage(sim)},
+        {"average_diplomatic_restraint", AverageDiplomaticRestraint(sim)},
         {"war_pressure_candidates", sim.WarPressures().size()},
         {"high_war_pressure_candidates", CountHighWarPressures(sim)},
         {"average_war_roi", AverageWarRoi(sim)},
@@ -1258,6 +1346,9 @@ nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
         {"average_friendly_penalty", AverageFriendlyPenalty(sim)},
         {"average_blockade_pressure", AverageBlockadePressure(sim)},
         {"average_dependency_pressure", AverageDependencyPressure(sim)},
+        {"average_grievance_pressure", AverageGrievancePressure(sim)},
+        {"average_restraint_pressure", AverageRestraintPressure(sim)},
+        {"average_vassalage_pressure", AverageVassalagePressure(sim)},
         {"war_target_candidates", sim.WarTargets().size()},
         {"high_war_target_candidates", CountHighWarTargets(sim)},
         {"average_war_target_roi", AverageWarTargetRoi(sim)},

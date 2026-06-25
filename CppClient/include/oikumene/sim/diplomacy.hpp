@@ -14,7 +14,16 @@ enum class DiplomaticPosture {
     BlockadeRisk,
 };
 
+enum class DiplomaticIncidentKind {
+    None,
+    TerritoryCeded,
+    OccupationWithdrawn,
+    VassalCreated,
+    OccupationRevolt,
+};
+
 [[nodiscard]] std::string ToString(DiplomaticPosture posture);
+[[nodiscard]] std::string ToString(DiplomaticIncidentKind kind);
 
 struct DiplomacyRelation {
     int id = -1;
@@ -38,6 +47,18 @@ struct DiplomacyRelation {
     float friendship = 0.0F;
     float competition = 0.0F;
     float blockade_tendency = 0.0F;
+
+    float grievance_a_to_b = 0.0F;
+    float grievance_b_to_a = 0.0F;
+    float vassalage_a_to_b = 0.0F;
+    float vassalage_b_to_a = 0.0F;
+    float restraint_a_to_b = 0.0F;
+    float restraint_b_to_a = 0.0F;
+    Turn memory_updated_turn = 0;
+    Turn last_incident_turn = -1;
+    DiplomaticIncidentKind last_incident = DiplomaticIncidentKind::None;
+    int incident_count = 0;
+
     DiplomaticPosture posture = DiplomaticPosture::Neutral;
     std::string reason;
 };

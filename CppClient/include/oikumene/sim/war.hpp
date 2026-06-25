@@ -29,6 +29,9 @@ struct WarPressure {
     float dependency_pressure = 0.0F;
     float blockade_pressure = 0.0F;
     float friendly_penalty = 0.0F;
+    float grievance_pressure = 0.0F;
+    float restraint_pressure = 0.0F;
+    float vassalage_pressure = 0.0F;
 
     float target_value = 0.0F;
     float campaign_cost = 0.0F;

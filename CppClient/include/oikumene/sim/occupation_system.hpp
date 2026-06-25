@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "oikumene/core/types.hpp"
+#include "oikumene/sim/diplomacy.hpp"
 #include "oikumene/sim/event_log.hpp"
 #include "oikumene/sim/occupation.hpp"
 #include "oikumene/sim/polity.hpp"
@@ -18,7 +19,8 @@ class OccupationSystem {
 
     static void UpdateOccupations(World& world, Turn turn, std::vector<Settlement>& settlements,
                                   std::vector<Polity>& polities, const std::vector<WarCampaign>& campaigns,
-                                  std::vector<OccupationRecord>& occupations, EventLog& event_log);
+                                  std::vector<OccupationRecord>& occupations,
+                                  std::vector<DiplomacyRelation>& diplomacy_relations, EventLog& event_log);
 };
 
 } // namespace oikumene

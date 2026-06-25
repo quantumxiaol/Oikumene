@@ -189,7 +189,7 @@ void Simulation::AdvanceOneTurn() {
     WarSystem::UpdateWars(world_, current_turn_, settlements_, polities_, trades_, war_target_candidates_,
                           war_campaigns_, event_log_);
     OccupationSystem::UpdateOccupations(world_, current_turn_, settlements_, polities_, war_campaigns_, occupations_,
-                                        event_log_);
+                                        diplomacy_relations_, event_log_);
     ++current_turn_;
 }
 

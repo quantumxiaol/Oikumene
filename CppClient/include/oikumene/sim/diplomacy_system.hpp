@@ -15,6 +15,8 @@ class DiplomacySystem {
     static void Reset(std::vector<DiplomacyRelation>& relations);
     static void UpdateDiplomacy(const World& world, Turn turn, const std::vector<Polity>& polities,
                                 const std::vector<TradeAgreement>& trades, std::vector<DiplomacyRelation>& relations);
+    static void RecordIncident(std::vector<DiplomacyRelation>& relations, Turn turn, PolityId actor_id,
+                               PolityId target_id, DiplomaticIncidentKind kind, float strength = 1.0F);
 };
 
 } // namespace oikumene

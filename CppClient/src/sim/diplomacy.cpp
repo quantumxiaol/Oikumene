@@ -18,4 +18,20 @@ std::string ToString(DiplomaticPosture posture) {
     return "Unknown";
 }
 
+std::string ToString(DiplomaticIncidentKind kind) {
+    switch (kind) {
+    case DiplomaticIncidentKind::None:
+        return "None";
+    case DiplomaticIncidentKind::TerritoryCeded:
+        return "TerritoryCeded";
+    case DiplomaticIncidentKind::OccupationWithdrawn:
+        return "OccupationWithdrawn";
+    case DiplomaticIncidentKind::VassalCreated:
+        return "VassalCreated";
+    case DiplomaticIncidentKind::OccupationRevolt:
+        return "OccupationRevolt";
+    }
+    return "Unknown";
+}
+
 } // namespace oikumene

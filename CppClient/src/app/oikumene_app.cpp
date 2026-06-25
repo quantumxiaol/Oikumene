@@ -269,7 +269,10 @@ std::string DiplomacyRelationLine(const DiplomacyRelation& relation) {
     return "P" + std::to_string(relation.polity_a_id) + "-P" + std::to_string(relation.polity_b_id) + " " +
            ToString(relation.posture) + " F " + Fixed(relation.friendship, 2) + " C " + Fixed(relation.competition, 2) +
            " D " + Fixed(std::max(relation.dependence_a_on_b, relation.dependence_b_on_a), 2) + " B " +
-           Fixed(relation.blockade_tendency, 2);
+           Fixed(relation.blockade_tendency, 2) + " G " +
+           Fixed(std::max(relation.grievance_a_to_b, relation.grievance_b_to_a), 2) + " V " +
+           Fixed(std::max(relation.vassalage_a_to_b, relation.vassalage_b_to_a), 2) + " R " +
+           Fixed(std::max(relation.restraint_a_to_b, relation.restraint_b_to_a), 2);
 }
 
 std::string TradeIdsForPolity(const std::vector<TradeAgreement>& trades, PolityId polity_id) {
@@ -312,7 +315,8 @@ std::string WarPressureLine(const WarPressure& pressure) {
     return "P" + std::to_string(pressure.actor_polity_id) + "->P" + std::to_string(pressure.target_polity_id) + " " +
            ToString(pressure.objective) + " ROI " + Fixed(pressure.war_roi, 2) + " Press " +
            Fixed(pressure.declaration_pressure, 2) + " Fpen " + Fixed(pressure.friendly_penalty, 2) + " TradeW " +
-           Fixed(pressure.trade_conflict_weight, 2);
+           Fixed(pressure.trade_conflict_weight, 2) + " G " + Fixed(pressure.grievance_pressure, 2) + " R " +
+           Fixed(pressure.restraint_pressure, 2);
 }
 
 std::vector<const WarPressure*> WarPressuresForActor(const std::vector<WarPressure>& pressures, PolityId polity_id) {

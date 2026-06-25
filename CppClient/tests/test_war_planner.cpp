@@ -119,12 +119,60 @@ void TestDependentPolityGetsBreakoutPressure() {
     assert(pressure->trade_conflict_weight > 0.55F);
 }
 
+void TestGrievanceRaisesAndRestraintSuppressesWarPressure() {
+    std::vector<oikumene::Polity> polities{MakeWarPolity(0, 24.0F), MakeWarPolity(1, 22.0F)};
+
+    auto grievance = MakeRelation();
+    grievance.friendship = 0.08F;
+    grievance.competition = 0.35F;
+    grievance.border_tension = 0.28F;
+    grievance.grievance_a_to_b = 0.88F;
+
+    auto restraint = grievance;
+    restraint.grievance_a_to_b = 0.0F;
+    restraint.restraint_a_to_b = 0.88F;
+
+    const auto grievance_pressures = oikumene::BuildWarPressures(polities, {grievance});
+    const auto restraint_pressures = oikumene::BuildWarPressures(polities, {restraint});
+    const auto* grievance_pressure = PressureFor(grievance_pressures, 0, 1);
+    const auto* restraint_pressure = PressureFor(restraint_pressures, 0, 1);
+
+    assert(grievance_pressure != nullptr);
+    assert(restraint_pressure != nullptr);
+    assert(grievance_pressure->grievance_pressure > 0.65F);
+    assert(restraint_pressure->restraint_pressure > 0.60F);
+    assert(grievance_pressure->declaration_pressure > restraint_pressure->declaration_pressure);
+}
+
+void TestVassalageCreatesDependencyBreakoutPressure() {
+    std::vector<oikumene::Polity> polities{MakeWarPolity(0, 24.0F), MakeWarPolity(1, 25.0F)};
+    auto relation = MakeRelation();
+    relation.friendship = 0.10F;
+    relation.competition = 0.24F;
+    relation.border_tension = 0.20F;
+    relation.vassalage_a_to_b = 0.82F;
+    relation.dependence_a_on_b = 0.82F;
+    relation.dependent_polity_id = 0;
+    relation.leverage_polity_id = 1;
+    relation.blockade_tendency = 0.40F;
+
+    const auto pressures = oikumene::BuildWarPressures(polities, {relation});
+    const auto* pressure = PressureFor(pressures, 0, 1);
+
+    assert(pressure != nullptr);
+    assert(pressure->objective == oikumene::WarObjective::DependencyBreakout);
+    assert(pressure->vassalage_pressure > 0.75F);
+    assert(pressure->dependency_pressure > 0.80F);
+}
+
 } // namespace
 
 int main() {
     TestFriendlyRelationSuppressesWarPressure();
     TestLeveragePolityGetsBlockadePressure();
     TestDependentPolityGetsBreakoutPressure();
+    TestGrievanceRaisesAndRestraintSuppressesWarPressure();
+    TestVassalageCreatesDependencyBreakoutPressure();
     std::cout << "war planner tests passed\n";
     return 0;
 }
