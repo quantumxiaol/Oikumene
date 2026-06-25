@@ -412,6 +412,46 @@ nlohmann::json WarTargetToJson(const oikumene::WarTargetCandidate& target) {
     };
 }
 
+nlohmann::json WarCampaignToJson(const oikumene::WarCampaign& campaign) {
+    nlohmann::json path = nlohmann::json::array();
+    for (const auto& coord : campaign.path) {
+        path.push_back(nlohmann::json{{"x", coord.x}, {"y", coord.y}});
+    }
+    return nlohmann::json{
+        {"id", campaign.id},
+        {"target_candidate_id", campaign.target_candidate_id},
+        {"actor_polity_id", campaign.actor_polity_id},
+        {"target_polity_id", campaign.target_polity_id},
+        {"objective", oikumene::ToString(campaign.objective)},
+        {"target_kind", oikumene::ToString(campaign.target_kind)},
+        {"status", oikumene::ToString(campaign.status)},
+        {"x", campaign.x},
+        {"y", campaign.y},
+        {"target_settlement_id", campaign.target_settlement_id},
+        {"target_trade_id", campaign.target_trade_id},
+        {"path", path},
+        {"tile_count", campaign.path.size()},
+        {"started_turn", campaign.started_turn},
+        {"ended_turn", campaign.ended_turn},
+        {"last_update_turn", campaign.last_update_turn},
+        {"turns_active", campaign.turns_active},
+        {"target_value", campaign.target_value},
+        {"campaign_cost", campaign.campaign_cost},
+        {"occupation_cost", campaign.occupation_cost},
+        {"action_score", campaign.action_score},
+        {"progress", campaign.progress},
+        {"mobilized_manpower", campaign.mobilized_manpower},
+        {"attacker_strength", campaign.attacker_strength},
+        {"defender_strength", campaign.defender_strength},
+        {"population_lost", campaign.population_lost},
+        {"food_spent", campaign.food_spent},
+        {"equipment_spent", campaign.equipment_spent},
+        {"occupation_profit", campaign.occupation_profit},
+        {"supply_failures", campaign.supply_failures},
+        {"outcome_reason", campaign.outcome_reason},
+    };
+}
+
 int CountActiveBands(const oikumene::Simulation& sim) {
     int count = 0;
     for (const auto& band : sim.Bands()) {
@@ -735,6 +775,49 @@ float AverageOccupationCost(const oikumene::Simulation& sim) {
     return total / static_cast<float>(sim.WarTargets().size());
 }
 
+int CountWarsByStatus(const oikumene::Simulation& sim, oikumene::WarCampaignStatus status) {
+    int count = 0;
+    for (const auto& campaign : sim.Wars()) {
+        count += campaign.status == status ? 1 : 0;
+    }
+    return count;
+}
+
+float TotalWarPopulationLost(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    for (const auto& campaign : sim.Wars()) {
+        total += campaign.population_lost;
+    }
+    return total;
+}
+
+float TotalWarFoodSpent(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    for (const auto& campaign : sim.Wars()) {
+        total += campaign.food_spent;
+    }
+    return total;
+}
+
+float TotalWarEquipmentSpent(const oikumene::Simulation& sim) {
+    float total = 0.0F;
+    for (const auto& campaign : sim.Wars()) {
+        total += campaign.equipment_spent;
+    }
+    return total;
+}
+
+float AverageWarProgress(const oikumene::Simulation& sim) {
+    if (sim.Wars().empty()) {
+        return 0.0F;
+    }
+    float total = 0.0F;
+    for (const auto& campaign : sim.Wars()) {
+        total += campaign.progress;
+    }
+    return total / static_cast<float>(sim.Wars().size());
+}
+
 float AverageAdminLoad(const oikumene::Simulation& sim) {
     if (sim.Polities().empty()) {
         return 0.0F;
@@ -928,6 +1011,10 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
     for (const auto& target : sim.WarTargets()) {
         war_targets.push_back(WarTargetToJson(target));
     }
+    nlohmann::json wars = nlohmann::json::array();
+    for (const auto& campaign : sim.Wars()) {
+        wars.push_back(WarCampaignToJson(campaign));
+    }
 
     return nlohmann::json{
         {"turn", sim.CurrentTurn()},
@@ -940,6 +1027,7 @@ nlohmann::json FinalStateToJson(const oikumene::Simulation& sim) {
         {"diplomacy_relations", diplomacy},
         {"war_pressures", war_pressures},
         {"war_targets", war_targets},
+        {"wars", wars},
         {"bands", bands},
         {"improved_tiles", ImprovedTilesToJson(sim)},
         {"route_tiles", RouteTilesToJson(sim)},
@@ -1005,6 +1093,15 @@ nlohmann::json SummaryToJson(const Options& options, const oikumene::Simulation&
         {"average_war_target_value", AverageWarTargetValue(sim)},
         {"average_campaign_cost", AverageCampaignCost(sim)},
         {"average_occupation_cost", AverageOccupationCost(sim)},
+        {"war_campaigns", sim.Wars().size()},
+        {"active_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Active)},
+        {"occupied_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Occupied)},
+        {"withdrawn_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Withdrawn)},
+        {"peace_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Peace)},
+        {"war_population_lost", TotalWarPopulationLost(sim)},
+        {"war_food_spent", TotalWarFoodSpent(sim)},
+        {"war_equipment_spent", TotalWarEquipmentSpent(sim)},
+        {"average_war_progress", AverageWarProgress(sim)},
         {"route_tile_count", CountRouteTiles(sim)},
         {"road_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Road)},
         {"trail_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Trail)},
@@ -1085,6 +1182,15 @@ nlohmann::json StateSampleToJson(const oikumene::Simulation& sim) {
         {"average_war_target_value", AverageWarTargetValue(sim)},
         {"average_campaign_cost", AverageCampaignCost(sim)},
         {"average_occupation_cost", AverageOccupationCost(sim)},
+        {"war_campaigns", sim.Wars().size()},
+        {"active_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Active)},
+        {"occupied_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Occupied)},
+        {"withdrawn_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Withdrawn)},
+        {"peace_wars", CountWarsByStatus(sim, oikumene::WarCampaignStatus::Peace)},
+        {"war_population_lost", TotalWarPopulationLost(sim)},
+        {"war_food_spent", TotalWarFoodSpent(sim)},
+        {"war_equipment_spent", TotalWarEquipmentSpent(sim)},
+        {"average_war_progress", AverageWarProgress(sim)},
         {"route_tile_count", CountRouteTiles(sim)},
         {"road_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Road)},
         {"trail_tile_count", CountRouteKindTiles(sim, oikumene::RouteKind::Trail)},

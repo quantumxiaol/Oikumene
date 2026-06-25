@@ -44,6 +44,14 @@ std::string ToString(EventType type) {
         return "RouteBuilt";
     case EventType::TradeOpened:
         return "TradeOpened";
+    case EventType::WarDeclared:
+        return "WarDeclared";
+    case EventType::WarTargetOccupied:
+        return "WarTargetOccupied";
+    case EventType::WarRetreated:
+        return "WarRetreated";
+    case EventType::PeaceSigned:
+        return "PeaceSigned";
     }
     return "Unknown";
 }

@@ -27,6 +27,10 @@ enum class EventType {
     TechnologyUnlocked,
     RouteBuilt,
     TradeOpened,
+    WarDeclared,
+    WarTargetOccupied,
+    WarRetreated,
+    PeaceSigned,
 };
 
 [[nodiscard]] std::string ToString(EventType type);

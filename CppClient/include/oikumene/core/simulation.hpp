@@ -13,6 +13,7 @@
 #include "oikumene/sim/simulation_params.hpp"
 #include "oikumene/sim/trade.hpp"
 #include "oikumene/sim/war.hpp"
+#include "oikumene/sim/war_campaign.hpp"
 #include "oikumene/sim/war_target.hpp"
 #include "oikumene/world/world.hpp"
 
@@ -42,6 +43,8 @@ class Simulation {
     [[nodiscard]] std::vector<WarPressure>& WarPressures();
     [[nodiscard]] const std::vector<WarTargetCandidate>& WarTargets() const;
     [[nodiscard]] std::vector<WarTargetCandidate>& WarTargets();
+    [[nodiscard]] const std::vector<WarCampaign>& Wars() const;
+    [[nodiscard]] std::vector<WarCampaign>& Wars();
     [[nodiscard]] const EventLog& Events() const;
     [[nodiscard]] EventLog& Events();
     [[nodiscard]] std::string StatusSummary() const;
@@ -61,6 +64,7 @@ class Simulation {
     std::vector<DiplomacyRelation> diplomacy_relations_;
     std::vector<WarPressure> war_pressures_;
     std::vector<WarTargetCandidate> war_target_candidates_;
+    std::vector<WarCampaign> war_campaigns_;
     EventLog event_log_;
 };
 

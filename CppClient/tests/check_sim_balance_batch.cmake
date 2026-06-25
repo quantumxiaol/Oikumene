@@ -88,6 +88,13 @@ foreach(token
     "\"mean_max_war_target_score\""
     "\"mean_campaign_cost\""
     "\"mean_occupation_cost\""
+    "\"mean_war_campaigns\""
+    "\"mean_active_wars\""
+    "\"mean_occupied_wars\""
+    "\"mean_withdrawn_wars\""
+    "\"mean_war_population_lost\""
+    "\"mean_war_food_spent\""
+    "\"mean_war_declared_events\""
 )
     string(FIND "${summary}" "${token}" token_index)
     if(token_index EQUAL -1)
@@ -116,6 +123,7 @@ foreach(token
     "\"mean_admin_distance_saving\""
     "\"mean_war_pressure_candidates\""
     "\"mean_war_target_candidates\""
+    "\"mean_war_campaigns\""
 )
     string(FIND "${off_summary}" "${token}" token_index)
     if(token_index EQUAL -1)

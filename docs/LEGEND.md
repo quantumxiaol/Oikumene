@@ -61,7 +61,7 @@
 
 ## 战争压力
 
-当前版本的战争系统还不执行宣战和占领，只生成用于调试 War ROI 的定向压力候选和具体目标候选。
+当前版本的战争系统执行战略层抽象战争，不做逐格战棋。
 
 - WarPressure：从一个 polity 指向另一个 polity 的战争倾向候选，来源于外交、贸易、边界和军力差异。
 - BorderDispute：边界摩擦和竞争主导的冲突倾向。
@@ -79,6 +79,10 @@
 - StrategicPass：争夺山口、河谷、沿海路线和其他交通瓶颈。
 - Campaign Cost：战役总成本，拆分为动员、补给、装备、地形损耗、防御和占领维护。
 - Occupation Cost：占领后的维护压力；距离、目标稳定性和友好惩罚会让占领更不划算。
+- WarCampaign：由高分 WarTargetCandidate 转成的抽象战役，记录状态、进度、消耗和结果。
+- Active / Occupied / Withdrawn / Peace：战争状态，分别表示进行中、占领目标、撤退失败和议和结束。
+- Population Lost / Food Spent / Equipment Spent：战争执行消耗，直接从成员 settlement 的人口和库存中扣除。
+- WarDeclared / WarTargetOccupied / WarRetreated / PeaceSigned：战争事件日志，用于复盘每次开战和战后结果。
 
 ## 实体
 

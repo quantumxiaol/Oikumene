@@ -52,6 +52,10 @@ struct Metrics {
     int pasture_events = 0;
     int route_events = 0;
     int trade_events = 0;
+    int war_declared_events = 0;
+    int war_occupied_events = 0;
+    int war_retreat_events = 0;
+    int peace_events = 0;
     int routes = 0;
     int active_trades = 0;
     int diplomacy_relations = 0;
@@ -63,6 +67,11 @@ struct Metrics {
     int high_war_pressure_candidates = 0;
     int war_target_candidates = 0;
     int high_war_target_candidates = 0;
+    int war_campaigns = 0;
+    int active_wars = 0;
+    int occupied_wars = 0;
+    int withdrawn_wars = 0;
+    int peace_wars = 0;
     int route_tiles = 0;
     int road_tiles = 0;
     int trail_tiles = 0;
@@ -130,6 +139,10 @@ struct Metrics {
     float average_war_target_value = 0.0F;
     float average_campaign_cost = 0.0F;
     float average_occupation_cost = 0.0F;
+    float war_population_lost = 0.0F;
+    float war_food_spent = 0.0F;
+    float war_equipment_spent = 0.0F;
+    float average_war_progress = 0.0F;
 };
 
 void PrintUsage() {
@@ -455,6 +468,10 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
     metrics.pasture_events = CountEvents(sim, oikumene::EventType::PastureBuilt);
     metrics.route_events = CountEvents(sim, oikumene::EventType::RouteBuilt);
     metrics.trade_events = CountEvents(sim, oikumene::EventType::TradeOpened);
+    metrics.war_declared_events = CountEvents(sim, oikumene::EventType::WarDeclared);
+    metrics.war_occupied_events = CountEvents(sim, oikumene::EventType::WarTargetOccupied);
+    metrics.war_retreat_events = CountEvents(sim, oikumene::EventType::WarRetreated);
+    metrics.peace_events = CountEvents(sim, oikumene::EventType::PeaceSigned);
     metrics.routes = static_cast<int>(sim.Routes().size());
     float trade_profit_sum = 0.0F;
     float trade_complementarity_sum = 0.0F;
@@ -549,6 +566,20 @@ Metrics RunOne(const Options& options, std::uint64_t seed) {
         metrics.average_campaign_cost = campaign_cost_sum / count;
         metrics.average_occupation_cost = occupation_cost_sum / count;
     }
+    metrics.war_campaigns = static_cast<int>(sim.Wars().size());
+    float war_progress_sum = 0.0F;
+    for (const auto& campaign : sim.Wars()) {
+        metrics.active_wars += campaign.status == oikumene::WarCampaignStatus::Active ? 1 : 0;
+        metrics.occupied_wars += campaign.status == oikumene::WarCampaignStatus::Occupied ? 1 : 0;
+        metrics.withdrawn_wars += campaign.status == oikumene::WarCampaignStatus::Withdrawn ? 1 : 0;
+        metrics.peace_wars += campaign.status == oikumene::WarCampaignStatus::Peace ? 1 : 0;
+        metrics.war_population_lost += campaign.population_lost;
+        metrics.war_food_spent += campaign.food_spent;
+        metrics.war_equipment_spent += campaign.equipment_spent;
+        war_progress_sum += campaign.progress;
+    }
+    metrics.average_war_progress =
+        metrics.war_campaigns <= 0 ? 0.0F : war_progress_sum / static_cast<float>(metrics.war_campaigns);
     metrics.food_output_consumption_ratio = metrics.total_food_output / std::max(1.0F, metrics.total_food_consumption);
     metrics.farm_share_of_worked_tiles =
         metrics.worked_tiles <= 0 ? 0.0F : static_cast<float>(metrics.farms) / static_cast<float>(metrics.worked_tiles);
@@ -657,6 +688,19 @@ nlohmann::json ToJson(const Metrics& metrics) {
         {"average_war_target_value", metrics.average_war_target_value},
         {"average_campaign_cost", metrics.average_campaign_cost},
         {"average_occupation_cost", metrics.average_occupation_cost},
+        {"war_campaigns", metrics.war_campaigns},
+        {"active_wars", metrics.active_wars},
+        {"occupied_wars", metrics.occupied_wars},
+        {"withdrawn_wars", metrics.withdrawn_wars},
+        {"peace_wars", metrics.peace_wars},
+        {"war_population_lost", metrics.war_population_lost},
+        {"war_food_spent", metrics.war_food_spent},
+        {"war_equipment_spent", metrics.war_equipment_spent},
+        {"average_war_progress", metrics.average_war_progress},
+        {"war_declared_events", metrics.war_declared_events},
+        {"war_occupied_events", metrics.war_occupied_events},
+        {"war_retreat_events", metrics.war_retreat_events},
+        {"peace_events", metrics.peace_events},
     };
 }
 
@@ -688,7 +732,10 @@ void WriteCsvHeader(std::ofstream& output) {
            "average_trade_path_tiles,average_friendship,average_competition,average_blockade_tendency,"
            "average_war_roi,max_declaration_pressure,average_trade_conflict_weight,average_friendly_penalty,"
            "average_blockade_pressure,average_dependency_pressure,average_war_target_roi,max_war_target_score,"
-           "average_war_target_value,average_campaign_cost,average_occupation_cost\n";
+           "average_war_target_value,average_campaign_cost,average_occupation_cost,"
+           "war_campaigns,active_wars,occupied_wars,withdrawn_wars,peace_wars,"
+           "war_population_lost,war_food_spent,war_equipment_spent,average_war_progress,"
+           "war_declared_events,war_occupied_events,war_retreat_events,peace_events\n";
 }
 
 void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
@@ -734,7 +781,12 @@ void WriteCsvRow(std::ofstream& output, const Metrics& metrics) {
            << metrics.average_friendly_penalty << ',' << metrics.average_blockade_pressure << ','
            << metrics.average_dependency_pressure << ',' << metrics.average_war_target_roi << ','
            << metrics.max_war_target_score << ',' << metrics.average_war_target_value << ','
-           << metrics.average_campaign_cost << ',' << metrics.average_occupation_cost << '\n';
+           << metrics.average_campaign_cost << ',' << metrics.average_occupation_cost << ',' << metrics.war_campaigns
+           << ',' << metrics.active_wars << ',' << metrics.occupied_wars << ',' << metrics.withdrawn_wars << ','
+           << metrics.peace_wars << ',' << metrics.war_population_lost << ',' << metrics.war_food_spent << ','
+           << metrics.war_equipment_spent << ',' << metrics.average_war_progress << ',' << metrics.war_declared_events
+           << ',' << metrics.war_occupied_events << ',' << metrics.war_retreat_events << ',' << metrics.peace_events
+           << '\n';
 }
 
 nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
@@ -858,6 +910,15 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_war_target_value", mean([](const Metrics& item) { return item.average_war_target_value; })},
         {"mean_campaign_cost", mean([](const Metrics& item) { return item.average_campaign_cost; })},
         {"mean_occupation_cost", mean([](const Metrics& item) { return item.average_occupation_cost; })},
+        {"mean_war_campaigns", mean([](const Metrics& item) { return item.war_campaigns; })},
+        {"mean_active_wars", mean([](const Metrics& item) { return item.active_wars; })},
+        {"mean_occupied_wars", mean([](const Metrics& item) { return item.occupied_wars; })},
+        {"mean_withdrawn_wars", mean([](const Metrics& item) { return item.withdrawn_wars; })},
+        {"mean_peace_wars", mean([](const Metrics& item) { return item.peace_wars; })},
+        {"mean_war_population_lost", mean([](const Metrics& item) { return item.war_population_lost; })},
+        {"mean_war_food_spent", mean([](const Metrics& item) { return item.war_food_spent; })},
+        {"mean_war_equipment_spent", mean([](const Metrics& item) { return item.war_equipment_spent; })},
+        {"mean_war_progress", mean([](const Metrics& item) { return item.average_war_progress; })},
         {"mean_food_output", mean([](const Metrics& item) { return item.total_food_output; })},
         {"mean_food_consumption", mean([](const Metrics& item) { return item.total_food_consumption; })},
         {"mean_food_output_consumption_ratio",
@@ -871,6 +932,10 @@ nlohmann::json Aggregate(const std::vector<Metrics>& metrics) {
         {"mean_pasture_built_events", mean([](const Metrics& item) { return item.pasture_events; })},
         {"mean_route_built_events", mean([](const Metrics& item) { return item.route_events; })},
         {"mean_trade_opened_events", mean([](const Metrics& item) { return item.trade_events; })},
+        {"mean_war_declared_events", mean([](const Metrics& item) { return item.war_declared_events; })},
+        {"mean_war_occupied_events", mean([](const Metrics& item) { return item.war_occupied_events; })},
+        {"mean_war_retreat_events", mean([](const Metrics& item) { return item.war_retreat_events; })},
+        {"mean_peace_events", mean([](const Metrics& item) { return item.peace_events; })},
     };
 }
 

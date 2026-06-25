@@ -10,6 +10,7 @@
 #include "oikumene/sim/technology_system.hpp"
 #include "oikumene/sim/trade_system.hpp"
 #include "oikumene/sim/war_planner.hpp"
+#include "oikumene/sim/war_system.hpp"
 #include "oikumene/sim/war_target_planner.hpp"
 #include "oikumene/world/world_generation_params.hpp"
 #include "oikumene/world/world_generator.hpp"
@@ -101,6 +102,14 @@ std::vector<WarTargetCandidate>& Simulation::WarTargets() {
     return war_target_candidates_;
 }
 
+const std::vector<WarCampaign>& Simulation::Wars() const {
+    return war_campaigns_;
+}
+
+std::vector<WarCampaign>& Simulation::Wars() {
+    return war_campaigns_;
+}
+
 const EventLog& Simulation::Events() const {
     return event_log_;
 }
@@ -119,8 +128,13 @@ std::string Simulation::StatusSummary() const {
     for (const auto& settlement : settlements_) {
         villages += settlement.level == SettlementLevel::Village ? 1 : 0;
     }
+    int active_wars = 0;
+    for (const auto& campaign : war_campaigns_) {
+        active_wars += campaign.status == WarCampaignStatus::Active ? 1 : 0;
+    }
     stream << "Turn " << current_turn_ << " bands " << active_bands << "/" << bands_.size() << " settlements "
-           << settlements_.size() << " villages " << villages << " polities " << polities_.size();
+           << settlements_.size() << " villages " << villages << " polities " << polities_.size() << " wars "
+           << active_wars;
     return stream.str();
 }
 
@@ -131,10 +145,12 @@ void Simulation::InitializeBands(int count) {
     diplomacy_relations_.clear();
     war_pressures_.clear();
     war_target_candidates_.clear();
+    war_campaigns_.clear();
     PolitySystem::Reset(world_, settlements_, polities_);
     RouteSystem::Reset(world_, routes_, polities_);
     TradeSystem::Reset(trades_, polities_);
     DiplomacySystem::Reset(diplomacy_relations_);
+    WarSystem::Reset(war_campaigns_);
     event_log_.Events().clear();
     current_turn_ = 0;
     BandSystem::InitializeBands(world_, params_, count, bands_);
@@ -155,6 +171,8 @@ void Simulation::AdvanceOneTurn() {
     } else if (current_turn_ % kWarTargetRefreshInterval == 0) {
         war_target_candidates_ = BuildWarTargetCandidates(world_, settlements_, polities_, trades_, war_pressures_);
     }
+    WarSystem::UpdateWars(world_, current_turn_, settlements_, polities_, trades_, war_target_candidates_,
+                          war_campaigns_, event_log_);
     ++current_turn_;
 }
 

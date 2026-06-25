@@ -346,6 +346,29 @@ std::vector<const WarTargetCandidate*> WarTargetsForActor(const std::vector<WarT
     return matches;
 }
 
+std::string WarCampaignLine(const WarCampaign& campaign) {
+    return "War " + std::to_string(campaign.id) + " P" + std::to_string(campaign.actor_polity_id) + "->P" +
+           std::to_string(campaign.target_polity_id) + " " + ToString(campaign.status) + " " +
+           ToString(campaign.target_kind) + " Prog " + Fixed(campaign.progress, 2) + " Loss " +
+           Fixed(campaign.population_lost, 0);
+}
+
+std::vector<const WarCampaign*> WarsForPolity(const std::vector<WarCampaign>& campaigns, PolityId polity_id) {
+    std::vector<const WarCampaign*> matches;
+    for (const auto& campaign : campaigns) {
+        if (campaign.actor_polity_id == polity_id || campaign.target_polity_id == polity_id) {
+            matches.push_back(&campaign);
+        }
+    }
+    std::sort(matches.begin(), matches.end(), [](const auto* lhs, const auto* rhs) {
+        if (lhs->status != rhs->status) {
+            return lhs->status == WarCampaignStatus::Active;
+        }
+        return lhs->started_turn > rhs->started_turn;
+    });
+    return matches;
+}
+
 int ContestedTileCount(const World& world) {
     int count = 0;
     for (const auto& tile : world.Tiles()) {
@@ -1030,6 +1053,14 @@ void DrawInspectorDetails(const AppState& state, int& y) {
             const std::size_t target_count = std::min<std::size_t>(war_targets.size(), 3);
             for (std::size_t i = 0; i < target_count; ++i) {
                 DrawText(Truncate(WarTargetLine(*war_targets[i]), 58).c_str(), 34, y, 16, Color{246, 194, 126, 255});
+                y += 22;
+            }
+            const auto wars = WarsForPolity(state.simulation.Wars(), polity->id);
+            DrawText(("Wars " + std::to_string(wars.size())).c_str(), 34, y, 16, Color{246, 150, 120, 255});
+            y += 22;
+            const std::size_t campaign_count = std::min<std::size_t>(wars.size(), 3);
+            for (std::size_t i = 0; i < campaign_count; ++i) {
+                DrawText(Truncate(WarCampaignLine(*wars[i]), 58).c_str(), 34, y, 16, Color{246, 150, 120, 255});
                 y += 22;
             }
         }

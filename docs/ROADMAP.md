@@ -98,7 +98,15 @@
 
 - Convert high-score `WarTargetCandidate` records into war plans.
 - Track war state, mobilized resources, campaign progress, occupation, retreat, and peace events.
+- Consume population, food, and equipment from member settlements during active campaigns.
+- Mutate settlement polity ownership or target tile control on successful occupation.
+- Export `WarCampaign` records and war event/resource metrics to headless JSON/CSV and selected-polity UI details.
+
+## Phase 5.6: Occupation and Settlement Aftermath
+
 - Let occupation profit or maintenance feed back into border stability.
+- Add treaties, cession, withdrawal, vassalization, and frontier revolt events.
+- Calibrate war frequency across seeds and map geographies.
 
 ## Phase 6: Remote Strategic AI
 
