@@ -19,6 +19,8 @@ struct UiConfig {
     float scale = 1.0F;
     bool show_debug_panel = false;
     bool show_help_panel = false;
+    bool pause_on_screenshot = true;
+    bool pause_on_focus_loss = true;
 };
 
 struct SimulationConfig {

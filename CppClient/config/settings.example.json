@@ -9,7 +9,9 @@
   "ui": {
     "scale": 1.0,
     "show_debug_panel": false,
-    "show_help_panel": false
+    "show_help_panel": false,
+    "pause_on_screenshot": true,
+    "pause_on_focus_loss": true
   },
   "simulation": {
     "default_seed": 42,

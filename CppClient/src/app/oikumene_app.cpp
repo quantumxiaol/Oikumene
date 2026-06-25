@@ -15,6 +15,7 @@
 
 #include "oikumene/ai/remote_decision_provider.hpp"
 #include "oikumene/app/app_state.hpp"
+#include "oikumene/app/input_policy.hpp"
 #include "oikumene/render/map_layer.hpp"
 #include "oikumene/sim/band_system.hpp"
 #include "oikumene/sim/settlement_system.hpp"
@@ -559,6 +560,19 @@ bool UiCapturesMouse(const AppState& state, Vector2 mouse) {
     return PointInAnyRectangle(mouse, UiCaptureRectangles(state));
 }
 
+ShortcutModifiers CurrentShortcutModifiers() {
+    return ShortcutModifiers{
+        .command = IsKeyDown(KEY_LEFT_SUPER) || IsKeyDown(KEY_RIGHT_SUPER),
+        .control = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL),
+        .alt = IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT),
+        .shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT),
+    };
+}
+
+bool GameKeyPressed(int key, const ShortcutModifiers& modifiers) {
+    return AppHotkeysAllowed(modifiers) && IsKeyPressed(key);
+}
+
 std::string Truncate(std::string text, std::size_t limit) {
     if (text.size() <= limit) {
         return text;
@@ -645,6 +659,10 @@ void SelectAtHover(AppState& state) {
 }
 
 void HandleLayerHotkeys(AppState& state) {
+    if (!LayerHotkeysAllowed(CurrentShortcutModifiers())) {
+        return;
+    }
+
     if (IsKeyPressed(KEY_ONE)) {
         state.current_layer = MapLayer::Biome;
     }
@@ -684,45 +702,46 @@ void HandleInput(AppState& state) {
     const bool mouse_captured = UiCapturesMouse(state, mouse);
     state.camera.Update(!mouse_captured, true);
     HandleLayerHotkeys(state);
+    const auto modifiers = CurrentShortcutModifiers();
 
-    if (IsKeyPressed(KEY_R)) {
+    if (GameKeyPressed(KEY_R, modifiers)) {
         BuildSimulation(state, NextSeed(state.generation_params.seed));
         state.camera.FitWorld(state.simulation.GetWorld().Width(), state.simulation.GetWorld().Height());
         state.status_message = "Generated seed " + std::to_string(state.generation_params.seed);
     }
-    if (IsKeyPressed(KEY_B)) {
+    if (GameKeyPressed(KEY_B, modifiers)) {
         state.simulation.InitializeBands(state.config.simulation.initial_bands);
         ApplySelection(state, ClearSelection());
         state.selected_band_id = -1;
         state.selected_settlement_id = -1;
         state.status_message = "Reset bands on current world";
     }
-    if (IsKeyPressed(KEY_H)) {
+    if (GameKeyPressed(KEY_H, modifiers)) {
         state.health = state.remote_provider.CheckHealth();
         state.status_message = "Python health check: " + StatusText(state.health);
     }
-    if (IsKeyPressed(KEY_SPACE)) {
+    if (GameKeyPressed(KEY_SPACE, modifiers)) {
         StepTurns(state, 1);
     }
-    if (IsKeyPressed(KEY_N)) {
-        StepTurns(state, IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT) ? 100 : 10);
+    if (GameKeyPressed(KEY_N, modifiers)) {
+        StepTurns(state, UsesLargeStep(modifiers) ? 100 : 10);
     }
-    if (IsKeyPressed(KEY_A)) {
+    if (GameKeyPressed(KEY_A, modifiers)) {
         state.controller.ToggleRunning();
     }
-    if (IsKeyPressed(KEY_MINUS)) {
+    if (GameKeyPressed(KEY_MINUS, modifiers)) {
         state.controller.SetTurnsPerSecond(state.controller.TurnsPerSecond() - 1.0F);
     }
-    if (IsKeyPressed(KEY_EQUAL)) {
+    if (GameKeyPressed(KEY_EQUAL, modifiers)) {
         state.controller.SetTurnsPerSecond(state.controller.TurnsPerSecond() + 1.0F);
     }
-    if (IsKeyPressed(KEY_TAB)) {
+    if (GameKeyPressed(KEY_TAB, modifiers)) {
         state.show_debug_panel = !state.show_debug_panel;
     }
-    if (IsKeyPressed(KEY_E)) {
+    if (GameKeyPressed(KEY_E, modifiers)) {
         state.show_event_log_panel = !state.show_event_log_panel;
     }
-    if (IsKeyPressed(KEY_C)) {
+    if (GameKeyPressed(KEY_C, modifiers)) {
         if (CenterOnSelection(state)) {
             state.status_message = "Centered selection";
         } else {
@@ -731,27 +750,32 @@ void HandleInput(AppState& state) {
         }
     }
     if (IsKeyPressed(KEY_HOME) || IsKeyPressed(KEY_F)) {
-        state.camera.FitWorld(state.simulation.GetWorld().Width(), state.simulation.GetWorld().Height());
-        state.status_message = "Fit world";
+        if (AppHotkeysAllowed(modifiers)) {
+            state.camera.FitWorld(state.simulation.GetWorld().Width(), state.simulation.GetWorld().Height());
+            state.status_message = "Fit world";
+        }
     }
-    if (IsKeyPressed(KEY_F1)) {
+    if (GameKeyPressed(KEY_F1, modifiers)) {
         state.show_help_panel = !state.show_help_panel;
     }
-    if (IsKeyPressed(KEY_F2)) {
+    if (GameKeyPressed(KEY_F2, modifiers)) {
         state.show_legend_panel = !state.show_legend_panel;
     }
-    if (IsKeyPressed(KEY_F11)) {
+    if (GameKeyPressed(KEY_F11, modifiers)) {
         ToggleFullscreen();
     }
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !mouse_captured) {
         SelectAtMouse(state, mouse);
     }
-    if (IsKeyPressed(KEY_M)) {
+    if (GameKeyPressed(KEY_M, modifiers)) {
         const auto path = WorldgenDirectory(state.generation_params.seed) / "report.json";
         state.status_message = WriteReportJson(state.report, path) ? "Exported report: " + path.string()
                                                                    : "Failed to export report: " + path.string();
     }
-    if (IsKeyPressed(KEY_P)) {
+    if (GameKeyPressed(KEY_P, modifiers)) {
+        if (ShouldPauseForScreenshot(state.config.ui.pause_on_screenshot)) {
+            state.controller.SetRunning(false);
+        }
         const auto directory = WorldgenDirectory(state.generation_params.seed);
         std::filesystem::create_directories(directory);
         state.pending_screenshot = directory / LayerFilename(state.current_layer);
@@ -760,6 +784,15 @@ void HandleInput(AppState& state) {
 
 void AdvanceAutoRun(AppState& state) {
     state.controller.Update(GetFrameTime(), state.simulation);
+}
+
+void HandleFocusPause(AppState& state) {
+    const bool focused = IsWindowFocused();
+    if (ShouldPauseForFocusLoss(state.config.ui.pause_on_focus_loss, state.window_was_focused, focused)) {
+        state.controller.SetRunning(false);
+        state.status_message = "Paused: window focus lost";
+    }
+    state.window_was_focused = focused;
 }
 
 void UpdateHover(AppState& state) {
@@ -1246,6 +1279,7 @@ int OikumeneApp::Run() {
 
     while (!WindowShouldClose()) {
         HandleInput(state);
+        HandleFocusPause(state);
         UpdateHover(state);
         AdvanceAutoRun(state);
 

@@ -41,6 +41,7 @@ include(cmake/ThirdParty.cmake)
 add_library(oikumene_core STATIC
     src/app/app_config.cpp
     src/app/command_line.cpp
+    src/app/input_policy.cpp
     src/app/simulation_controller.cpp
     src/ai/heuristic_decision_provider.cpp
     src/ai/remote_decision_provider.cpp
@@ -172,6 +173,11 @@ add_executable(oikumene_simulation_controller_tests
     tests/test_simulation_controller.cpp
 )
 target_link_libraries(oikumene_simulation_controller_tests PRIVATE oikumene_core)
+
+add_executable(oikumene_input_policy_tests
+    tests/test_input_policy.cpp
+)
+target_link_libraries(oikumene_input_policy_tests PRIVATE oikumene_core)
 
 add_executable(oikumene_decision_tests
     tests/test_decision_models.cpp
@@ -309,6 +315,7 @@ endforeach()
 if(BUILD_TESTING)
     add_test(NAME oikumene_app_config_tests COMMAND oikumene_app_config_tests)
     add_test(NAME oikumene_simulation_controller_tests COMMAND oikumene_simulation_controller_tests)
+    add_test(NAME oikumene_input_policy_tests COMMAND oikumene_input_policy_tests)
     add_test(NAME oikumene_decision_tests COMMAND oikumene_decision_tests)
     add_test(NAME oikumene_strategic_report_tests COMMAND oikumene_strategic_report_tests)
     add_test(NAME oikumene_world_generation_tests COMMAND oikumene_world_generation_tests)

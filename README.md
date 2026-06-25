@@ -130,9 +130,12 @@ cp CppClient/config/settings.example.json CppClient/config/settings.json
 
 命令行参数会覆盖配置文件里的值。
 
+`ui.pause_on_screenshot` 默认为 `true`，按 `P` 导出截图时会先暂停自动推进，避免截图过程改变回合。`ui.pause_on_focus_loss` 默认为 `true`，窗口失焦时会暂停自动推进，适合用 macOS 系统截图或切到别的窗口时保持当前观察状态。
+
 ## 窗口快捷键
 
 - `1`-`9`、`0`：切换地图图层：Biome、Elevation、Rainfall、Temperature、Fertility、Resources、SettlementScore、PolityControl、RouteNetwork、TradeNetwork。
+- 数字图层快捷键只在没有 `Command` / `Control` / `Option` / `Shift` 时生效，避免 macOS `Shift+Command+4` 截图误切到 Temperature。
 - `F2`：显示/隐藏图例面板。
 - `R`：使用新 seed 重新生成世界，并重置仿真。
 - `B`：在当前世界上重置 band。

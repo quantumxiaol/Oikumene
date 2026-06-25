@@ -36,6 +36,7 @@ struct AppState {
     bool show_help_panel = false;
     bool show_event_log_panel = false;
     bool show_legend_panel = false;
+    bool window_was_focused = true;
     std::string status_message;
     std::optional<std::filesystem::path> pending_screenshot;
     std::optional<std::pair<int, int>> hover_tile;

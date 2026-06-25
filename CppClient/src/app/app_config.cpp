@@ -29,6 +29,8 @@ nlohmann::json ToJson(const AppConfig& config) {
              {"scale", config.ui.scale},
              {"show_debug_panel", config.ui.show_debug_panel},
              {"show_help_panel", config.ui.show_help_panel},
+             {"pause_on_screenshot", config.ui.pause_on_screenshot},
+             {"pause_on_focus_loss", config.ui.pause_on_focus_loss},
          }},
         {"simulation",
          {
@@ -58,6 +60,8 @@ AppConfig AppConfigFromJson(const nlohmann::json& json) {
     config.ui.scale = JsonValue(ui, "scale", config.ui.scale);
     config.ui.show_debug_panel = JsonValue(ui, "show_debug_panel", config.ui.show_debug_panel);
     config.ui.show_help_panel = JsonValue(ui, "show_help_panel", config.ui.show_help_panel);
+    config.ui.pause_on_screenshot = JsonValue(ui, "pause_on_screenshot", config.ui.pause_on_screenshot);
+    config.ui.pause_on_focus_loss = JsonValue(ui, "pause_on_focus_loss", config.ui.pause_on_focus_loss);
 
     config.simulation.default_seed = JsonValue(simulation, "default_seed", config.simulation.default_seed);
     config.simulation.world_width = JsonValue(simulation, "world_width", config.simulation.world_width);

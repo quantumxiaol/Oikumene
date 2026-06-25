@@ -19,6 +19,8 @@ void TestAppConfigJsonRoundTrip() {
     config.window.height = 900;
     config.window.fullscreen = true;
     config.ui.show_debug_panel = false;
+    config.ui.pause_on_screenshot = false;
+    config.ui.pause_on_focus_loss = false;
     config.simulation.default_seed = 1234;
     config.simulation.world_width = 96;
     config.simulation.world_height = 64;
@@ -31,6 +33,8 @@ void TestAppConfigJsonRoundTrip() {
     assert(restored.window.height == 900);
     assert(restored.window.fullscreen);
     assert(!restored.ui.show_debug_panel);
+    assert(!restored.ui.pause_on_screenshot);
+    assert(!restored.ui.pause_on_focus_loss);
     assert(restored.simulation.default_seed == 1234);
     assert(restored.simulation.world_width == 96);
     assert(restored.simulation.world_height == 64);
