@@ -67,7 +67,10 @@ add_library(oikumene_core STATIC
     src/sim/route_planner.cpp
     src/sim/route_system.cpp
     src/sim/settlement.cpp
+    src/sim/settlement_improvement.cpp
+    src/sim/settlement_production.cpp
     src/sim/settlement_system.cpp
+    src/sim/settlement_work.cpp
     src/sim/simulation_conflict_metrics.cpp
     src/sim/simulation_metrics.cpp
     src/sim/simulation_params.cpp
