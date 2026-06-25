@@ -99,7 +99,13 @@ add_library(oikumene_core STATIC
     src/world/world.cpp
     src/world/world_generation_report.cpp
     src/world/world_generation_params.cpp
+    src/world/world_generator_climate.cpp
+    src/world/world_generator_ecology.cpp
+    src/world/world_generator_helpers.cpp
+    src/world/world_generator_hydrology.cpp
     src/world/world_generator.cpp
+    src/world/world_generator_resources.cpp
+    src/world/world_generator_terrain.cpp
 )
 
 target_include_directories(oikumene_core
