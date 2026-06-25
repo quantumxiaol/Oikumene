@@ -47,6 +47,7 @@ add_library(oikumene_core STATIC
     src/ai/remote_decision_provider.cpp
     src/ai/strategic_report.cpp
     src/core/simulation.cpp
+    src/io/simulation_json.cpp
     src/network/http_client.cpp
     src/sim/band.cpp
     src/sim/band_system.cpp
@@ -115,14 +116,23 @@ endif()
 
 add_executable(oikumene_app
     src/main.cpp
+    src/app/input_controller.cpp
     src/app/oikumene_app.cpp
+    src/io/export_service.cpp
     src/render/camera_controller.cpp
     src/render/color_palette.cpp
     src/render/map_layer.cpp
     src/render/map_renderer.cpp
     src/render/selection.cpp
     src/render/symbol_registry.cpp
+    src/ui/details_panel.cpp
+    src/ui/event_log_panel.cpp
+    src/ui/help_panel.cpp
+    src/ui/hud_panel.cpp
     src/ui/legend_panel.cpp
+    src/ui/panel_layout.cpp
+    src/ui/playback_bar.cpp
+    src/ui/view_helpers.cpp
 )
 
 target_link_libraries(oikumene_app PRIVATE oikumene_core)
