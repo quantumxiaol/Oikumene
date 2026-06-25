@@ -48,6 +48,7 @@ add_library(oikumene_core STATIC
     src/ai/strategic_report.cpp
     src/core/simulation.cpp
     src/io/simulation_json.cpp
+    src/io/simulation_snapshot_json.cpp
     src/network/http_client.cpp
     src/sim/band.cpp
     src/sim/band_system.cpp
@@ -67,7 +68,10 @@ add_library(oikumene_core STATIC
     src/sim/route_system.cpp
     src/sim/settlement.cpp
     src/sim/settlement_system.cpp
+    src/sim/simulation_conflict_metrics.cpp
+    src/sim/simulation_metrics.cpp
     src/sim/simulation_params.cpp
+    src/sim/simulation_polity_metrics.cpp
     src/sim/tech_effects.cpp
     src/sim/technology.cpp
     src/sim/technology_system.cpp
@@ -171,6 +175,8 @@ target_link_libraries(oikumene_sim_batch PRIVATE oikumene_core)
 
 add_executable(oikumene_sim_balance_batch
     tools/sim_balance_batch.cpp
+    tools/sim_balance_metrics.cpp
+    tools/sim_balance_output.cpp
 )
 target_link_libraries(oikumene_sim_balance_batch PRIVATE oikumene_core)
 
