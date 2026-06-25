@@ -44,6 +44,7 @@ add_library(oikumene_core STATIC
     src/app/simulation_controller.cpp
     src/ai/heuristic_decision_provider.cpp
     src/ai/remote_decision_provider.cpp
+    src/ai/strategic_report.cpp
     src/core/simulation.cpp
     src/network/http_client.cpp
     src/sim/band.cpp
@@ -177,6 +178,11 @@ add_executable(oikumene_decision_tests
 )
 target_link_libraries(oikumene_decision_tests PRIVATE oikumene_core)
 
+add_executable(oikumene_strategic_report_tests
+    tests/test_strategic_report.cpp
+)
+target_link_libraries(oikumene_strategic_report_tests PRIVATE oikumene_core)
+
 add_executable(oikumene_world_generation_tests
     tests/test_world_generation.cpp
 )
@@ -304,6 +310,7 @@ if(BUILD_TESTING)
     add_test(NAME oikumene_app_config_tests COMMAND oikumene_app_config_tests)
     add_test(NAME oikumene_simulation_controller_tests COMMAND oikumene_simulation_controller_tests)
     add_test(NAME oikumene_decision_tests COMMAND oikumene_decision_tests)
+    add_test(NAME oikumene_strategic_report_tests COMMAND oikumene_strategic_report_tests)
     add_test(NAME oikumene_world_generation_tests COMMAND oikumene_world_generation_tests)
     add_test(NAME oikumene_world_generation_balance_tests COMMAND oikumene_world_generation_balance_tests)
     add_test(NAME oikumene_band_settlement_tests COMMAND oikumene_band_settlement_tests)

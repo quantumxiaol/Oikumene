@@ -131,6 +131,15 @@
 - Let War ROI use treaty direction: subjects with high liberty desire get dependency-breakout pressure, while overlords are restrained from directly attacking their own vassals.
 - Export treaty records and treaty aggregate metrics in headless JSON/CSV, and show treaty lines in the selected-polity debug UI.
 
+## Phase 5.9: Compressed Strategic Reports
+
+- Build compact `StrategicReport` records for each polity as the C++ side of the Phase 6 decision input.
+- Summarize polity status, stockpiles, budget, governance, technology, geography, trade, diplomacy, war pressure, war targets, wars, occupations, vassal treaties, and recent events.
+- Generate legal candidate actions for research, trade, war preparation, and peace offers without mutating the world.
+- Wrap strategic reports into the existing `DecisionBatchRequest` protocol shape.
+- Export `strategic_reports.json` and `decision_batch.json` from `oikumene_sim_batch` for offline review before connecting Python/LLM decisions.
+- Keep the report intentionally compressed: no full map, no full path dump, and no unbounded event history.
+
 ## Phase 6: Remote Strategic AI
 
 - Async C++ decision orchestration.

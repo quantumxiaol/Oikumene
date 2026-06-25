@@ -9,6 +9,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "oikumene/ai/strategic_report.hpp"
 #include "oikumene/core/simulation.hpp"
 #include "oikumene/sim/event.hpp"
 #include "oikumene/sim/route_system.hpp"
@@ -1510,6 +1511,14 @@ void WriteStateSample(std::ofstream& output, const oikumene::Simulation& sim) {
     output << StateSampleToJson(sim).dump() << '\n';
 }
 
+nlohmann::json StrategicReportsToJson(const oikumene::Simulation& sim) {
+    nlohmann::json reports = nlohmann::json::array();
+    for (const auto& report : oikumene::BuildStrategicReports(sim)) {
+        reports.push_back(oikumene::ToJson(report));
+    }
+    return reports;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -1554,6 +1563,8 @@ int main(int argc, char** argv) {
         WriteJson(options.out / "world_report.json", oikumene::ToJson(report));
         WriteJson(options.out / "final_state.json", FinalStateToJson(sim));
         WriteJson(options.out / "summary.json", SummaryToJson(options, sim));
+        WriteJson(options.out / "strategic_reports.json", StrategicReportsToJson(sim));
+        WriteJson(options.out / "decision_batch.json", oikumene::BuildDecisionBatchRequest(sim, sim.CurrentTurn() / 5));
         WriteEventsJsonl(options.out / "events.jsonl", sim);
 
         std::cout << "wrote sim batch to " << options.out << '\n';

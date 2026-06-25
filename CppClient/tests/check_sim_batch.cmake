@@ -19,9 +19,41 @@ if(NOT result EQUAL 0)
     message(FATAL_ERROR "oikumene_sim_batch failed\nstdout:\n${stdout}\nstderr:\n${stderr}")
 endif()
 
-foreach(path summary.json final_state.json events.jsonl world_report.json states.jsonl)
+foreach(path summary.json final_state.json events.jsonl world_report.json states.jsonl strategic_reports.json decision_batch.json)
     if(NOT EXISTS "${OUT}/${path}")
         message(FATAL_ERROR "missing ${OUT}/${path}")
+    endif()
+endforeach()
+
+file(READ "${OUT}/strategic_reports.json" strategic_reports)
+foreach(token
+        "\"report\""
+        "\"candidate_actions\""
+        "\"polity\""
+        "\"stockpiles\""
+        "\"governance\""
+        "\"technology\""
+        "\"geography\""
+        "\"neighbors\""
+        "\"war_pressures\""
+        "\"war_targets\""
+        "\"vassalage\"")
+    string(FIND "${strategic_reports}" "${token}" token_index)
+    if(token_index EQUAL -1)
+        message(FATAL_ERROR "strategic_reports.json is missing ${token}")
+    endif()
+endforeach()
+
+file(READ "${OUT}/decision_batch.json" decision_batch)
+foreach(token
+        "\"protocol_version\""
+        "\"requests\""
+        "\"request_id\""
+        "\"report\""
+        "\"candidate_actions\"")
+    string(FIND "${decision_batch}" "${token}" token_index)
+    if(token_index EQUAL -1)
+        message(FATAL_ERROR "decision_batch.json is missing ${token}")
     endif()
 endforeach()
 

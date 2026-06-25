@@ -8,16 +8,51 @@
       "strategic_turn": 2,
       "polity_id": 1,
       "report": {
-        "name": "Barkaquin Confederacy",
-        "government_level": "chiefdom",
-        "population": 842,
+        "version": "0.1",
+        "turn": 10,
+        "polity": {
+          "id": 1,
+          "name": "Barkaquin Confederacy",
+          "level": "Chiefdom",
+          "capital_settlement_id": 3,
+          "capital_population": 260,
+          "population": 842,
+          "settlement_count": 4
+        },
         "stockpiles": {
           "food": 1240,
           "wood": 330,
           "ore": 42,
-          "metal": 8,
           "wealth": 19
-        }
+        },
+        "governance": {
+          "stability": 0.82,
+          "admin_load": 11.2,
+          "admin_capacity": 18,
+          "overextension": 0.14
+        },
+        "technology": {
+          "current": "Mining",
+          "progress": 32,
+          "current_cost": 150,
+          "legal_options": [
+            {
+              "id": "Mining",
+              "cost": 150,
+              "preferred": true
+            }
+          ]
+        },
+        "geography": {
+          "controlled_land_tiles": 128,
+          "contested_tiles": 7,
+          "connected_mines": 1
+        },
+        "neighbors": [],
+        "war_pressures": [],
+        "war_targets": [],
+        "occupations": [],
+        "vassal_treaties": []
       },
       "candidate_actions": [
         {
