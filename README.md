@@ -9,6 +9,8 @@ Oikumene（中文名《人居界》）是一个地理驱动的文明演化沙盒
 - LLM 后续只负责外交、科技、贸易、战争等低频宏观决策；村民行为、生产、寻路、控制力、战争结算等由 C++ 规则系统负责。
 - `frontend` 预留给未来 GitHub Pages / Web 回放器；当前 MVP 前端是 `CppClient` 的 Raylib 窗口。
 
+详细 target、模块边界和回归命令见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
+
 ## 当前状态
 
 当前已经进入 Phase 5.9（Phase 6 前置）：
@@ -161,6 +163,14 @@ cp CppClient/config/settings.example.json CppClient/config/settings.json
 默认只显示左上角轻量 HUD，避免挡住地图。需要看 tile、band、settlement 的详细解释字段时再按 `Tab`。
 
 ## 测试
+
+一键 C++ 回归：
+
+```bash
+scripts/regression_cpp.sh
+```
+
+常规测试：
 
 ```bash
 cd CppClient

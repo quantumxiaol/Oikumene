@@ -284,6 +284,18 @@ C++ builds StrategicReport + CandidateActions
 
 ## 回归命令
 
+一键 C++ 回归：
+
+```bash
+scripts/regression_cpp.sh
+```
+
+脚本会执行 C++ 格式化、构建、CTest、单 seed headless 仿真和小批量平衡回归。可以用环境变量覆盖默认参数，例如：
+
+```bash
+REGRESSION_TURNS=300 REGRESSION_COUNT=10 scripts/regression_cpp.sh
+```
+
 常规 C++ 回归：
 
 ```bash
@@ -394,7 +406,7 @@ uv run uvicorn oikumene_agent.main:app --reload --port 8000
 
 - `tools/sim_balance_output.cpp` 和 `tools/sim_balance_metrics.cpp` 仍然接近 500 行，但职责集中在批量平衡工具，可以暂时接受。
 - `occupation_system.cpp`、`diplomacy_system.cpp`、`war_system.cpp` 仍有继续拆分空间。
-- Python AgentServer 暂时没有正式 pytest 测试；Phase 6 前建议补最小 API 测试，并决定是否加入 `httpx2` 或改用其他测试方式。
+- Python AgentServer 已有最小 pytest 覆盖 health route、decision route 注册和 heuristic action 选择；Phase 6 前如果需要真实 ASGI client，再决定是否加入 `httpx2`。
 - `StrategicReport` 的 JSON shape 已经比较大，后续接 LLM 前需要继续限制字段数量和 recent event 长度。
 
 整体方向是：保持 `oikumene_core` 可 headless、可测试、可复现；保持 app 层薄；保持 Python advisory，而不是第二个模拟器。
